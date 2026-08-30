@@ -146,7 +146,11 @@ class RunCommandTool : Tool {
     )
 
     override suspend fun execute(context: ToolContext, call: ToolCall): ToolResult {
-        val sandbox = context.sandbox ?: failure(call, "no_sandbox", "当前没有可用的命令执行后端")
+        // 注意：这里必须提前 return，不能用 `?:` 接 failure()。
+        // failure() 返回 ToolResult，与 Sandbox 无共同父类型，Elvis 会把
+        // sandbox 推断成 Any，导致后续 .execute / .stdout 全部 Unresolved。
+        val sandbox = context.sandbox
+            ?: return failure(call, "no_sandbox", "当前没有可用的命令执行后端")
         val command = requireNotNull(call.arg("command")) { "缺少 command 参数" }
         return runCatching {
             val result = sandbox.execute(

@@ -40,7 +40,11 @@ dependencies {
 
     api(platform(libs.compose.bom))
     api(libs.compose.material3)
+    // extended 包含 core 全部图标，并额外提供 Stop / Inbox / ErrorOutline 等。
+    // 设计系统后续会持续新增图标，只依赖 core 会反复踩"图标找不到"。
+    // Release 构建由 R8 移除未使用图标，不增加最终 APK 体积。
     api(libs.compose.material.icons.core)
+    api(libs.compose.material.icons.extended)
     api(libs.compose.ui)
     api(libs.compose.ui.tooling.preview)
 
