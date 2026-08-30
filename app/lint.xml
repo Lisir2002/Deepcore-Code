@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  只关掉与本项目无关的噪音检查。
+  注意：DirectMaterial3Usage 与 HardcodedDesignToken 故意**不在这里**——
+  它们是设计系统的守卫，必须保持 error 级别，让违规直接构建失败。
+-->
+<lint>
+    <issue id="MissingApplicationIcon" severity="ignore" />
+    <issue id="MissingTranslation" severity="ignore" />
+    <issue id="ExtraTranslation" severity="ignore" />
+    <issue id="GradleCompatible" severity="ignore" />
+    <issue id="OldTargetApi" severity="ignore" />
+    <issue id="GoogleAppIndexingWarning" severity="ignore" />
+    <issue id="AutoboxingStateCreation" severity="ignore" />
+    <issue id="UnusedMaterial3ScaffoldPaddingParameter" severity="ignore" />
+</lint>

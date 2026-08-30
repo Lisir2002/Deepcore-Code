@@ -1,0 +1,46 @@
+name: Release
+
+# 打 tag 即发布：git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: 构建并发布
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: 发布前先跑测试
+        run: ./gradlew :core:agent:test :core:uistate:test --console=plain
+
+      - name: 构建 Release APK
+        run: ./gradlew :app:assembleRelease --console=plain
+
+      - name: 收集产物
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/release/*.apk dist/ || true
+          ls -la dist
+
+      - name: 创建 GitHub Release 并上传 APK
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

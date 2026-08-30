@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -XX:+HeapDumpOnOutOfMemoryError"
+
+jobs:
+  # ── 1. 核心层单测：纯 Kotlin，不依赖 Android SDK，跑得最快，最早给反馈 ──
+  core-test:
+    name: 核心模块单元测试
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: 配置 Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 运行 Agent 主循环与归约器测试
+        run: ./gradlew :core:agent:test :core:uistate:test --console=plain
+
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            core/agent/build/reports/tests/
+            core/uistate/build/reports/tests/
+
+  # ── 2. Android 编译：Compose / AGP 代码只有这一步能真正验证 ──
+  android-build:
+    name: 编译 Debug APK
+    runs-on: ubuntu-latest
+    needs: core-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: 配置 Android SDK
+        uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: 编译
+        run: ./gradlew :app:assembleDebug --console=plain
+
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+  # ── 3. 设计系统守卫：业务层绕过组件库 = 构建失败 ──
+  design-guard:
+    name: 设计系统守卫
+    runs-on: ubuntu-latest
+    needs: core-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: 运行自定义 Lint 规则
+        run: ./gradlew :app:lintDebug :feature:chat:lintDebug --console=plain
+
+      - name: 上传 Lint 报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: |
+            app/build/reports/lint-results-debug.html
+            feature/chat/build/reports/lint-results-debug.html
