@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-# 提交并推送到 GitHub（直连，不再走 Gitee 中转）
+# 提交并推送到 GitHub（直连）
 #
 # 用法：
 #   ./scripts/push.sh "提交信息"              # 提交全部改动并推送
 #   ./scripts/push.sh "提交信息" --skip-ci    # 跳过推送前的本地验证
 #   ./scripts/push.sh --amend "新信息"        # 修改上一次提交
 #
-# 为什么不必再走 Gitee 中转：
-#   本沙箱对 GitHub 的限制是「DNS 劫持 + 概率性丢包」，不是 IP 封锁。
-#   github-tunnel.sh install 注入 hosts 解决前者，本脚本用重试包装解决后者，
-#   两者叠加后实测 clone/push 稳定成功。
+# 本沙箱对 GitHub 的限制是「DNS 劫持 + 概率性丢包」，不是 IP 封锁：
+#   · github-tunnel.sh install 注入 hosts 解决前者
+#   · 本脚本用重试包装解决后者
+#   两者叠加后实测 clone/push 稳定成功，无需任何中转镜像。
 #
 # 推送前默认跑一遍本地能跑的验证（等价于 CI 的 core-test 环节），
 # 避免把编译不过的代码推上去浪费一轮 CI。
