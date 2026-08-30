@@ -66,21 +66,23 @@ class ChatViewModel(
         _running.update { true }
         viewModelScope.launch {
             runCatching { runtime.submit(text) }
-                .onFailure { _errorMessage.update { it.message ?: "发送失败" } }
+                // 必须显式命名 error：若用 it，内层 update{} 的 it(String) 会
+                // 遮蔽外层 it(Throwable)，it.message 就解析不到了。
+                .onFailure { error -> _errorMessage.update { error.message ?: "发送失败" } }
         }
     }
 
     fun approve(call: ToolCall, scope: ApprovalScope) {
         viewModelScope.launch {
             runCatching { runtime.respondToApproval(call, approved = true, scope = scope) }
-                .onFailure { _errorMessage.update { it.message ?: "授权失败" } }
+                .onFailure { error -> _errorMessage.update { error.message ?: "授权失败" } }
         }
     }
 
     fun deny(call: ToolCall) {
         viewModelScope.launch {
             runCatching { runtime.respondToApproval(call, approved = false, reason = "用户在界面上拒绝") }
-                .onFailure { _errorMessage.update { it.message ?: "操作失败" } }
+                .onFailure { error -> _errorMessage.update { error.message ?: "操作失败" } }
         }
     }
 
