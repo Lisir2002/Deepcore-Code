@@ -12,8 +12,8 @@ android {
         applicationId = "com.deepcode.agent"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 4
+        versionName = "0.1.3"
     }
 
     // ---- 正式签名配置 ----------------------------------------------------
@@ -63,12 +63,17 @@ android {
                 // v2（Android 7.0+）：校验整包二进制，防篡改主力。
                 // v3（Android 9.0+）：在 v2 之上支持密钥轮换，上传密钥丢了还能换。
                 // v4：留给 AGP 按构建类型自动决定，不在这里手动开关。
-                // AGP 8.7 签名方案开关：enableVxSigning 为 Boolean?，
-                // 不设置（null）时走基于 minSdk 的默认值。minSdk=26 (>=24)
-                // 时 AGP 默认签 V2+V3；而显式 enableV2Signing=true 在本项目
-                // 实测反而会让 V2 被跳过（v0.1.1 仅得 v1+v3），故 V2/V3 交回默认。
-                // V1 默认不签（AGP 认为 V2 已足够），这里显式开启以兼容 Android 7 前设备。
+                //
+                // AGP 8.7 的开关属性是 enableV1/V2/V3Signing（Boolean?，null 走默认）。
+                // 实测结论（已用 APK Signing Block 二进制解析逐版验证）：
+                //   - 显式三开（v0.1.1）→ v1+v2+v3 全部命中；
+                //   - 只显式开 v1、其余交默认（v0.1.2）→ v3 消失。
+                //     即 AGP 8.7.3 + minSdk 26 的「默认」并不包含 v3，
+                //     v3 必须显式开启；v1 亦然。
+                // 故此处三个方案全部显式开启，不依赖默认值。
                 enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
