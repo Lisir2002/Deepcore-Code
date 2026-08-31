@@ -20,14 +20,14 @@ DeepCore-Code 是一个 AI 编程智能体的移动端宿主（Agent IDE for And
 ## 模块结构
 
 ```
-:app                 装配层：DI 绑定、MainActivity
+:app                 装配层：DI 绑定、MainActivity、SQLite 驱动装配
 :feature:chat        会话页（只准用 designsystem 组件）
 :designsystem        UI 统一层：唯一可用 Material3 的模块
 :core:platform       Android 能力实现（工作区、白名单沙箱、内置工具）
 ──────────── 纯 Kotlin 分界线（以下模块零 Android 依赖，JVM 直接单测）────────────
 :core:uistate        事件 → 渲染块归约器
 :core:agent          主循环 + 全部 SPI + 权限门 + 上下文策略
-:core:data           append-only 事件日志存储
+:core:data           SQLite 持久化（SQLDelight）：事件日志 + 会话索引 + TableModule 扩展协议
 :core:model          领域模型 + 事件定义
 :lint                设计系统守卫（绕过 designsystem 直接编译失败）
 ```
@@ -41,7 +41,7 @@ DeepCore-Code 是一个 AI 编程智能体的移动端宿主（Agent IDE for And
 | Kotlin / Compose | 2.0.21 / BOM (Material3) |
 | AGP / Gradle | 8.7.3 / 8.9 |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
-| DI / 序列化 | Koin / kotlinx.serialization |
+| DI / 序列化 / 持久化 | Koin / kotlinx.serialization / SQLDelight 2.x (SQLite) |
 
 ## 快速开始
 
@@ -75,6 +75,7 @@ cd Deepcore-Code
 | 文档 | 内容 |
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 架构设计、三大地基决策、扩展点清单 |
+| [DATA_LAYER.md](DATA_LAYER.md) | 数据层设计定稿（SQLite/SQLDelight、schema、TableModule 扩展协议） |
 | [PLAN.md](PLAN.md) | 里程碑路线图与当前进展 |
 | [agent.md](agent.md) | AI 协同开发规范（人与 AI 协作者共同遵守） |
 | [Version.md](Version.md) | 版本号规范、签名方案要求、发版检查清单 |

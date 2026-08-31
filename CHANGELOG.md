@@ -10,6 +10,10 @@
   `Version.md`（版本与更新规范）、本文件（变更日志）。
 - `scripts/check_apk_signing.py`：零依赖 APK 签名验证脚本（解析 Signing Block，
   判定 v1/v2/v3 并比对官方证书指纹），替代临时手写字节搜索，杜绝 0.1.2 式验证笔误。
+- `DATA_LAYER.md`：数据层设计定稿 —— **SQLite（SQLDelight 2.x）接管持久化**。
+  决策：事件 payload 存 JSON blob + type 列过滤；sessions 会话索引表本期引入；
+  状态表与事件流统一事务边界；新表/字段经 `TableModule` 注册制接入（核心框架零改动）。
+  新增里程碑 M0.6（设计定稿，待实现），M3 原"Room 持久化"条目相应修正。
 
 ## [0.1.3] — 2026-08-31 · tag [v0.1.3](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.1.3) · versionCode 4
 

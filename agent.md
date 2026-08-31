@@ -25,6 +25,9 @@
    `:app` 里一行绑定，禁止在业务代码里 `when (provider.type)` 之类的前提判断。
 5. **渲染按产物类型分发**：`ToolOutput` 是结构化类型（Text/Diff/FileList/SearchHits/KeyValues），
    禁止按工具名 `when (tool.name)` 分发渲染。
+6. **持久化一律走数据层协议**：业务表/字段以 `TableModule` 注册进 `SchemaManager`，
+   禁止 feature 层私开 SQLite 连接、私建数据库文件；加字段只在迁移链尾部追加，
+   永不改历史迁移。协议与 schema 见 `DATA_LAYER.md`。
 
 ## 2. 修改代码前
 

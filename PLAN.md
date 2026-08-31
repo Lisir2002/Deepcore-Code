@@ -11,9 +11,10 @@
 | --- | --- | --- |
 | **M0 架构地基** | 骨架 + 主循环 + UI 统一机制跑通完整链路 | ✅ 完成（v0.1.0） |
 | **M0.5 发布基线** | 正式签名 + 加固 + CI 发版流水线 | ✅ 完成（v0.1.3） |
+| **M0.6 数据层 SQLite 化** | SQLDelight 接管持久化（events/sessions 表 + TableModule 扩展协议） | 🔄 设计定稿（见 DATA_LAYER.md），待实现 |
 | **M1 能真跑** | 接真实模型（OkHttp + SSE 的 `ModelProvider`），真实对话 | 🔜 下一步 |
 | **M2 能用** | 工作区文件树、Diff 审阅、git 工具、会话列表页 | ⏳ 规划中 |
-| **M3 能扛** | Room 持久化、前台服务保活、上下文压缩实战化 | ⏳ 规划中 |
+| **M3 能扛** | 上下文压缩实战化、前台服务保活、数据层深化 | ⏳ 规划中 |
 | **M4 扩展** | MCP 客户端、子 Agent 并行、Plan Mode、远端沙箱 | ⏳ 规划中 |
 
 ---
@@ -47,10 +48,11 @@
 
 ## 当前焦点
 
-**v0.1.3 发布验证**：CI 构建签名修复版（commit `09032e8`），产物需通过
-`scripts/check_apk_signing.py` 三绿验证后作为最新正式 Release。
+**M0.6 数据层 SQLite 化**：方案已定稿（SQLDelight 2.x + payload JSON + sessions 表 +
+TableModule 注册制扩展协议 + 统一事务边界），四项决策 2026-08-31 经评审确认，
+见 `DATA_LAYER.md`。下一步按其《实施清单》落地代码，随后进入 M1。
 
-## M1 设计要点（下一步）
+## M1 设计要点（数据层之后）
 
 1. **`OkHttpProvider : ModelProvider`**：SSE 流式解析，映射到 `ThinkingDelta` /
    `MessageDelta` 事件；超时/重试策略进 `ContextPolicy` 之外的独立配置。

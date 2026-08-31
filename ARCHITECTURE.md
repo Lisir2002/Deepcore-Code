@@ -19,7 +19,7 @@
                     ┌────────────▼────────────────────────┐
                     │  :core:uistate   事件→渲染块 归约     │
                     │  :core:agent     主循环 + 全部 SPI    │
-                    │  :core:data      事件日志存储          │
+                    │  :core:data      SQLite 持久化(SQLDelight) │
                     │  :core:model     领域模型 + 事件定义   │
                     └────────────┬────────────────────────┘
                     ┌────────────▼────────────────────────┐
@@ -128,6 +128,7 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 | Plan Mode（先出计划再执行） | 新增 `AgentRuntime` 策略实现 | 接口不变 |
 | 本地小模型（端侧推理） | 新增 `ModelProvider` | 同上 |
 | 换存储为 Room | 新增 `EventStore` 实现 | 接口不变 |
+| 新功能持久化（任何业务表） | 写 `TableModule` 注册进 `SchemaManager`，加 DAO | **核心框架零改动**（协议见 DATA_LAYER.md） |
 | 项目记忆 CLAUDE.md | 实现 `ProjectMemory` | 已预留注入口 `systemPromptProvider` |
 | 长任务后台保活 | `:core:platform` 加前台服务 | Runtime 不感知 Android |
 
