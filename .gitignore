@@ -21,3 +21,20 @@ keystore.properties
 
 # 本地令牌（绝不提交）
 .gh_token_env
+
+# ---- 签名密钥：多重模式兜底，任何一条命中即不入库 ----
+# 真实 keystore 实体放在仓库外（/root/deepcode-signing/），
+# 这里再叠几层模式，防止哪天有人把密钥拷进仓库时被 git add 带走。
+*.jks
+*.keystore
+*.jceks
+*.p12
+*.pfx
+/signing/
+/keystore/
+app/keystore/
+# 混淆映射表：不能提交到公开仓库——它记录着混淆前后的类名对照，
+# 一旦泄露等于把混淆白做了一遍。需要还原崩溃栈时，从构建产物里取出来
+# 单独存（或上传到 Play Console），别进 git。
+*.mapping.txt
+app/build/outputs/mapping/

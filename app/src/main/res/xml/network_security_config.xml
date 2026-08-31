@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  网络安全配置
+
+  应用的核心能力是调用远端 LLM API，会携带 API Key。
+  明文 HTTP 一旦被中间人劫持，密钥和对话内容就是裸奔的，
+  所以这里全局禁止明文流量，只允许 HTTPS。
+
+  注意：这不会阻止用户主动发起的 http:// 请求被系统拦下时抛异常——
+  那正是我们想要的行为：协议写错应该在开发期就暴露，而不是到线上静默泄露。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <!--
+      本地开发例外：连接本机调试服务（10.0.2.2 是模拟器访问宿主机的地址）
+      时允许明文。只开 127.0.0.1 与 10.0.2.2，不开放整个局域网。
+
+      如果将来要连自建的内网 LLM 服务，在这里按域名单独加 domain-config，
+      不要把 cleartextTrafficPermitted 全局打开。
+    -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+</network-security-config>
