@@ -19,6 +19,8 @@
                     ┌────────────▼────────────────────────┐
                     │  :core:uistate   事件→渲染块 归约     │
                     │  :core:agent     主循环 + 全部 SPI    │
+                    │  │  └─ skill/  Agent Skills 标准解析  │
+                    │  :core:mcp       MCP 客户端（官方SDK） │
                     │  :core:data      SQLite 持久化(SQLDelight) │
                     │  :core:model     领域模型 + 事件定义   │
                     └────────────┬────────────────────────┘
@@ -29,6 +31,7 @@
 ```
 
 **分界线以上是 Android/Compose，以下全是纯 Kotlin。**
+图中 `:core:mcp` 与 `core:agent/skill/` 为 M1 规划中模块（设计定稿见 `TOOLS_SKILLS.md`）。
 
 这条线不是洁癖，是收益：Agent 主循环是这个 App 里最容易出错的部分，把它放在纯 Kotlin 模块，
 就能在 JVM 上直接跑测试，**不用开模拟器、不用打包 APK**。M0 阶段已经靠它抓到一个真实 bug
@@ -121,7 +124,8 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 |---|---|---|
 | 接真实模型（Claude/GPT/DeepSeek） | 实现 `ModelProvider`，换掉 `:app` 里的一行绑定 | **仅此一处** |
 | 加一种工具（grep / git / 网页） | 实现 `Tool` + `register()` | Runtime、事件、UI 全不动 |
-| 接 MCP 工具 | 实现 `Tool`，内部转发给 MCP server | 同上，Runtime 不认识 MCP |
+| 接 MCP 工具 | `core:mcp` 的 `McpToolBridge` 直接实现内部 `Tool` SPI 注册进统一 Registry | Runtime 不认识 MCP；规范映射与生命周期见 `TOOLS_SKILLS.md` |
+| 加一种技能包（Skill） | `core:agent/skill/` 按 Agent Skills 标准解析 `SKILL.md`，L1 元数据自动注入 system prompt | 加载/注入三层渐进披露见 `TOOLS_SKILLS.md` |
 | 跑 npm / clang（内嵌 Linux） | 新增 `ProotSandbox : Sandbox` | 只换 `:app` 绑定，上层无感 |
 | 连远端服务器 | 新增 `SshWorkspace` / `SshSandbox` | 同上 |
 | 子 Agent 并行 | 事件模型已有 `SubAgentEvent` | 主循环加分支，UI 递归复用渲染器 |

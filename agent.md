@@ -28,6 +28,11 @@
 6. **持久化一律走数据层协议**：业务表/字段以 `TableModule` 注册进 `SchemaManager`，
    禁止 feature 层私开 SQLite 连接、私建数据库文件；加字段只在迁移链尾部追加，
    永不改历史迁移。协议与 schema 见 `DATA_LAYER.md`。
+7. **工具与技能对齐业界统一标准，禁止自造私有协议**（规范见 `TOOLS_SKILLS.md`）：
+   工具互操作一律走 **MCP**（`core:mcp` 用官方 Kotlin SDK，工具字段映射照抄规范）；
+   技能包一律 **Agent Skills 开放标准**（`SKILL.md` + frontmatter 校验 + 渐进披露三层加载）。
+   内部扩展信息只放自有字段/附加属性，不得污染标准字段；外部工具的 annotations
+   一律视为不可信，风险裁决只认本地 `PermissionGate`。
 
 ## 2. 修改代码前
 

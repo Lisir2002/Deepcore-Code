@@ -12,10 +12,10 @@
 | **M0 架构地基** | 骨架 + 主循环 + UI 统一机制跑通完整链路 | ✅ 完成（v0.1.0） |
 | **M0.5 发布基线** | 正式签名 + 加固 + CI 发版流水线 | ✅ 完成（v0.1.3） |
 | **M0.6 数据层 SQLite 化** | SQLDelight 接管持久化（events/sessions 表 + TableModule 扩展协议） | ✅ 完成（v0.1.4，CI 全量验证通过） |
-| **M1 能真跑** | 接真实模型（OkHttp + SSE 的 `ModelProvider`），真实对话 | 🔜 下一步 |
-| **M2 能用** | 工作区文件树、Diff 审阅、git 工具、会话列表页 | ⏳ 规划中 |
+| **M1 能真跑** | 接真实模型（OkHttp + SSE 的 `ModelProvider`）+ **工具/技能层标准化**（MCP 客户端 + Agent Skills） | 🔜 下一步（工具/Skill 设计已定稿） |
+| **M2 能用** | 工作区文件树、Diff 审阅、git 工具、会话列表页；ProotSandbox 后补 stdio MCP | ⏳ 规划中 |
 | **M3 能扛** | 上下文压缩实战化、前台服务保活、数据层深化 | ⏳ 规划中 |
-| **M4 扩展** | MCP 客户端、子 Agent 并行、Plan Mode、远端沙箱 | ⏳ 规划中 |
+| **M4 扩展** | 子 Agent 并行、Plan Mode、远端沙箱、MCP Server 侧反向暴露 | ⏳ 规划中 |
 
 ---
 
@@ -65,6 +65,16 @@
   取代手改 `versionCode`/`versionName`，并规避注释误匹配与编码笔误。
 - [x] `release.yml` 新增 **tag ↔ versionName 一致性校验**步骤。
 
+### 工具与技能层设计定稿（2026-08-31，随 M1 实施）
+
+- [x] 确立双标准铁律：工具互操作走 **MCP**（规范基线 2025-11-25）、技能包走 **Agent Skills 开放标准**
+  （agentskills.io），禁止自造私有协议——外部生态的工具/技能插件可直接适配。
+- [x] 四项决策定稿：MCP Client 先行 / SKILL.md 全兼容 / `core:agent` 加 skill 子包 + 新建 `core:mcp` /
+  Streamable HTTP 先行 stdio 后补。
+- [x] 设计文档 `docs/TOOLS_SKILLS.md`（类型映射表、风险映射、渐进披露三层落地、调度定稿、接口草案、测试策略）。
+- [ ] 实施清单 T1–T7 见 `TOOLS_SKILLS.md` 九（T1 model 扩展 → T2 skill 包 → T3 主循环接入 →
+  T4 core:mcp → T5 app 装配 → T6 文档 → T7 发版走四段式门禁 `0.2.0.x`）。
+
 ---
 
 ## 当前焦点
@@ -83,9 +93,12 @@ M1 首发预计为 `0.2.0.x`。
    `MessageDelta` 事件；超时/重试策略进 `ContextPolicy` 之外的独立配置。
 2. **模型配置面**：API Key 存 `EncryptedSharedPreferences`；`PermissionGate`
    增加网络访问确认（复用现有风险等级模型）。
-3. **验收标准**：真实模型流式对话跑通一轮完整工具调用；`core:agent` 全部用例保持绿；
-   事件序列可重放恢复。
-4. **发布口径**：M1 功能进 `0.2.0.x`（次版本号 + 全局构建号 W，符合 Version.md 语义）。
+3. **工具与技能标准化**（设计见 `TOOLS_SKILLS.md`）：`core:mcp`（官方 Kotlin SDK
+   Client，Streamable HTTP）+ `core:agent/skill/`（Agent Skills 标准解析与渐进披露注入）；
+   主循环仅两处感知点（specs 快照、system prompt 技能段），其余零改动。
+4. **验收标准**：真实模型流式对话跑通一轮完整工具调用；`core:agent` 全部用例保持绿；
+   事件序列可重放恢复；MCP 内存服务器端到端单测绿。
+5. **发布口径**：M1 功能进 `0.2.0.x`（次版本号 + 全局构建号 W，符合 Version.md 语义）。
 
 ## 风险与依赖
 

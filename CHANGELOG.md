@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- **工具与技能层设计定稿**（文档 `docs/TOOLS_SKILLS.md`，随 M1 实施）：
+  - 双标准铁律：工具互操作对齐 **MCP**（规范基线 2025-11-25，官方 Kotlin SDK），
+    技能包对齐 **Agent Skills 开放标准**（agentskills.io，`SKILL.md` + 渐进披露三层加载），
+    禁止自造私有协议，保证外部生态插件可直接适配。
+  - 模块规划：`core:mcp` 新模块（MCP Client，Streamable HTTP 先行）；
+    `core:agent` 新增 `skill/` 子包（保持纯 Kotlin 零第三方依赖）。
+  - 调度定稿：Skill 永不伪装成 Tool（L1 元数据注 system prompt、L2 用现有 read 工具
+    触发加载、L3 资源按需）；MCP 工具经桥接进统一 `ToolRegistry`，annotations 视为
+    不可信、风险裁决只认本地 `PermissionGate`；turn 内工具清单快照以保证 prompt cache 命中。
+
 ### Changed
 
 - **版本号迁移至四段式 `X.Y.Z.W`**（规范见 `Version.md` 一、二、三）：
