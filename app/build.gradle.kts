@@ -63,9 +63,11 @@ android {
                 // v2（Android 7.0+）：校验整包二进制，防篡改主力。
                 // v3（Android 9.0+）：在 v2 之上支持密钥轮换，上传密钥丢了还能换。
                 // v4：留给 AGP 按构建类型自动决定，不在这里手动开关。
-                enableV1Signing = true
-                enableV2Signing = true
-                enableV3Signing = true
+                // AGP 8.1+ 起 v3 为强制启用（不可降级），无需显式开关；
+                // v1/v2 改用下列属性控制（旧的 enableVxSigning 在 8.x 已被忽略，
+                // 这正是上一版只签出 v1+v3 而缺 v2 的根因）。
+                v1SigningEnabled = true
+                v2SigningEnabled = true
             }
         }
     }
