@@ -1,6 +1,7 @@
 package com.deepcode.designsystem.render
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.deepcode.core.model.ApprovalScope
@@ -307,7 +309,63 @@ fun ToolOutputView(output: ToolOutput, modifier: Modifier = Modifier) {
         is ToolOutput.FileList -> FileListView(output, modifier)
         is ToolOutput.SearchHits -> SearchHitsView(output, modifier)
         is ToolOutput.KeyValues -> KeyValuesView(output, modifier)
+        // 以下三种随 MCP 工具桥一起引入（T1）：MCP 的 content block 不止文本，
+        // 图片/资源链接/结构化 JSON 都必须有落点，否则 when 不穷尽直接编译失败。
+        is ToolOutput.Image -> ToolImageView(output, modifier)
+        is ToolOutput.ResourceLink -> ResourceLinkView(output, modifier)
+        is ToolOutput.Structured -> AppCodeBlock(
+            text = output.json.toString(),
+            modifier = modifier,
+            maxLines = 30,
+        )
         ToolOutput.Empty -> Unit
+    }
+}
+
+/**
+ * 图片产物（MCP content type=image）。
+ *
+ * base64 解码放进 [remember]：图片动辄几 MB，每次重组都重解一遍会直接把 UI 卡住。
+ * 解码失败不崩页面——坏数据要能被看见（降级成一行提示），而不是让整个会话渲染失败。
+ */
+@Composable
+private fun ToolImageView(image: ToolOutput.Image, modifier: Modifier) {
+    val bitmap = remember(image.base64) {
+        runCatching {
+            val bytes = android.util.Base64.decode(image.base64, android.util.Base64.DEFAULT)
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        }.getOrNull()
+    }
+    if (bitmap == null) {
+        AppCodeBlock(
+            text = "[图片解析失败：${image.mimeType}]",
+            modifier = modifier,
+            maxLines = 4,
+        )
+    } else {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = "工具产物图片（${image.mimeType}）",
+            modifier = modifier.fillMaxWidth(),
+        )
+    }
+}
+
+/** 资源链接产物（MCP content type=resource_link）：名称 + URI，不做跳转（URI 未必是 http）。 */
+@Composable
+private fun ResourceLinkView(link: ToolOutput.ResourceLink, modifier: Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = link.name ?: "资源链接",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = link.uri,
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+        )
     }
 }
 

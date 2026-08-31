@@ -30,6 +30,10 @@ enum class AppTextTone {
     Default, Muted, Primary, Error, Success
 }
 
+// 这两个映射函数必须带 @Composable：MaterialTheme.typography / colorScheme 与 appColors()
+// 都是组合内可读的状态，在普通函数里读会直接编译失败（"Functions which invoke
+// @Composable functions must be marked with the @Composable annotation"）。
+@Composable
 private fun AppTextStyle.toTextStyle(): TextStyle = when (this) {
     AppTextStyle.Display -> MaterialTheme.typography.titleLarge
     AppTextStyle.TitleLarge -> MaterialTheme.typography.titleLarge
@@ -40,6 +44,7 @@ private fun AppTextStyle.toTextStyle(): TextStyle = when (this) {
     AppTextStyle.Caption -> MaterialTheme.typography.labelSmall
 }
 
+@Composable
 private fun AppTextTone.toColor(): Color = when (this) {
     AppTextTone.Default -> MaterialTheme.colorScheme.onSurface
     AppTextTone.Muted -> MaterialTheme.colorScheme.onSurfaceVariant

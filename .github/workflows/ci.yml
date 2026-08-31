@@ -34,8 +34,11 @@ jobs:
 
       # :core:data 是数据层（SQLite/SQLDelight）。它在 JVM 内存库上跑建表、迁移链与
       # DAO 测试，不需要模拟器——这是选 SQLDelight 而非 Room 的核心理由。
-      - name: 运行核心模块单元测试（Agent 主循环 / 归约器 / 数据层）
-        run: ./gradlew :core:agent:test :core:uistate:test :core:data:test --console=plain
+      # :core:mcp 是 MCP 客户端（纯 Kotlin，OkHttp 自实现），15 例单测覆盖 JSON-RPC
+      # 握手、SSE 解析、风险映射与服务器编排——新增模块时必须同步进这里，
+      # 否则「测试绿」只是旧模块的绿，新代码等于裸奔（T5 期间就漏过一次）。
+      - name: 运行核心模块单元测试（Agent 主循环 / 归约器 / 数据层 / MCP 客户端）
+        run: ./gradlew :core:agent:test :core:uistate:test :core:data:test :core:mcp:test --console=plain
 
       - name: 上传测试报告
         if: always()
@@ -46,6 +49,7 @@ jobs:
             core/agent/build/reports/tests/
             core/uistate/build/reports/tests/
             core/data/build/reports/tests/
+            core/mcp/build/reports/tests/
 
   # ── 2. Android 编译：Compose / AGP 代码只有这一步能真正验证 ──
   android-build:
@@ -167,8 +171,10 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # 每新增一个 :feature:* 模块都要同步进这里：守卫只对列出的模块生效，
+      # 漏掉就等于该模块不受设计系统约束（:feature:settings 曾漏过一轮）。
       - name: 运行自定义 Lint 规则
-        run: ./gradlew :app:lintDebug :feature:chat:lintDebug --console=plain
+        run: ./gradlew :app:lintDebug :feature:chat:lintDebug :feature:settings:lintDebug --console=plain
 
       - name: 上传 Lint 报告
         if: always()
@@ -178,3 +184,4 @@ jobs:
           path: |
             app/build/reports/lint-results-debug.html
             feature/chat/build/reports/lint-results-debug.html
+            feature/settings/build/reports/lint-results-debug.html

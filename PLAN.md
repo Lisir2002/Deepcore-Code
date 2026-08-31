@@ -82,16 +82,34 @@
   组件库出口表（补 `AppText`/`AppTextField`/`AppSwitch`）、当前状态表（补 `:core:mcp` 15 例与
   `:feature:settings`，`:core:agent` 更新为 17 例）、技术栈与两项开放标准；MCP 规范版本全文统一为
   `2025-11-25`。`CHANGELOG.md` 补 T6 条目。
-- [ ] 实施清单 **T7 待做**：发版走四段式门禁 `0.2.0.x`（正式版前须用户确认，否则自动 `rcN`）；
-  发版前需 CI 验证 `:app` 与 `:feature:settings` 编译（沙箱无 Android SDK，本地无法自验）。
+- [x] 实施清单 **T7（tag 已打，发布未成功）**：`0.2.0.1-rc1` 已按四段式门禁打 tag，
+  但 Release 构建失败、GitHub Release 未产出。
+- [ ] 实施清单 **T7-fix（进行中）**：修复 T1–T6 遗留的 CI 红，见下方「当前焦点」。
 
 ---
 
 ## 当前焦点
 
-**M1 能真跑**：接真实模型（OkHttp + SSE 的 `ModelProvider`），让 Demo 链路升级为真实对话。
-数据层 M0.6 已随 **v0.1.4** 发布（CI 全量验证通过，`:app` 装配 `android-build` 绿），
-设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单。下一步直接进入 M1。
+**先修红，再谈 M1。** T1–T6 的代码从未在 CI 上编译通过——`core-test` 一直绿，掩盖了
+`:app` / `:feature:settings` 的编译失败（`:core:mcp` 的 15 例单测也从未进过 CI）。
+详见下方「CI 红根因与修复」。
+
+**M1 能真跑**（修红之后的下一个目标）：接真实模型（OkHttp + SSE 的 `ModelProvider`），
+让 Demo 链路升级为真实对话。数据层 M0.6 已随 **v0.1.4** 发布（CI 全量验证通过，
+`:app` 装配 `android-build` 绿），设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单。
+
+### CI 红根因与修复（2026-09-01 接手盘点）
+
+| 根因 | 后果 |
+| --- | --- |
+| `app/build.gradle.kts` 未声明 `implementation(project(":core:mcp"))`，但 DI 直接 new `McpServerManager`/`McpCompositeToolRegistry` | `:app` 全片 `Unresolved reference` → android-build / design-guard / release-build 三 job 同红 |
+| `AppModule.kt`、`DeepCoreCodeApp.kt` 用了未导入的 `named()` / `inject()` / `get()` | 同上 |
+| `ci.yml` 的 core-test 只跑 `agent/uistate/data` | `:core:mcp` 15 例从未执行，「测试绿」只覆盖旧模块 |
+| `ci.yml` 的 design-guard 只跑 `app/chat` | `:feature:settings` 不受设计系统守卫约束 |
+
+**沙箱能力升级**：已装 Android SDK（platform-35 / build-tools 34.0.0+35.0.1 / platform-tools）
++ Gradle 8.9 + JDK 17（与 CI 对齐），依赖走阿里云 google 镜像。
+现在本地可跑 `:app:assembleDebug`，不再只能靠推 commit 等 CI 盲试。
 
 **版本治理已就位**：后续每次发版走四段式 `X.Y.Z.W` + `scripts/release_helper.py`，
 正式版需用户确认、否则自动发 `X.Y.Z.W-rcN` 预发行（详见 `Version.md` 三、确认门禁）。

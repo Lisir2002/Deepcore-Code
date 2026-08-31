@@ -179,6 +179,10 @@ dependencies {
     implementation(project(":core:agent"))
     implementation(project(":core:data"))
     implementation(project(":core:platform"))
+    // MCP 客户端：DI 里要直接 new McpServerManager / McpCompositeToolRegistry，
+    // 必须显式声明。之前只靠 :feature:settings 传递（implementation 不对外暴露），
+    // 于是 :app 里所有 core.mcp 类型全部 Unresolved reference，android-build 与 lint 一起红。
+    implementation(project(":core:mcp"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)

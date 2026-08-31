@@ -25,7 +25,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: 发布前先跑测试
-        run: ./gradlew :core:agent:test :core:uistate:test :core:data:test --console=plain
+        run: ./gradlew :core:agent:test :core:uistate:test :core:data:test :core:mcp:test --console=plain
 
       # tag ↔ versionName 一致性校验：release_helper.py 在打 tag 前已写入
       # build.gradle.kts，这里兜底防止"tag 与 APK 内部版本不一致"。

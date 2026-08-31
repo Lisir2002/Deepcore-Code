@@ -73,6 +73,35 @@
   取代手改 `versionCode`/`versionName`，杜绝注释误匹配与编码笔误。
 - `release.yml` 新增 **tag ↔ versionName 一致性校验**步骤，不一致即中止发版。
 
+### Fixed
+
+- **修复 T1–T6 遗留的 CI 红（M1 工具/技能层代码此前从未在 CI 上编译通过）**：
+  - `app/build.gradle.kts` 补 `implementation(project(":core:mcp"))`。DI 里直接构造
+    `McpServerManager` / `McpCompositeToolRegistry`，却只靠 `:feature:settings` 传递依赖
+    （`implementation` 不向外暴露），`:app` 全片 `Unresolved reference`——
+    这是 android-build / design-guard / release-build 三个 job 同红的根因。
+  - `AppModule.kt` 补 `org.koin.core.qualifier.named` 导入；
+    `DeepCoreCodeApp.kt` 补 `org.koin.core.component.get` / `inject` 导入。
+  - `designsystem` 的 `AppTextStyle.toTextStyle()` / `AppTextTone.toColor()` 补
+    `@Composable`：二者读 `MaterialTheme.typography` / `colorScheme` / `appColors()`，
+    在普通函数里读组合状态会直接编译失败。
+  - `RenderBlockView.ToolOutputView` 补 `Image` / `ResourceLink` / `Structured` 三个产物分支。
+    T1 给 `ToolOutput` 加了这三种形态却没补渲染落点，`when` 不穷尽 → 编译失败，
+    这是 CI 自 b3164b5 起连红的**直接**根因。
+- **补齐 CI 覆盖缺口**：
+  - `ci.yml` 的 core-test 纳入 `:core:mcp:test`（此前 15 例单测从未在 CI 执行，
+    「测试绿」实际只覆盖旧模块）；
+  - `ci.yml` 的 design-guard 纳入 `:feature:settings:lintDebug`（新模块此前不受设计系统守卫约束）；
+  - `release.yml` 的发布前测试同步纳入 `:core:mcp:test`；
+  - 两处均补注释写明「新增模块必须同步进本清单」。
+
+### Added
+
+- **沙箱本地 Android 编译环境**：Android SDK（platform-35 / build-tools 34.0.0 + 35.0.1 /
+  platform-tools）+ Gradle 8.9（镜像下载）+ JDK 17（与 CI 对齐），依赖经阿里云 google 镜像解析。
+  `PLAN.md` 里「沙箱无 Android SDK，本地无法自验」的限制就此解除：推送前可本地跑
+  `:app:compileDebugKotlin`，不必靠推 commit 等 CI 盲试。
+
 ## [0.1.4] — 2026-08-31 · tag [v0.1.4](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.1.4) · versionCode 5
 
 ### Added
