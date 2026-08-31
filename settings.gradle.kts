@@ -36,5 +36,6 @@ include(":lint")
 
 // ---- 业务页面 ----
 include(":feature:chat")
+include(":feature:settings")
 
 include(":app")

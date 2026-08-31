@@ -76,8 +76,8 @@
   `core:agent/skill/` 三件套 + 单测、T3 主循环两处感知点、T4 `core:mcp` 自实现 MCP 客户端
   （OkHttp，因官方 Kotlin SDK 需 Kotlin 2.2+ 与本项目 2.0.21 不兼容而弃用）+ 桥接/管理器/风险映射
   + 单测全绿（15 例）。
-- [ ] 实施清单 **T5–T7 待做**：T5 `:app` DI 装配（MCP 配置存储 + skill 目录声明）+ settings
-  server 管理界面（`:app` 沙箱无 Android SDK，仅 CI 验证）；T6 文档同步；T7 发版走四段式门禁 `0.2.0.x`。
+- [x] 实施清单 **T5 已完成**：`:app` DI 装配（`McpServerConfigStore` 接口 + `AndroidMcpServerConfigStore` JSON 持久化 + Koin 装配 `McpServerManager`/`McpCompositeToolRegistry` + `SkillLoader`/`SkillInjector` 接入 `skillSectionProvider` + 启动 `connectAll`）+ 新建 `:feature:settings`（CRUD 表单，designsystem 扩展 `AppText`/`AppTextField`/`AppSwitch`）。`:app` 沙箱无 Android SDK，**仅 CI 验证**，纯 Kotlin 的 `:core:mcp` 单测已绿。
+- [ ] 实施清单 **T6–T7 待做**：T6 文档同步（本文件/PLAN/CHANGELOG 已随 T5 更新）；T7 发版走四段式门禁 `0.2.0.x`。
 
 ---
 

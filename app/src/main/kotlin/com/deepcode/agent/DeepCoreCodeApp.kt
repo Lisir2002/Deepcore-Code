@@ -3,17 +3,29 @@ package com.deepcode.agent
 import android.app.Application
 import com.deepcode.agent.di.appModule
 import com.deepcode.agent.security.SignatureGuard
+import com.deepcode.feature.settings.settingsModule
+import com.deepcode.core.mcp.McpServerManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
+import org.koin.core.component.KoinComponent
 import org.koin.core.context.startKoin
+import org.koin.core.qualifier.named
 
-class DeepCoreCodeApp : Application() {
+class DeepCoreCodeApp : Application(), KoinComponent {
 
     override fun onCreate() {
         super.onCreate()
         checkIntegrity()
         startKoin {
             androidContext(this@DeepCoreCodeApp)
-            modules(appModule)
+            modules(appModule, settingsModule)
+        }
+        // 启动后连接已配置的 MCP server；单点失败只记日志，不阻断 App（见 McpServerManager.connectAll）。
+        val agentScope: CoroutineScope by inject(named("agent"))
+        agentScope.launch {
+            runCatching { get<McpServerManager>().connectAll() }
+                .onFailure { android.util.Log.w("DeepCoreCodeApp", "MCP 连接初始化失败：${it.message}") }
         }
     }
 

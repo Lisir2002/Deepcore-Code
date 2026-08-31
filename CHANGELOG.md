@@ -34,6 +34,19 @@
     触发加载、L3 资源按需）；MCP 工具经桥接进统一 `ToolRegistry`，annotations 视为
     不可信、风险裁决只认本地 `PermissionGate`；turn 内工具清单快照以保证 prompt cache 命中。
 
+- **T5 `:app` 装配与设置页（代码随 M1，未发版）**：
+  - `core:mcp` 新增 `McpServerConfigStore` 接口（纯 Kotlin、零 Android 依赖），`:app` 提供
+    `AndroidMcpServerConfigStore`（`filesDir/mcp/servers.json`，kotlinx-serialization 本地 DTO
+    映射，构造期同步读供非阻塞装配）；`McpServerManager` 增加 `addServer`/`updateServer`/
+    `removeServer`/`reconnectAll`/`snapshotConfigs` 支持设置页运行时热插拔。
+  - Koin 装配：`McpServerConfigStore` + `McpServerManager`（clientFactory=HttpJsonRpcMcpClient、
+    configs 取 store 非阻塞快照）+ `McpCompositeToolRegistry`（内置工具与 MCP 工具实时聚合，
+    沿用 BUILTIN 优先 + name 稳定排序）+ `SkillLoader`/`SkillInjector` 接入
+    `DefaultAgentRuntime.skillSectionProvider`；`DeepCoreCodeApp` 启动触发 `connectAll`。
+  - 新建 `:feature:settings` 模块：MCP server 管理 CRUD 表单（增删、信任切换、重连、状态展示），
+    `designsystem` 同步扩展 `AppText`/`AppTextField`/`AppSwitch`（封装 Material3 输入组件，
+    业务层不直接触碰 Material3，符合 `:lint` 守卫）；`MainActivity` 经状态切换接入导航。
+
 ### Changed
 
 - **版本号迁移至四段式 `X.Y.Z.W`**（规范见 `Version.md` 一、二、三）：

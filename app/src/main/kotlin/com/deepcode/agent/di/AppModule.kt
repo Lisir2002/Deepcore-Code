@@ -10,6 +10,14 @@ import com.deepcode.core.agent.spi.ModelProvider
 import com.deepcode.core.agent.spi.Sandbox
 import com.deepcode.core.agent.spi.ToolRegistry
 import com.deepcode.core.agent.spi.Workspace
+import com.deepcode.core.agent.skill.DefaultSkillInjector
+import com.deepcode.core.agent.skill.SkillInjector
+import com.deepcode.core.agent.skill.SkillLoader
+import com.deepcode.core.agent.skill.WorkspaceSkillLoader
+import com.deepcode.core.mcp.HttpJsonRpcMcpClient
+import com.deepcode.core.mcp.McpServerConfigStore
+import com.deepcode.core.mcp.McpServerManager
+import com.deepcode.core.mcp.McpTransport
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.deepcode.core.data.EventStore
 import com.deepcode.core.data.db.DeepCoreDatabase
@@ -27,6 +35,7 @@ import com.deepcode.core.platform.tools.RunCommandTool
 import com.deepcode.core.platform.tools.WriteFileTool
 import com.deepcode.core.platform.workspace.LocalDirWorkspace
 import com.deepcode.agent.demo.DemoProvider
+import com.deepcode.agent.mcp.AndroidMcpServerConfigStore
 import com.deepcode.feature.chat.ChatViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -81,13 +90,38 @@ val appModule = module {
     }
 
     single<ToolRegistry> {
-        DefaultToolRegistry().apply {
+        val builtin = DefaultToolRegistry().apply {
             register(ListFilesTool())
             register(ReadFileTool())
             register(WriteFileTool())
             register(RunCommandTool())
         }
+        McpCompositeToolRegistry(builtin, get())
     }
+
+    // ── MCP server 配置与连接 ──────────────────────────────────────
+    // 配置落 filesDir/mcp/servers.json；构造期同步读，供 manager 非阻塞装配。
+    single<McpServerConfigStore> { AndroidMcpServerConfigStore(androidContext()) }
+
+    single<McpServerManager> {
+        val store = get<McpServerConfigStore>()
+        McpServerManager(
+            configs = store.current(),
+            clientFactory = { cfg ->
+                when (val t = cfg.transport) {
+                    is McpTransport.Http -> HttpJsonRpcMcpClient(cfg.id, t.url, t.headers)
+                }
+            },
+            scope = get(named("agent")),
+        )
+    }
+
+    // ── Agent Skills（L1 注入）──────────────────────────────────────
+    // skill 根目录相对工作区根；用户级 skill 由 :app 的 Workspace 指向私有目录。
+    single<SkillLoader> {
+        WorkspaceSkillLoader(get(), roots = listOf("skills", ".deepcode/skills"))
+    }
+    single<SkillInjector> { DefaultSkillInjector() }
 
     // M0 用演示模型跑通链路；接入真实模型时把这一行换成对应 Provider 即可
     single<ModelProvider> { DemoProvider() }
@@ -95,6 +129,8 @@ val appModule = module {
     single<ContextPolicy> { DefaultContextPolicy() }
 
     single<AgentRuntime> {
+        val skillLoader = get<SkillLoader>()
+        val skillInjector = get<SkillInjector>()
         DefaultAgentRuntime(
             sessionId = SessionId("default"),
             provider = get(),
@@ -106,6 +142,10 @@ val appModule = module {
             contextPolicy = get(),
             scope = get(qualifier = org.koin.core.qualifier.named("agent")),
             config = AgentConfig(maxIterations = 12),
+            skillSectionProvider = {
+                val result = skillLoader.load()
+                skillInjector.buildSkillSection(result.skills).takeIf { it.isNotEmpty() }
+            },
         )
     }
 

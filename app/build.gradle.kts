@@ -174,6 +174,7 @@ android {
 dependencies {
     implementation(project(":designsystem"))
     implementation(project(":feature:chat"))
+    implementation(project(":feature:settings"))
     implementation(project(":core:model"))
     implementation(project(":core:agent"))
     implementation(project(":core:data"))

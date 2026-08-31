@@ -356,7 +356,7 @@ class McpServerManager(
 - [x] **T2** `core:agent/skill/`：`SkillParser` / `SkillLoader` / `SkillInjector` + 单测
 - [x] **T3** 主循环两处感知点落地（specs 快照规则 + system prompt 技能段）
 - [x] **T4** 新建 `core:mcp`：`McpClient` 接口 + `HttpJsonRpcMcpClient`（OkHttp 自实现）+ `McpToolBridge` / `McpServerManager` / 风险映射 + FakeMcpClient/MockWebServer 单测（15 例全绿）
-- [ ] **T5** `:app` DI 装配（MCP 配置存储、skill 目录声明）+ settings 界面接 server 管理（feature 层）
+- [x] **T5** `:app` DI 装配 + settings server 管理界面（feature 层）：`McpServerConfigStore` 接口（core:mcp）+ `AndroidMcpServerConfigStore`（JSON 文件持久化）+ Koin 装配 `McpServerManager`（clientFactory=HttpJsonRpcMcpClient、configs 非阻塞快照）+ `McpCompositeToolRegistry`（内置+MCP 实时聚合）+ `SkillLoader`/`SkillInjector` 接入 `skillSectionProvider` + `connectAll` 启动触发；新建 `:feature:settings`（CRUD 表单，designsystem 扩展 AppText/AppTextField/AppSwitch）
 - [ ] **T6** 文档同步（本文件勾进度、ARCHITECTURE 扩展点表、CHANGELOG）
 - [ ] **T7** 发版走四段式版本门禁（`0.2.0.x`，正式版前 AskUserQuestion 确认）
 
