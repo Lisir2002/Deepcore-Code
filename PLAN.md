@@ -11,7 +11,7 @@
 | --- | --- | --- |
 | **M0 架构地基** | 骨架 + 主循环 + UI 统一机制跑通完整链路 | ✅ 完成（v0.1.0） |
 | **M0.5 发布基线** | 正式签名 + 加固 + CI 发版流水线 | ✅ 完成（v0.1.3） |
-| **M0.6 数据层 SQLite 化** | SQLDelight 接管持久化（events/sessions 表 + TableModule 扩展协议） | ✅ 代码实现完成（`:core:data` 单测 21/21 绿，`:app` 装配完成，待 CI 全量验证） |
+| **M0.6 数据层 SQLite 化** | SQLDelight 接管持久化（events/sessions 表 + TableModule 扩展协议） | ✅ 完成（v0.1.4，CI 全量验证通过） |
 | **M1 能真跑** | 接真实模型（OkHttp + SSE 的 `ModelProvider`），真实对话 | 🔜 下一步 |
 | **M2 能用** | 工作区文件树、Diff 审阅、git 工具、会话列表页 | ⏳ 规划中 |
 | **M3 能扛** | 上下文压缩实战化、前台服务保活、数据层深化 | ⏳ 规划中 |
@@ -60,8 +60,8 @@
 ## 当前焦点
 
 **M1 能真跑**：接真实模型（OkHttp + SSE 的 `ModelProvider`），让 Demo 链路升级为真实对话。
-数据层 M0.6 已落地（设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单），进入 M1 前建议先
-由 CI 跑一轮全量 `android-build` 验证 `:app` 装配（本地无 Android SDK，无法预验）。
+数据层 M0.6 已随 **v0.1.4** 发布（CI 全量验证通过，`:app` 装配 `android-build` 绿），
+设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单。下一步直接进入 M1。
 
 ## M1 设计要点（数据层之后）
 

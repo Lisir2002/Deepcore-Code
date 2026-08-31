@@ -25,7 +25,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: 发布前先跑测试
-        run: ./gradlew :core:agent:test :core:uistate:test --console=plain
+        run: ./gradlew :core:agent:test :core:uistate:test :core:data:test --console=plain
 
       # 从 Secrets 还原 keystore。仓库里不存密钥，只有 base64 密文。
       # 解码到 $RUNNER_TEMP 而非工作区，避免被后续步骤误打包进产物。

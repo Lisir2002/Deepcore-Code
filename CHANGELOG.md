@@ -2,14 +2,10 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [Unreleased]
+## [0.1.4] — 2026-08-31 · tag [v0.1.4](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.1.4) · versionCode 5
 
 ### Added
 
-- 文档体系：`README.md`（项目说明）、`agent.md`（AI 协同开发规范）、`PLAN.md`（开发设计计划）、
-  `Version.md`（版本与更新规范）、本文件（变更日志）。
-- `scripts/check_apk_signing.py`：零依赖 APK 签名验证脚本（解析 Signing Block，
-  判定 v1/v2/v3 并比对官方证书指纹），替代临时手写字节搜索，杜绝 0.1.2 式验证笔误。
 - **数据层 M0.6 落地 —— SQLite 经 SQLDelight 2.x 接管持久化**（设计见 `DATA_LAYER.md`）：
   - `:core:data` 引入 SQLDelight 2.0.2 + sqlite-3-18 方言；`.sq` 定义 `events`/`sessions` 表，
     生成 `DeepCoreDatabase` 类型安全查询。
@@ -86,7 +82,8 @@
 
 - Android 编译两处根因（包名对齐、lambda `it` 遮蔽）后首个可编译 tag。
 
-[Unreleased]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.0...v0.1.1
