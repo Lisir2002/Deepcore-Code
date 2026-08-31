@@ -111,13 +111,21 @@ android {
 
             // ---- 签名 ----
             // 本地没配 keystore 时回退 debug，方便随手跑 assembleRelease；
-            // CI 上（GitHub Actions 会自动设 CI=true）则直接失败——
-            // 一个不可分发的 debug 签名包被打成 vX.Y.Z 的 GitHub Release，
-            // 比构建红掉危险得多，因为它看起来像真的发布版。
+            // 真正打 Release 包的 CI（release.yml / release-build job）若缺签名
+            // 则直接失败——一个不可分发的 debug 签名包被打成 vX.Y.Z 的 GitHub
+            // Release，比构建红掉危险得多。
+            //
+            // 判断条件不能只凭 CI=true：GitHub Actions 给「每一个」job 都注入
+            // CI=true，包括只跑单测的 core-test。若只看 CI，core-test 在配置
+            // app 模块时就会因为缺签名直接抛错、连单测都跑不起来。
+            // 所以这里额外看「本次实际请求的 task 名里有没有 Release」——
+            // 只有真的在打 Release 包时才强制要求签名。
             val onCi = System.getenv("CI")?.toBoolean() == true
+            val buildingRelease = gradle.startParameter.taskNames
+                .any { it.contains("Release", ignoreCase = true) }
             if (signingReady) {
                 signingConfig = signingConfigs.getByName("release")
-            } else if (onCi) {
+            } else if (onCi && buildingRelease) {
                 throw GradleException(
                     """
                     |CI 构建 Release 包但签名配置不完整，已中止。
