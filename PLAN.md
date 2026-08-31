@@ -108,6 +108,7 @@
 | `ci.yml` 的 design-guard 只跑 `app/chat` | `:feature:settings` 不受设计系统守卫约束 |
 | `McpServerConfigStore` 接口漏声明 `current()`（实现类与调用方都按契约写，唯独接口没写） | 第 5 轮 CI 暴露：`:feature:settings` / `:app` 共 4 处 `Unresolved reference 'current'` |
 | `SettingsScreen.kt` 顶层 import `layout.weight`（RowScope/ColumnScope 成员扩展不可顶层 import） | `:feature:settings` 报 "Cannot access internal in file" |
+| `:app` plugins 缺 `kotlin.serialization`；okhttp/serialization-json 未显式依赖（core:mcp 均 implementation 不传递） | 第 6 轮 CI 暴露：`:app` 22 处错误（`serializer()` Unresolved、`Cannot access OkHttpClient`） |
 
 **教训（第 5 轮）**：编译错误是分层浮出的——前一层修好后才轮到下一层。本地编译因
 沙箱 40 分钟超时截断在 `:feature:settings` 之前，未能提前暴露；裁决以 GitHub CI 为准。

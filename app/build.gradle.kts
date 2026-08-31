@@ -2,6 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // AndroidMcpServerConfigStore 用 @Serializable 落盘 MCP 配置；没有这个插件
+    // serializer() 编译期生成物不存在，decodeFromString 全片类型推断失败（CI 第 6 轮踩坑）。
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -183,6 +186,11 @@ dependencies {
     // 必须显式声明。之前只靠 :feature:settings 传递（implementation 不对外暴露），
     // 于是 :app 里所有 core.mcp 类型全部 Unresolved reference，android-build 与 lint 一起红。
     implementation(project(":core:mcp"))
+    // :app 直接构造 HttpJsonRpcMcpClient（默认参数引用 OkHttpClient 类型）与
+    // AndroidMcpServerConfigStore（Json/@Serializable/encodeToString）。core:mcp 对
+    // okhttp/serialization-json 都是 implementation（不传递），谁用谁声明：
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)

@@ -105,6 +105,13 @@
 - **修复 `release_helper.py` 无法解析自身写出的 rc 版本名**：`parse_name` 先剥离 `-rcN`
   后缀再按四段解析——上一版写入 `0.2.0.1-rc1` 后，`plan` 子命令必然崩溃（rc → 下一版
   路径此前从未被走过）。
+- **修复 CI 第 6 轮暴露的 `:app` 编译错误（错误修到第三层，`:app` 首次真正进入编译）**：
+  - `app/build.gradle.kts` plugins 补 `kotlin.serialization`：`AndroidMcpServerConfigStore`
+    的 `@Serializable` 依赖该插件在编译期生成 `serializer()`，缺失导致 22 处连锁类型
+    推断错误（`Unresolved reference 'serializer'` 等）；
+  - dependencies 补 `libs.okhttp` / `libs.kotlinx.serialization.json`：core:mcp 对这两个
+    库均为 `implementation`（不向外传递），而 `:app` 直接构造 `HttpJsonRpcMcpClient`
+    （默认参数引用 `OkHttpClient` 类型）——谁直接用谁声明。
 
 ### Added
 
