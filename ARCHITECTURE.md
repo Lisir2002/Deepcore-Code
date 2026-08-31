@@ -135,7 +135,7 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 
 ---
 
-## 五、M0 已完成
+## 五、当前状态
 
 | 层 | 内容 | 验证状态 |
 |---|---|---|
@@ -143,16 +143,14 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 | `core:agent` | 主循环、权限门、上下文策略、全部 SPI | ✅ 编译 + **4 个用例通过** |
 | `core:data` | 事件日志（append-only） | ✅ 编译 |
 | `core:uistate` | 事件→渲染块归约器 | ✅ 编译 + **6 个用例通过** |
-| `core:platform` | 本地工作区、命令白名单沙箱、4 个基础工具 | ⚠️ 未编译（需 Android SDK） |
-| `designsystem` | 主题令牌、组件库、事件渲染器 | ⚠️ 未编译（需 Android SDK） |
-| `feature:chat` | 会话页 + ViewModel | ⚠️ 未编译 |
-| `app` | DI 装配、演示模型、MainActivity | ⚠️ 未编译 |
+| `core:platform` | 本地工作区、命令白名单沙箱、4 个基础工具 | ✅ CI 编译 + 正式包产出 |
+| `designsystem` | 主题令牌、组件库、事件渲染器 | ✅ CI 编译 + 正式包产出 |
+| `feature:chat` | 会话页 + ViewModel | ✅ CI 编译 + 正式包产出 |
+| `app` | DI 装配、演示模型、MainActivity | ✅ CI 编译 + 正式包产出（v0.1.3） |
 | `lint` | 设计系统守卫 | ✅ 编译 |
 
-> **诚实说明**：开发沙箱无法访问 Android SDK（Google 的 manifest 服务器不通），
-> 所以 Android/Compose 部分**只做了静态审查，没有编译验证**。首次在 Android Studio 打开时，
-> 可能需要修一些 import 或 API 细节。纯 Kotlin 部分则全部真编译、真跑过测试——
-> 这也是把它们独立成模块的好处之一。
+M0 已交付并经 CI 全量编译验证；正式签名 + 加固 + 发版流水线已落地（最新 v0.1.3）。
+进度与下一步见 `PLAN.md`，版本历史见 `CHANGELOG.md`。
 
 ### M0 测出来的真实 bug
 

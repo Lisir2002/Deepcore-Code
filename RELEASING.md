@@ -3,12 +3,13 @@
 ## 一键发版
 
 ```bash
-git tag -a v0.1.1 -m "版本说明"
-./scripts/github-tunnel.sh git push origin v0.1.1
+git tag -a v0.1.3 -m "版本说明"
+./scripts/github-tunnel.sh git push origin v0.1.3
 ```
 
 推送 tag 即触发 `.github/workflows/release.yml`：跑测试 → 构建 Release APK → 创建 GitHub Release 并上传 APK。
 Release 说明由 `generate_release_notes` 自动生成（基于两次 tag 之间的提交）。
+版本号规则与产物交付标准见 `Version.md`，版本演进历史见 `CHANGELOG.md`。
 
 > 用 `github-tunnel.sh git` 而非裸 `git`：本沙箱到 github.com 有概率性丢包，
 > 单发约 1/3 概率挂在 TLS 握手上，重试包装已内置。
@@ -70,10 +71,26 @@ chmod 600 keystore.properties
 
 ### 构建行为（app/build.gradle.kts）
 
-- `release` 签名方案：**v1 + v2 + v3 全开**。v2/v3 校验整包二进制，是防篡改主力；v1 仅做老渠道兼容，不能单独使用。
+- `release` 签名方案：**v1 + v2 + v3 三个开关全部显式 `= true`，不依赖 AGP 默认值**。
+  字节级验证结论：AGP 8.7.3 + minSdk 26 的默认方案**不含 v3**（v0.1.2 教训），
+  且显式三开时 v1/v2/v3 全部正确命中（v0.1.1 已复验）。v2/v3 校验整包二进制，是防篡改主力；
+  v1 仅做老渠道兼容，不能单独使用。
 - 配置就绪时 → 用正式密钥签名。
 - **CI 上缺配置 → 直接 `GradleException` 中止**（CI 环境变量存在即视为发版环境，绝不允许打出 debug 签名的"假正式包"）。
 - 本地缺配置 → 友好告警后回退 debug 签名，方便随手 `assembleRelease`，但不对外分发。
+- CI 强制签名的判断是 `CI=true && 本次 task 名含 Release`：GitHub 给每个 job 都注入
+  `CI=true`，只看它会把 core-test 一起拦死（v0.1.1 前踩过）。
+
+### 产物验证（发版必做）
+
+```bash
+python3 scripts/check_apk_signing.py app-release.apk
+```
+
+脚本零依赖（纯 Python 标准库），字节级解析 APK Signing Block：判定 v1/v2/v3、
+提取签名证书指纹与 `SignatureGuard` 官方指纹比对。**三方案全 True 且指纹 ✅、退出码 0
+才可分发。** 背景：v0.1.2 曾因临时手写字节搜索时把 v2 方案 ID 字节序写错而误判
+"缺 V2"，连锁改配置后真正丢了 V3——验证一律走本脚本，不再手写字节搜索。
 
 ### 代码加固清单
 
@@ -95,7 +112,7 @@ chmod 600 keystore.properties
 - [ ] `versionName` 与即将打的 tag 一致
 - [ ] 本地 `./scripts/ci-local.sh` 全绿
 - [ ] 上一轮 GitHub Actions 的 CI（`core-test` / `android-build` / `release-build` / `design-guard`）全绿
-- [ ] Release 构建产物经 `apksigner verify` 确认 v1/v2/v3 均通过
+- [ ] Release 构建产物经 `python3 scripts/check_apk_signing.py` 验证 v1/v2/v3 三绿 + 指纹一致
 - [ ] `mapping.txt` 显示确有类被混淆（CI 已自动断言，小于 5 条直接失败）
 - [ ] 正式版已配置签名（非 debug 回退）；`SignatureGuard.OFFICIAL_SIGNATURE_SHA256` 与当前密钥指纹一致
 - [ ] 密钥已离线备份，`/root/deepcode-signing/` 未进入版本库
@@ -103,5 +120,9 @@ chmod 600 keystore.properties
 
 ## 相关文档
 
-- `docs/github-sandbox-tunnel.md` —— 沙箱网络通道原理
+- `Version.md` —— 版本号规则、交付标准、变更记录规范
+- `CHANGELOG.md` —— 各版本实际变更与决策记录
+- `PLAN.md` —— 里程碑路线图
+- `agent.md` —— AI 协同开发规范（含踩坑速查表）
 - `ARCHITECTURE.md` —— 架构设计与扩展点清单
+- `docs/github-sandbox-tunnel.md` —— 沙箱网络通道原理
