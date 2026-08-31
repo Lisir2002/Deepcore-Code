@@ -54,7 +54,8 @@ def bump(x: int, y: int, z: int, w: int, typ: str) -> tuple[int, int, int, int]:
 
 
 def parse_name(name: str) -> tuple[int, int, int, int]:
-    parts = name.split(".")
+    base = name.split("-rc", 1)[0]            # 剥掉预发行后缀（如 0.2.0.1-rc1 → 0.2.0.1），
+    parts = base.split(".")                   # 否则自己写出的 rc 版本名自己解析不回来
     if len(parts) == 3:                       # 兼容旧三段式迁移
         x, y, z = (int(p) for p in parts)
         return x, y, z, 0

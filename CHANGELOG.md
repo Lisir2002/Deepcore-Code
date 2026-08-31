@@ -94,6 +94,17 @@
   - `ci.yml` 的 design-guard 纳入 `:feature:settings:lintDebug`（新模块此前不受设计系统守卫约束）；
   - `release.yml` 的发布前测试同步纳入 `:core:mcp:test`；
   - 两处均补注释写明「新增模块必须同步进本清单」。
+- **修复 CI 第 5 轮暴露的第二层编译错误（前一层修好后才浮出）**：
+  - `McpServerConfigStore` 接口补声明 `fun current(): List<McpServerConfig>`（非阻塞内存
+    快照）。`AndroidMcpServerConfigStore` 早已按此契约实现（构造期同步读 + `override fun
+    current()`），`AppModule` 装配与 `SettingsViewModel` 也按契约调用，唯独接口本身漏了
+    声明——`:feature:settings` / `:app` 共 4 处 `Unresolved reference 'current'` 连锁。
+  - `SettingsScreen.kt` 删除 `import androidx.compose.foundation.layout.weight`：
+    `weight` 是 `RowScope`/`ColumnScope` 的成员扩展，无需（也不能）顶层 import，
+    该 import 恰好解析到 Compose internal 属性，报 "Cannot access ... internal in file"。
+- **修复 `release_helper.py` 无法解析自身写出的 rc 版本名**：`parse_name` 先剥离 `-rcN`
+  后缀再按四段解析——上一版写入 `0.2.0.1-rc1` 后，`plan` 子命令必然崩溃（rc → 下一版
+  路径此前从未被走过）。
 
 ### Added
 

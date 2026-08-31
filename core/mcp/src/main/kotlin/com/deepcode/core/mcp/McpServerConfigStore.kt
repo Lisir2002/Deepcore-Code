@@ -15,6 +15,9 @@ package com.deepcode.core.mcp
  */
 interface McpServerConfigStore {
 
+    /** 当前内存快照（非阻塞、不触发 IO）；返回最近一次读/写后的配置。 */
+    fun current(): List<McpServerConfig>
+
     /** 读取全部已配置 server；无配置返回空列表（不抛异常）。 */
     suspend fun load(): List<McpServerConfig>
 

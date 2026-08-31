@@ -106,6 +106,12 @@
 | `AppModule.kt`、`DeepCoreCodeApp.kt` 用了未导入的 `named()` / `inject()` / `get()` | 同上 |
 | `ci.yml` 的 core-test 只跑 `agent/uistate/data` | `:core:mcp` 15 例从未执行，「测试绿」只覆盖旧模块 |
 | `ci.yml` 的 design-guard 只跑 `app/chat` | `:feature:settings` 不受设计系统守卫约束 |
+| `McpServerConfigStore` 接口漏声明 `current()`（实现类与调用方都按契约写，唯独接口没写） | 第 5 轮 CI 暴露：`:feature:settings` / `:app` 共 4 处 `Unresolved reference 'current'` |
+| `SettingsScreen.kt` 顶层 import `layout.weight`（RowScope/ColumnScope 成员扩展不可顶层 import） | `:feature:settings` 报 "Cannot access internal in file" |
+
+**教训（第 5 轮）**：编译错误是分层浮出的——前一层修好后才轮到下一层。本地编译因
+沙箱 40 分钟超时截断在 `:feature:settings` 之前，未能提前暴露；裁决以 GitHub CI 为准。
+同轮顺带修复 `release_helper.py` 解析自身写出的 rc 版本名（`parse_name` 剥 `-rcN` 后缀）。
 
 **沙箱能力升级**：已装 Android SDK（platform-35 / build-tools 34.0.0+35.0.1 / platform-tools）
 + Gradle 8.9 + JDK 17（与 CI 对齐），依赖走阿里云 google 镜像。
