@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- **UI 令牌体系与主题包设计定稿**（文档 `docs/DESIGN_TOKENS.md`，实施随 T8）：
+  - 三层令牌模型（Primitive / Semantic / Component）；语义色面板（品牌/表面/文本/边线/状态）、
+    字体字重/行高/字族、动效档位基线；
+  - 主题包（ThemePack）运行时机制：`theme.json` 声明式清单（delta 覆盖，与 Agent Skills
+    同哲学）+ assets/filesDir 双根加载 + 对比度/触控校验兜底；
+  - 决策 D5–D7：风格包可切换、可插拔、高度自定义；`dynamicColor`（Material You 取色）
+    默认关闭；先定稿后实施（T8.1–T8.4）。
+
 ## [0.2.0.2] — 2026-09-01 · tag [v0.2.0.2](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.2.0.2) · versionCode 20002
 
 ### Added

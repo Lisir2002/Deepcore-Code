@@ -102,6 +102,10 @@ T1–T6 的工具/技能层代码至此全部经过 CI 全量验证（此前 `co
 让 Demo 链路升级为真实对话。数据层 M0.6 已随 **v0.1.4** 发布（CI 全量验证通过，
 `:app` 装配 `android-build` 绿），设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单。
 
+**UI 令牌体系已定稿（T8 待启动）**：多设计页面 / 风格包可插拔的三层令牌设计见
+`docs/DESIGN_TOKENS.md`（2026-09-01 定稿，决策 D5–D7：风格包可切换可插拔、
+dynamicColor 默认关、先定稿后实施），实施清单 T8.1–T8.4 见下方。
+
 ### CI 红根因与修复（2026-09-01 接手盘点）
 
 | 根因 | 后果 |
@@ -139,6 +143,17 @@ M1 首发预计为 `0.2.0.x`。
 4. **验收标准**：真实模型流式对话跑通一轮完整工具调用；`core:agent` 全部用例保持绿；
    事件序列可重放恢复；MCP 内存服务器端到端单测绿。
 5. **发布口径**：M1 功能进 `0.2.0.x`（次版本号 + 全局构建号 W，符合 Version.md 语义）。
+
+## T8 实施清单（UI 令牌体系与主题包，设计见 `docs/DESIGN_TOKENS.md`）
+
+- [ ] **T8.1 令牌层扩展**：`AppTokens` 聚合（colors/typography/motion）+ 语义色面板补全
+  + 字重/行高/字族 + `AppTextStyle` 角色扩展；`dynamicColor` 删除（D6）。
+- [ ] **T8.2 主题包机制（编译期）**：`AppThemeSpec` + brand 内置包 + `StyleController`
+  （StateFlow + 持久化）+ 设置页风格切换 UI；`AppTheme(spec)` 参数化。
+- [ ] **T8.3 运行时可插拔**：`theme.json` v1 解析 + `ThemePackLoader`（assets/filesDir
+  双根，复用 SkillLoader 模式）+ 对比度/触控校验兜底 + 设置页导入入口。
+- [ ] **T8.4 lint 扩展**：拦业务层 `Color(0x…)` 字面量与裸 `TextStyle` 构造。
+- 节奏：T8.1→T8.4 串行；T8.1/T8.2 可与 M1 并行，T8.3/T8.4 排在 M1 之后（真实模型优先）。
 
 ## 风险与依赖
 
