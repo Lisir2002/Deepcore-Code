@@ -12,8 +12,14 @@ android {
         applicationId = "com.deepcode.agent"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 5
-        versionName = "0.1.4"
+        // 版本基线（x.x.x.x 方案，自 v0.1.4 起启用，详见 Version.md 一、二）：
+        //   versionName = MAJOR.MINOR.PATCH.BUILD，BUILD 为全局单调递增构建号。
+        //   versionCode = MAJOR*1_000_000 + MINOR*10_000 + PATCH*100 + BUILD，
+        //   严格单调。v0.1.4 实为三段式（versionCode=5），此处 0.1.4.0/10400 为
+        //   新方案迁移锚点——10400 > 5，设备升级覆盖无碍；后续发版用
+        //   scripts/release_helper.py 计算，不再手改。
+        versionCode = 10400
+        versionName = "0.1.4.0"
     }
 
     // ---- 正式签名配置 ----------------------------------------------------

@@ -2,6 +2,21 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [Unreleased]
+
+### Changed
+
+- **版本号迁移至四段式 `X.Y.Z.W`**（规范见 `Version.md` 一、二、三）：
+  - `versionName` 由 `MAJOR.MINOR.PATCH` 改为 `MAJOR.MINOR.PATCH.BUILD`；
+  - `versionCode` 编码改为 `X*1_000_000 + Y*10_000 + Z*100 + W`，W 为全局单调递增构建号，
+    每次发版（含 RC）+1，永不重置；
+  - 基线锚点设为 `0.1.4.0 / 10400`（v0.1.4 实为三段式 `versionCode=5`，10400 > 5 保证升级覆盖）。
+- 新增 **确认门禁**：打正式 tag 前必须经用户确认，否则自动发布 `X.Y.Z.W-rcN` 预发行版本
+  （`release.yml` 按 tag 是否含 `-rc` 自动标记 prerelease）。
+- 新增 `scripts/release_helper.py`：统一计算下一版本（current/plan/code/rc-number），
+  取代手改 `versionCode`/`versionName`，杜绝注释误匹配与编码笔误。
+- `release.yml` 新增 **tag ↔ versionName 一致性校验**步骤，不一致即中止发版。
+
 ## [0.1.4] — 2026-08-31 · tag [v0.1.4](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.1.4) · versionCode 5
 
 ### Added

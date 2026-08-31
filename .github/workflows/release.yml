@@ -27,6 +27,20 @@ jobs:
       - name: 发布前先跑测试
         run: ./gradlew :core:agent:test :core:uistate:test :core:data:test --console=plain
 
+      # tag ↔ versionName 一致性校验：release_helper.py 在打 tag 前已写入
+      # build.gradle.kts，这里兜底防止"tag 与 APK 内部版本不一致"。
+      # tag 形如 v0.1.5.1-rc1，去掉前缀 v 后应等于 versionName（含 -rcN）。
+      - name: 校验 tag 与 versionName 一致
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          VN=$(grep -oP '^\s*versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)
+          echo "tag=$TAG  versionName=$VN"
+          if [ "$TAG" != "$VN" ]; then
+            echo "::error::tag($TAG) 与 app/build.gradle.kts 的 versionName($VN) 不一致，已中止"
+            exit 1
+          fi
+
       # 从 Secrets 还原 keystore。仓库里不存密钥，只有 base64 密文。
       # 解码到 $RUNNER_TEMP 而非工作区，避免被后续步骤误打包进产物。
       - name: 还原签名密钥
@@ -80,6 +94,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.ref_name }}
+          # 含 -rc 后缀的 tag 自动标记为预发行（见 Version.md 二、确认门禁）
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
           generate_release_notes: true
           files: dist/*.apk
         env:

@@ -56,7 +56,8 @@
   push `v*` tag 触发 `release.yml`（release-build + GitHub Release）。
 - CI 全绿才算完成。红了先看是不是自己改出来的，再判断是否级联误红（0.1.2 期间
   出现过"core-test 因 app 构建脚本属性名错误而级联变红"的案例，别被表象骗了）。
-- 版本演进：`versionCode` 严格递增、`versionName` 与 tag 对齐，同一次变更里改。
+- 版本演进：四段式 `X.Y.Z.W`（`W` 全局单调递增），`versionCode` 严格递增、
+  `versionName` 与 tag 对齐，同一次变更里改；**禁止手改，一律走 `scripts/release_helper.py`**。
 
 ## 5. 文档同步义务（每次实现后）
 
@@ -84,3 +85,4 @@
 | AGP 8.7.3 + minSdk 26 默认**不含 v3** | 显式 `enableV3Signing = true` |
 | PKCS12 口令 store/key 不一致报 `not a private key` | 两个口令必须相同 |
 | 验证 APK 签名时 v2 方案 ID 字节序写错导致误判"缺 V2" | `0x7109871a` 小端是 `1a 87 09 71`；用 `scripts/check_apk_signing.py`，别手写字节搜索 |
+| 手改 `versionCode`/`versionName` 撞注释里的 `versionCode=5` 或编码笔误 | 版本号走 `scripts/release_helper.py plan --type <t> [--rc]`；四段式 `X.Y.Z.W`，`versionCode=X*1e6+Y*1e4+Z*100+W` |

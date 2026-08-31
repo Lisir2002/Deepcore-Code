@@ -2,12 +2,27 @@
 
 ## 一键发版
 
+版本号**禁止手改**，一律由 `scripts/release_helper.py` 计算（详见 `Version.md` 一、三）。
+典型流程（Agent 会自动跑，这里给人工对照）：
+
 ```bash
-git tag -a v0.1.3 -m "版本说明"
-./scripts/github-tunnel.sh git push origin v0.1.3
+# 1. 计算并写入下一版本（patch 修复 / minor 新功能 / major 破坏性）
+python3 scripts/release_helper.py plan --type patch        # 正式版，如 0.1.5.1
+python3 scripts/release_helper.py plan --type patch --rc   # RC 预发行，如 0.1.5.1-rc1
+
+# 2. 提交版本号改动（与代码同一次 commit）
+git add app/build.gradle.kts && git commit -m "chore(release): 对齐版本号 vX.Y.Z.W"
+
+# 3. 确认门禁：Agent 用 AskUserQuestion 询问是否发正式版
+#      • 确认           → git tag -a vX.Y.Z.W      -m "..." && 推送
+#      • 不选/选 RC/超时 → git tag -a vX.Y.Z.W-rcN -m "..." && 推送（自动 prerelease）
+
+# 4. 推送 tag 触发 release.yml
+./scripts/github-tunnel.sh git push origin vX.Y.Z.W        # 或 vX.Y.Z.W-rcN
 ```
 
-推送 tag 即触发 `.github/workflows/release.yml`：跑测试 → 构建 Release APK → 创建 GitHub Release 并上传 APK。
+推送 tag 即触发 `.github/workflows/release.yml`：校验 tag↔versionName → 跑测试 →
+构建 Release APK → 创建 GitHub Release 并上传 APK（含 `-rc` 自动标记 prerelease）。
 Release 说明由 `generate_release_notes` 自动生成（基于两次 tag 之间的提交）。
 版本号规则与产物交付标准见 `Version.md`，版本演进历史见 `CHANGELOG.md`。
 
@@ -16,14 +31,18 @@ Release 说明由 `generate_release_notes` 自动生成（基于两次 tag 之�
 
 ## 版本号规范
 
-在 `app/build.gradle.kts` 里维护，**两者必须同时更新**：
+采用**四段式** `MAJOR.MINOR.PATCH.BUILD`（记作 `X.Y.Z.W`），在 `app/build.gradle.kts` 里维护。
+**禁止手改**，一律走 `scripts/release_helper.py plan`：
 
 | 字段 | 规则 | 示例 |
 | --- | --- | --- |
-| `versionCode` | 整数，**严格单调递增**，只增不减 | `1` → `2` → `3` |
-| `versionName` | 语义化版本，与 tag 保持一致 | `0.1.0` ↔ tag `v0.1.0` |
+| `versionCode` | `X*1_000_000 + Y*10_000 + Z*100 + W`，**严格单调递增** | `0.1.4.0` → `10400`；`0.1.5.1` → `10501` |
+| `versionName` | `X.Y.Z.W`；预发行追加 `-rcN`，与 tag 保持一致 | `0.1.4.0` ↔ tag `v0.1.4.0`；`0.1.5.1-rc1` ↔ `v0.1.5.1-rc1` |
 
-`-rc` / `-beta` / `-alpha` 后缀的版本会被 release 流程自动标记为 pre-release。
+- `W` 为**全局单调递增构建号**：每次发版（含 RC）+1，不因 `X.Y.Z` 变化而重置；
+  故新补丁首发可能是 `0.1.5.1` 而非 `0.1.5.0`（见 `Version.md` 一）。
+- 含 `-rc` 的 tag 会被 `release.yml` 自动标记为 pre-release。
+- `release.yml` 会在构建前断言 tag 与 `versionName` 完全一致，不一致直接中止。
 
 发版前务必确认 tag 名与 `versionName` 对齐，否则 GitHub Release 的版本号会与 APK 内部版本不一致。
 
@@ -108,8 +127,8 @@ python3 scripts/check_apk_signing.py app-release.apk
 
 ## 发版前检查清单
 
-- [ ] `versionCode` 已递增
-- [ ] `versionName` 与即将打的 tag 一致
+- [ ] `versionCode` 已由 `scripts/release_helper.py` 计算且单调递增（`X*1e6+Y*1e4+Z*100+W`）
+- [ ] `versionName` 与即将打的 tag 一致（含 `-rcN` 预发行）；`release.yml` 会自动校验
 - [ ] 本地 `./scripts/ci-local.sh` 全绿
 - [ ] 上一轮 GitHub Actions 的 CI（`core-test` / `android-build` / `release-build` / `design-guard`）全绿
 - [ ] Release 构建产物经 `python3 scripts/check_apk_signing.py` 验证 v1/v2/v3 三绿 + 指纹一致

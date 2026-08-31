@@ -55,6 +55,16 @@
 - [x] CI：core-test 纳入 `:core:data:test`
 - [x] 设计定稿与实施记录见 `DATA_LAYER.md`
 
+### 版本治理（2026-08-31 落地）
+
+- [x] 版本号迁移至 **四段式 `X.Y.Z.W`**（`Version.md` 一、二、三）：`W` 为全局单调递增构建号，
+  `versionCode = X*1_000_000 + Y*10_000 + Z*100 + W`；基线锚点 `0.1.4.0 / 10400`。
+- [x] **确认门禁**：打正式 tag 前必须经用户确认，否则自动发布 `X.Y.Z.W-rcN` 预发行
+  （`release.yml` 按 tag 是否含 `-rc` 自动标记 prerelease）。
+- [x] 新增 `scripts/release_helper.py`（current/plan/code/rc-number），统一计算下一版本，
+  取代手改 `versionCode`/`versionName`，并规避注释误匹配与编码笔误。
+- [x] `release.yml` 新增 **tag ↔ versionName 一致性校验**步骤。
+
 ---
 
 ## 当前焦点
@@ -62,6 +72,10 @@
 **M1 能真跑**：接真实模型（OkHttp + SSE 的 `ModelProvider`），让 Demo 链路升级为真实对话。
 数据层 M0.6 已随 **v0.1.4** 发布（CI 全量验证通过，`:app` 装配 `android-build` 绿），
 设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单。下一步直接进入 M1。
+
+**版本治理已就位**：后续每次发版走四段式 `X.Y.Z.W` + `scripts/release_helper.py`，
+正式版需用户确认、否则自动发 `X.Y.Z.W-rcN` 预发行（详见 `Version.md` 三、确认门禁）。
+M1 首发预计为 `0.2.0.x`。
 
 ## M1 设计要点（数据层之后）
 
@@ -71,7 +85,7 @@
    增加网络访问确认（复用现有风险等级模型）。
 3. **验收标准**：真实模型流式对话跑通一轮完整工具调用；`core:agent` 全部用例保持绿；
    事件序列可重放恢复。
-4. **发布口径**：M1 功能进 `0.2.0`（次版本号，符合 Version.md 语义）。
+4. **发布口径**：M1 功能进 `0.2.0.x`（次版本号 + 全局构建号 W，符合 Version.md 语义）。
 
 ## 风险与依赖
 
