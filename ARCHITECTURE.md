@@ -9,7 +9,8 @@
 
 ```
                     ┌─────────────────────────────────────┐
-  Android 层         │  :app          :feature:chat        │
+  Android 层        │  :app      :feature:chat            │
+                    │  :feature:settings                  │
                     └────────────┬────────────────────────┘
                                  │ 只能用 designsystem 的组件
                     ┌────────────▼────────────────────────┐
@@ -20,7 +21,7 @@
                     │  :core:uistate   事件→渲染块 归约     │
                     │  :core:agent     主循环 + 全部 SPI    │
                     │  │  └─ skill/  Agent Skills 标准解析  │
-                    │  :core:mcp       MCP 客户端（官方SDK） │
+                    │  :core:mcp     MCP 客户端（自实现）    │
                     │  :core:data      SQLite 持久化(SQLDelight) │
                     │  :core:model     领域模型 + 事件定义   │
                     └────────────┬────────────────────────┘
@@ -31,7 +32,14 @@
 ```
 
 **分界线以上是 Android/Compose，以下全是纯 Kotlin。**
-图中 `:core:mcp` 与 `core:agent/skill/` 为 M1 规划中模块（设计定稿见 `TOOLS_SKILLS.md`）。
+
+`:core:mcp`（MCP 客户端）与 `core:agent/skill/`（Agent Skills 解析）**已落地并接进主循环**，
+设计定稿与实施清单见 `docs/TOOLS_SKILLS.md`。
+
+> 一处现实妥协：MCP 客户端**没有**用官方 `io.modelcontextprotocol:kotlin-sdk`——
+> 该 SDK 0.6+ 要求 Kotlin 2.2+，本项目锁 Kotlin 2.0.21，元数据不兼容。
+> 改为 okhttp + kotlinx.serialization **自实现协议级兼容客户端**（JSON-RPC 2.0 +
+> Streamable HTTP + SSE），对外仍严格对齐 MCP 规范 2025-11-25，换官方 SDK 只需替换 `:core:mcp` 内部实现。
 
 这条线不是洁癖，是收益：Agent 主循环是这个 App 里最容易出错的部分，把它放在纯 Kotlin 模块，
 就能在 JVM 上直接跑测试，**不用开模拟器、不用打包 APK**。M0 阶段已经靠它抓到一个真实 bug
@@ -71,7 +79,12 @@ Android 上跑一个 Agent 二三十分钟太正常，进程随时可能被回�
 ### 3. 能力即接口
 
 `ModelProvider` / `Tool` / `Sandbox` / `Workspace` / `PermissionGate` / `ContextPolicy` /
-`ProjectMemory` ——全部是接口。想换实现，只改 `:app` 里的依赖绑定，业务代码一行不动。
+`ProjectMemory` / `SkillLoader` / `SkillInjector` / `McpClient` / `McpServerConfigStore`
+——全部是接口。想换实现，只改 `:app` 里的依赖绑定，业务代码一行不动。
+
+M1 新加的三个接口延续同一条规矩：`McpServerConfigStore` 定义接口在 `:core:mcp`，
+Android 实现（`AndroidMcpServerConfigStore`，JSON 文件持久化）放在 `:app`——
+这样 `feature:settings` 只依赖 core，**不反向依赖 `:app`**，同时保住 core 零 Android 依赖。
 
 ---
 
@@ -105,6 +118,13 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 | 间距/圆角/字号 | `Dimens` / `TypeScale` 令牌 |
 | 工具卡片 | `RenderBlockView`（注册即用，不许自己写） |
 | 输入栏 | `AppInputBar` |
+| 文本 | `AppText`（`AppTextStyle` × `AppTextTone`，不许裸写 `Text`） |
+| 表单输入 | `AppTextField` |
+| 开关 | `AppSwitch` |
+
+> `AppText` / `AppTextField` / `AppSwitch` 是做「设置页」时补进来的：feature 层被 lint 禁掉
+> material3，表单类控件如果不在组件库里提供，业务页面就只能违规 import。
+> **缺件先补组件库，不要在 feature 层开洞**——这是这条防线能长期成立的前提。
 
 看 `ChatScreen.kt` 就明白了——它没有自己的布局、没有自己的卡片、没有自己的状态处理，
 只是把 ViewModel 的状态接到组件上。**页面里根本没有发挥"设计才华"的余地。**
@@ -124,8 +144,10 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 |---|---|---|
 | 接真实模型（Claude/GPT/DeepSeek） | 实现 `ModelProvider`，换掉 `:app` 里的一行绑定 | **仅此一处** |
 | 加一种工具（grep / git / 网页） | 实现 `Tool` + `register()` | Runtime、事件、UI 全不动 |
-| 接 MCP 工具 | `core:mcp` 的 `McpToolBridge` 直接实现内部 `Tool` SPI 注册进统一 Registry | Runtime 不认识 MCP；规范映射与生命周期见 `TOOLS_SKILLS.md` |
-| 加一种技能包（Skill） | `core:agent/skill/` 按 Agent Skills 标准解析 `SKILL.md`，L1 元数据自动注入 system prompt | 加载/注入三层渐进披露见 `TOOLS_SKILLS.md` |
+| 接一个 MCP 服务器 | 设置页填 URL（+ 可选 header）→ `AndroidMcpServerConfigStore` 落 `filesDir/mcp/servers.json`；`McpServerManager` 热插拔，重启自动重连 | 配置持久化走 `McpServerConfigStore` 接口（实现在 `:app`，core 零 Android 依赖） |
+| 接 MCP 工具 | `McpToolBridge` 把 MCP 工具实现成内部 `Tool` SPI，`McpCompositeToolRegistry` 实时聚合「内置 + MCP」 | Runtime 不认识 MCP；快照排序 BUILTIN 优先 + name 稳定，保 prompt cache；`listChanged` 下一 turn 生效 |
+| 加一种技能包（Skill） | `core:agent/skill/` 按 Agent Skills 标准解析 `SKILL.md`（目录 `skills/` 或 `.deepcode/skills/`），`DefaultSkillInjector` 把 L1 元数据注入 system prompt | 三层渐进披露 + `skillSectionProvider` 挂点见 `docs/TOOLS_SKILLS.md`；Skill 永不伪装成 Tool |
+| 加一种 MCP 传输（stdio / WebSocket） | `McpTransport` 加分支 + 对应 `McpClient` 实现 | 当前仅 `McpTransport.Http`；`McpServerManager` 的 `clientFactory` 是唯一分派点 |
 | 跑 npm / clang（内嵌 Linux） | 新增 `ProotSandbox : Sandbox` | 只换 `:app` 绑定，上层无感 |
 | 连远端服务器 | 新增 `SshWorkspace` / `SshSandbox` | 同上 |
 | 子 Agent 并行 | 事件模型已有 `SubAgentEvent` | 主循环加分支，UI 递归复用渲染器 |
@@ -145,16 +167,22 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 | 层 | 内容 | 验证状态 |
 |---|---|---|
 | `core:model` | 事件模型、工具规格、风险等级、结构化产物 | ✅ 编译 + 单测 |
-| `core:agent` | 主循环、权限门、上下文策略、全部 SPI | ✅ 编译 + **4 个用例通过** |
+| `core:agent` | 主循环、权限门、上下文策略、全部 SPI + `skill/`（Agent Skills 解析/注入） | ✅ 编译 + **17 个用例通过**（主循环 6 + Skill 11） |
 | `core:data` | 事件日志（append-only）+ SQLite 持久化（SQLDelight 2.x） | ✅ 编译 + **21 个用例通过** |
+| `core:mcp` | 自实现 MCP 客户端（JSON-RPC 2.0 / Streamable HTTP / SSE）、`McpToolBridge`、`McpServerManager` 热插拔 | ✅ 编译 + **15 个用例通过** |
 | `core:uistate` | 事件→渲染块归约器 | ✅ 编译 + **6 个用例通过** |
 | `core:platform` | 本地工作区、命令白名单沙箱、4 个基础工具 | ✅ CI 编译 + 正式包产出 |
 | `designsystem` | 主题令牌、组件库、事件渲染器 | ✅ CI 编译 + 正式包产出 |
 | `feature:chat` | 会话页 + ViewModel | ✅ CI 编译 + 正式包产出 |
-| `app` | DI 装配、演示模型、MainActivity | ✅ CI 编译 + 正式包产出（v0.1.3） |
+| `feature:settings` | MCP 服务器管理页（完整 CRUD 表单 + 受信任开关 + 重连） | ⏳ 仅 CI 验证（沙箱无 Android SDK） |
+| `app` | DI 装配、演示模型、MainActivity；MCP/Skill 接线（`AndroidMcpServerConfigStore`、`McpCompositeToolRegistry`、启动 `connectAll`） | ✅ CI 编译 + 正式包产出（v0.1.3）；M1 装配 ⏳ 仅 CI 验证 |
 | `lint` | 设计系统守卫 | ✅ 编译 |
 
 M0 已交付并经 CI 全量编译验证；正式签名 + 加固 + 发版流水线已落地（最新 v0.1.3）。
+
+**M1 工具/技能层（MCP × Agent Skills 双标准）代码已完成**，纯 Kotlin 模块在沙箱内跑过全量单测
+（`core:model` 无独立测试，`:core:agent` 17 / `:core:mcp` 15 / `:core:data` 21 / `:core:uistate` 6 全绿）；
+`:app`、`:feature:settings` 因**沙箱无 Android SDK 只能由 CI 验证**。
 进度与下一步见 `PLAN.md`，版本历史见 `CHANGELOG.md`。
 
 ### M0 测出来的真实 bug
@@ -170,7 +198,7 @@ M0 已交付并经 CI 全量编译验证；正式签名 + 加固 + 发版流水�
 - **M1 能真跑**：接一个真实 `ModelProvider`（OkHttp + SSE），补 `OkHttpProvider`，跑通真实对话
 - **M2 能用**：工作区文件树、Diff 审阅、git 工具、会话列表页
 - **M3 能扛**：数据层深化（SQLDelight 字段/索引演进）、前台服务保活、上下文压缩接真实场景
-- **M4 扩展**：MCP 客户端、子 Agent、Plan Mode、远端沙箱
+- **M4 扩展**：子 Agent、Plan Mode、远端沙箱、MCP stdio/WebSocket 传输（MCP 客户端本体已在 M1 提前落地）
 
 **强烈建议 M1 先做**：把演示模型换成真实模型后，prompt 工程、工具描述质量、
 上下文策略这些真正决定体验的东西才有办法调优。
@@ -184,8 +212,13 @@ M0 已交付并经 CI 全量编译验证；正式签名 + 加固 + 发版流水�
 ./gradlew :app:assembleDebug
 
 # 纯 Kotlin 模块可以脱离 Android SDK 单独验证
-./gradlew :core:agent:test :core:uistate:test :core:data:test
+./gradlew :core:agent:test :core:mcp:test :core:uistate:test :core:data:test
 ```
 
 技术栈：Kotlin 2.0.21 · Jetpack Compose（Material3）· Coroutines/Flow ·
-kotlinx.serialization · Koin · Gradle 8.9 · AGP 8.7.3 · minSdk 26
+kotlinx.serialization · Koin 4.0.0 · OkHttp（模型请求 / MCP 传输）· SQLDelight 2.x ·
+Gradle 8.9 · AGP 8.7.3 · minSdk 26
+
+对接的开放标准：**MCP**（Model Context Protocol，规范版本 2025-11-25）与
+**Agent Skills**（agentskills.io，SKILL.md + YAML frontmatter + 三层渐进披露）。
+两者均为跨平台事实标准，不设私有协议——第三方工具/技能插件可直接适配。

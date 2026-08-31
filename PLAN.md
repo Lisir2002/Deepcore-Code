@@ -77,7 +77,13 @@
   （OkHttp，因官方 Kotlin SDK 需 Kotlin 2.2+ 与本项目 2.0.21 不兼容而弃用）+ 桥接/管理器/风险映射
   + 单测全绿（15 例）。
 - [x] 实施清单 **T5 已完成**：`:app` DI 装配（`McpServerConfigStore` 接口 + `AndroidMcpServerConfigStore` JSON 持久化 + Koin 装配 `McpServerManager`/`McpCompositeToolRegistry` + `SkillLoader`/`SkillInjector` 接入 `skillSectionProvider` + 启动 `connectAll`）+ 新建 `:feature:settings`（CRUD 表单，designsystem 扩展 `AppText`/`AppTextField`/`AppSwitch`）。`:app` 沙箱无 Android SDK，**仅 CI 验证**，纯 Kotlin 的 `:core:mcp` 单测已绿。
-- [ ] 实施清单 **T6–T7 待做**：T6 文档同步（本文件/PLAN/CHANGELOG 已随 T5 更新）；T7 发版走四段式门禁 `0.2.0.x`。
+- [x] 实施清单 **T6 已完成（文档同步）**：`ARCHITECTURE.md` 同步模块图（补 `:feature:settings`、
+  `:core:mcp` 标注自实现并注明弃用官方 SDK 原因）、扩展点表（新增「接一个 MCP 服务器」「加一种 MCP 传输」）、
+  组件库出口表（补 `AppText`/`AppTextField`/`AppSwitch`）、当前状态表（补 `:core:mcp` 15 例与
+  `:feature:settings`，`:core:agent` 更新为 17 例）、技术栈与两项开放标准；MCP 规范版本全文统一为
+  `2025-11-25`。`CHANGELOG.md` 补 T6 条目。
+- [ ] 实施清单 **T7 待做**：发版走四段式门禁 `0.2.0.x`（正式版前须用户确认，否则自动 `rcN`）；
+  发版前需 CI 验证 `:app` 与 `:feature:settings` 编译（沙箱无 Android SDK，本地无法自验）。
 
 ---
 

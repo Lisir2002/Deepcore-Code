@@ -46,6 +46,19 @@
   - 新建 `:feature:settings` 模块：MCP server 管理 CRUD 表单（增删、信任切换、重连、状态展示），
     `designsystem` 同步扩展 `AppText`/`AppTextField`/`AppSwitch`（封装 Material3 输入组件，
     业务层不直接触碰 Material3，符合 `:lint` 守卫）；`MainActivity` 经状态切换接入导航。
+- **T6 架构文档同步（未发版）**：
+  - `ARCHITECTURE.md` 模块图补 `:feature:settings`，`:core:mcp` 由「官方SDK」改为「自实现」
+    并加注弃用官方 SDK 的原因（SDK 0.6+ 要求 Kotlin 2.2+，与本项目 2.0.21 元数据不兼容）；
+  - 「能力即接口」补 `SkillLoader`/`SkillInjector`/`McpClient`/`McpServerConfigStore`，
+    并写明「接口在 `:core:mcp`、Android 实现在 `:app`」——避免 `feature:settings` 反向依赖 `:app`；
+  - 「扩展点」表新增「接一个 MCP 服务器」「加一种 MCP 传输（stdio/WebSocket）」两行，
+    MCP 工具行更新为 `McpCompositeToolRegistry` 聚合语义（BUILTIN 优先 + name 稳定排序）；
+  - 「组件库是唯一出口」表补 `AppText`/`AppTextField`/`AppSwitch`，并写明「缺件先补组件库，
+    不要在 feature 层开洞」；
+  - 「当前状态」表补 `:core:mcp`（15 例）、`:feature:settings`，`:core:agent` 用例数更新为
+    17（主循环 6 + Skill 11），并标注 `:app`/`:feature:settings` 仅 CI 验证；
+  - 技术栈补 OkHttp / Koin 4.0.0 / SQLDelight 2.x 与两项开放标准（MCP 2025-11-25、Agent Skills）；
+    MCP 规范版本统一为 `2025-11-25`（与 `TOOLS_SKILLS.md` 设计定稿一致）。
 
 ### Changed
 
