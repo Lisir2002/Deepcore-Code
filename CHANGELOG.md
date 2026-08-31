@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.2.0.2] — 2026-09-01 · tag [v0.2.0.2](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.2.0.2) · versionCode 20002
+
 ### Added
 
 - **工具与技能层设计定稿**（文档 `docs/TOOLS_SKILLS.md`，随 M1 实施）：
@@ -200,7 +202,8 @@
 
 - Android 编译两处根因（包名对齐、lambda `it` 遮蔽）后首个可编译 tag。
 
-[Unreleased]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.2.0.2...HEAD
+[0.2.0.2]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.2.0.1-rc1...v0.2.0.2
 [0.1.4]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.1...v0.1.2

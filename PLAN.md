@@ -82,19 +82,23 @@
   组件库出口表（补 `AppText`/`AppTextField`/`AppSwitch`）、当前状态表（补 `:core:mcp` 15 例与
   `:feature:settings`，`:core:agent` 更新为 17 例）、技术栈与两项开放标准；MCP 规范版本全文统一为
   `2025-11-25`。`CHANGELOG.md` 补 T6 条目。
-- [x] 实施清单 **T7（tag 已打，发布未成功）**：`0.2.0.1-rc1` 已按四段式门禁打 tag，
+- [x] 实施清单 **T7（rc1 发布未成功）**：`0.2.0.1-rc1` 已按四段式门禁打 tag，
   但 Release 构建失败、GitHub Release 未产出。
-- [ ] 实施清单 **T7-fix（进行中）**：修复 T1–T6 遗留的 CI 红，见下方「当前焦点」。
+- [x] 实施清单 **T7-fix（已完成，2026-09-01）**：修复 T1–T6 遗留的三层 CI 红（共 5+2+2 处
+  根因，见下方「CI 红根因与修复」），CI 四 job 全绿（run 33443248890）；经确认门禁发
+  **正式版 v0.2.0.2**（versionCode 20002），Release 构建成功、APK 经
+  `check_apk_signing.py` 三绿验证 + 指纹比对一致。
 
 ---
 
 ## 当前焦点
 
-**先修红，再谈 M1。** T1–T6 的代码从未在 CI 上编译通过——`core-test` 一直绿，掩盖了
-`:app` / `:feature:settings` 的编译失败（`:core:mcp` 的 15 例单测也从未进过 CI）。
-详见下方「CI 红根因与修复」。
+**修红完成 ✅ M1 收官。** 2026-09-01：CI 四 job 全绿（run 33443248890），正式版
+**v0.2.0.2**（versionCode 20002）经确认门禁发布，Release + APK 产出并三绿验证。
+T1–T6 的工具/技能层代码至此全部经过 CI 全量验证（此前 `core-test` 一直绿，掩盖了
+`:app` / `:feature:settings` 的编译失败，共三层根因，见下方表）。
 
-**M1 能真跑**（修红之后的下一个目标）：接真实模型（OkHttp + SSE 的 `ModelProvider`），
+**M1 下一目标——能真跑**：接真实模型（OkHttp + SSE 的 `ModelProvider`），
 让 Demo 链路升级为真实对话。数据层 M0.6 已随 **v0.1.4** 发布（CI 全量验证通过，
 `:app` 装配 `android-build` 绿），设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单。
 
