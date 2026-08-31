@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "com.agentide.designsystem"
+    namespace = "com.deepcode.designsystem"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {

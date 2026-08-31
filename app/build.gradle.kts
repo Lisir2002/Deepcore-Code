@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.agentide.app"
+    namespace = "com.deepcode.agent"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.agentide.app"
+        applicationId = "com.deepcode.agent"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1

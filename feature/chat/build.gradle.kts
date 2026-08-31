@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.agentide.feature.chat"
+    namespace = "com.deepcode.feature.chat"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {

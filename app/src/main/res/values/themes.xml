@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 无 ActionBar：页面内容全部由 Compose 绘制，标题栏统一走 AppTopAppBar -->
-    <style name="Theme.AgentIde" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.DeepCoreCode" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.agentide.core.platform"
+    namespace = "com.deepcode.core.platform"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {

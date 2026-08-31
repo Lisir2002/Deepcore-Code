@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AgentIde"
+rootProject.name = "DeepCore-Code"
 
 // ---- L0/L1 底座：纯 Kotlin，零 Android 依赖，可脱离模拟器编译与单测 ----
 include(":core:model")
