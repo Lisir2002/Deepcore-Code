@@ -1,7 +1,7 @@
-package com.deepcode.app
+package com.deepcode.agent
 
 import android.app.Application
-import com.deepcode.app.di.appModule
+import com.deepcode.agent.di.appModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 

@@ -249,8 +249,25 @@ cmd_api() {
     err "请先设置环境变量 GITHUB_TOKEN（不要在命令行传 token）"
     return 1
   fi
+  # 令牌含空白/换行时，curl 会以 exit 43 直接拒绝构造 header，
+  # 而且重试 12 次结果完全一样——白等 ~30s 还不如立刻说清原因。
+  # 典型踩法：GITHUB_TOKEN=$(cat token.env) 把注释行和 export 前缀一起读进来了，
+  # 正确做法是 source token.env。
+  if [[ "$token" =~ [[:space:]] ]]; then
+    err "GITHUB_TOKEN 含空白字符（当前长度 ${#token}），curl 无法构造 header"
+    err "从文件读取请改用: source <文件>  而不是 GITHUB_TOKEN=\$(cat <文件>)"
+    return 1
+  fi
   local method="${1:-GET}"; shift || true
   local path="${1:-/user}"; shift 2>/dev/null || true
+  # 方法名也会原样进 -X，拼错同样是 exit 43。
+  # 典型误用：api --method POST /xxx —— 本脚本用位置参数，不是 --method 风格。
+  if [[ ! "$method" =~ ^(GET|POST|PUT|PATCH|DELETE|HEAD)$ ]]; then
+    err "HTTP 方法非法: '$method'（应为 GET/POST/PUT/PATCH/DELETE/HEAD 之一）"
+    err "用法: $0 api <方法> <路径> [额外 curl 参数...]"
+    err "例  : $0 api POST /repos/OWNER/REPO/actions/workflows/ci.yml/dispatches -d '{\"ref\":\"main\"}'"
+    return 1
+  fi
   case "$path" in
     http*)  : ;;
     /repos/*|/user*|/rate_limit|/search/*) : ;;
@@ -313,6 +330,10 @@ case "${1:-doctor}" in
   curl <参数>         带重试的 curl（吸收概率丢包）
   git  <参数>         带重试的 git
   api <方法> <路径>   GitHub API，需 GITHUB_TOKEN 环境变量
+                      例: api POST /repos/OWNER/REPO/actions/workflows/ci.yml/dispatches
+                          -d '{"ref":"main"}'
+                      注意: 方法是位置参数，不是 --method 风格；
+                            令牌请用 `source <env文件>` 载入（勿用 \$(cat)，会把注释行读进来）
   verify              端到端验证
 
 环境变量：GITHUB_TOKEN  GH_OWNER(默认 Lisir2002)  GH_REPO(默认 Deepcore-Code)

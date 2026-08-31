@@ -1,4 +1,4 @@
-package com.deepcode.app.di
+package com.deepcode.agent.di
 
 import com.deepcode.core.agent.AgentConfig
 import com.deepcode.core.agent.AgentRuntime
@@ -21,7 +21,7 @@ import com.deepcode.core.platform.tools.ReadFileTool
 import com.deepcode.core.platform.tools.RunCommandTool
 import com.deepcode.core.platform.tools.WriteFileTool
 import com.deepcode.core.platform.workspace.LocalDirWorkspace
-import com.deepcode.app.demo.DemoProvider
+import com.deepcode.agent.demo.DemoProvider
 import com.deepcode.feature.chat.ChatViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

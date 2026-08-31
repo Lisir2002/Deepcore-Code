@@ -1,4 +1,4 @@
-package com.deepcode.app
+package com.deepcode.agent
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

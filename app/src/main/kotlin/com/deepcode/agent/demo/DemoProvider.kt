@@ -1,4 +1,4 @@
-package com.deepcode.app.demo
+package com.deepcode.agent.demo
 
 import com.deepcode.core.agent.spi.CompletionChunk
 import com.deepcode.core.agent.spi.CompletionRequest
