@@ -10,10 +10,16 @@
   `Version.md`（版本与更新规范）、本文件（变更日志）。
 - `scripts/check_apk_signing.py`：零依赖 APK 签名验证脚本（解析 Signing Block，
   判定 v1/v2/v3 并比对官方证书指纹），替代临时手写字节搜索，杜绝 0.1.2 式验证笔误。
-- `DATA_LAYER.md`：数据层设计定稿 —— **SQLite（SQLDelight 2.x）接管持久化**。
-  决策：事件 payload 存 JSON blob + type 列过滤；sessions 会话索引表本期引入；
-  状态表与事件流统一事务边界；新表/字段经 `TableModule` 注册制接入（核心框架零改动）。
-  新增里程碑 M0.6（设计定稿，待实现），M3 原"Room 持久化"条目相应修正。
+- **数据层 M0.6 落地 —— SQLite 经 SQLDelight 2.x 接管持久化**（设计见 `DATA_LAYER.md`）：
+  - `:core:data` 引入 SQLDelight 2.0.2 + sqlite-3-18 方言；`.sq` 定义 `events`/`sessions` 表，
+    生成 `DeepCoreDatabase` 类型安全查询。
+  - 门面 SPI `SqliteDatabase`（`transaction` / `observe` / `rawQuery` / `rawExecute`，
+    IO 统一切单线程，主线程永不碰库）。
+  - 扩展协议 `TableModule` 注册制 + `SchemaManager` 版本链：新功能加表/加字段不改核心框架。
+  - `SQLiteEventStore`：events 与 sessions 同事务更新，`EventCodec` 多态事件 JSON 编解码。
+  - `:app` 装配 `AndroidSqliteDriver` + `dataTableModules` 注册表，`EventStore` 一行切换。
+  - JVM 全链路单测 **21/21 绿**（含迁移链、多态往返、会话索引、事务一致性）。
+  - CI：core-test job 纳入 `:core:data:test`。
 
 ## [0.1.3] — 2026-08-31 · tag [v0.1.3](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.1.3) · versionCode 4
 

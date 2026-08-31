@@ -38,7 +38,7 @@ CI 无需模拟器。Android 端由 `:app` 装配 `AndroidSqliteDriver`，不引
 ├─ InMemoryEventStore       ← 保留，专供单测
 ├─ event/SQLiteEventStore   ← events 表实现 EventStore（通用实现）
 └─ db/
-   ├─ SqliteDatabase        ← 门面 SPI：连接获取、withTransaction、Flow 观测
+   ├─ SqliteDatabase        ← 门面 SPI：连接获取、transaction、Flow 观测
    ├─ SchemaManager         ← SCHEMA_VERSION + 有序迁移链（版本只增不改历史）
    └─ TableModule           ← ★ 新表接入协议（见第五节）
 
@@ -122,7 +122,7 @@ interface Migration {
 ```kotlin
 // SQLiteEventStore：events 表 + sessions 表联动
 class SQLiteEventStore(private val db: SqliteDatabase) : EventStore {
-    override suspend fun append(event: AgentEvent) = db.withTransaction {
+    override suspend fun append(event: AgentEvent) = db.transaction {
         insertEvent(event)                       // events 表
         touchSession(event.sessionId, event.ts)  // sessions.updated_at（同事务）
     }
@@ -135,11 +135,28 @@ class SQLiteEventStore(private val db: SqliteDatabase) : EventStore {
 迁移路径：首版无线上数据，直接以 v1 schema 起步；`InMemoryEventStore` 保留供单测；
 `:app` 一处绑定切换，上层业务零改动（EventStore 接口未动）。
 
-## 七、实施清单（下个里程碑落地）
+## 七、实施清单（已落地 · 2026-08-31）
 
-- [ ] `:core:data` 引入 SQLDelight Gradle 插件与 `.sq` 定义（sessions/events）
-- [ ] `SqliteDatabase` / `SchemaManager` / `TableModule` / `Migration` SPI 落地
-- [ ] `SQLiteEventStore` 实现 + JVM 内存库全链路单测（含迁移链）
-- [ ] `:app` 装配 Android 驱动（`AndroidSqliteDriver`）与模块注册
-- [ ] 会话列表读路径接 `sessions` 表（M1 的会话列表页前置就绪）
-- [ ] CI：JVM 数据层测试纳入 `ci.yml`（core-test job）
+> 代码已提交，`:core:data` 单测 **21/21 绿**；`:app` 装配完成（受 Android SDK 限制，
+> 本地无法编译 `:app`，由 CI 全量验证）。新增文件：
+
+| 项 | 文件 | 说明 |
+| --- | --- | --- |
+| 依赖 | `gradle/libs.versions.toml` / `build.gradle.kts` / `core/data/build.gradle.kts` | SQLDelight 2.0.2 + sqlite-3-18 方言 |
+| Schema 定义 | `core/data/src/main/sqldelight/.../db/{Events,Sessions}.sq` | 生成 `DeepCoreDatabase` 类型安全查询 |
+| 门面 SPI | `core/data/.../db/SqliteDatabase.kt` + `SqliteDatabaseImpl.kt` | `transaction` / `observe` / `rawQuery` / `rawExecute` |
+| 注册协议 | `core/data/.../db/{TableModule,Migration,SchemaManager}.kt` | 版本链 + 模块 DDL/迁移缝接 |
+| 事件存储 | `core/data/.../event/{SQLiteEventStore,EventCodec}.kt` + `SessionIndex.kt` | events/sessions 同事务，多态 JSON 编解码 |
+| 装配点 | `app/src/main/.../di/AppModule.kt` | `AndroidSqliteDriver` + `dataTableModules` 注册表 |
+| 测试 | `core/data/src/test/.../{SQLiteEventStoreTest,SchemaManagerTest,TestDatabase}.kt` | JVM 内存库跑全量 DDL + 迁移链 |
+| CI | `.github/workflows/ci.yml` | core-test 纳入 `:core:data:test` |
+
+- [x] `:core:data` 引入 SQLDelight Gradle 插件与 `.sq` 定义（sessions/events）
+- [x] `SqliteDatabase` / `SchemaManager` / `TableModule` / `Migration` SPI 落地
+- [x] `SQLiteEventStore` 实现 + JVM 内存库全链路单测（含迁移链，21/21 通过）
+- [x] `:app` 装配 Android 驱动（`AndroidSqliteDriver`）与模块注册（`dataTableModules`）
+- [x] 会话列表读路径接 `sessions` 表（`observeSessions()` / `renameSession()` 已就绪，M1 会话列表页前置完成）
+- [x] CI：JVM 数据层测试纳入 `ci.yml`（core-test job）
+
+**遗留（不阻塞 M0.6 收尾）**：`:app` 的 Release 包需 CI 跑通 `android-build` 验证
+`AndroidSqliteDriver` + R8 混淆组合；本地无 Android SDK，已交 CI 兜底。

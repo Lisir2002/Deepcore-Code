@@ -1,0 +1,35 @@
+-- 会话索引（schema v1）
+--
+-- 存在的唯一理由：会话列表页不该为了显示"最近改过哪些会话"去全量重放事件流。
+-- 真正的会话内容仍然只在 events 表里（事件流是唯一契约）。
+-- 本文件生成 SessionsQueries；与 events 表的联动见 SQLiteEventStore。
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id          TEXT PRIMARY KEY,      -- SessionId.value
+  title       TEXT NOT NULL,
+  created_at  INTEGER NOT NULL,      -- epoch millis
+  updated_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_updated ON sessions(updated_at DESC);
+
+-- 首装：不存在才插入；已存在则整句跳过（SQLite 3.18 无 UPSERT，故拆成两句）
+insertSession:
+INSERT OR IGNORE INTO sessions(id, title, created_at, updated_at)
+VALUES (:id, :title, :created_at, :updated_at);
+
+-- 心跳：每次 append 事件都推一次 updated_at（与事件同事务）
+touchSession:
+UPDATE sessions SET updated_at = :updated_at WHERE id = :id;
+
+renameSession:
+UPDATE sessions SET title = :title, updated_at = :updated_at WHERE id = :id;
+
+selectSession:
+SELECT * FROM sessions WHERE id = :id;
+
+allSessions:
+SELECT * FROM sessions ORDER BY updated_at DESC, id;
+
+deleteSession:
+DELETE FROM sessions WHERE id = :id;

@@ -32,8 +32,10 @@ jobs:
       - name: 配置 Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: 运行 Agent 主循环与归约器测试
-        run: ./gradlew :core:agent:test :core:uistate:test --console=plain
+      # :core:data 是数据层（SQLite/SQLDelight）。它在 JVM 内存库上跑建表、迁移链与
+      # DAO 测试，不需要模拟器——这是选 SQLDelight 而非 Room 的核心理由。
+      - name: 运行核心模块单元测试（Agent 主循环 / 归约器 / 数据层）
+        run: ./gradlew :core:agent:test :core:uistate:test :core:data:test --console=plain
 
       - name: 上传测试报告
         if: always()
@@ -43,6 +45,7 @@ jobs:
           path: |
             core/agent/build/reports/tests/
             core/uistate/build/reports/tests/
+            core/data/build/reports/tests/
 
   # ── 2. Android 编译：Compose / AGP 代码只有这一步能真正验证 ──
   android-build:

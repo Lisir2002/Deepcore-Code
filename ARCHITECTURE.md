@@ -142,7 +142,7 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 |---|---|---|
 | `core:model` | 事件模型、工具规格、风险等级、结构化产物 | ✅ 编译 + 单测 |
 | `core:agent` | 主循环、权限门、上下文策略、全部 SPI | ✅ 编译 + **4 个用例通过** |
-| `core:data` | 事件日志（append-only） | ✅ 编译 |
+| `core:data` | 事件日志（append-only）+ SQLite 持久化（SQLDelight 2.x） | ✅ 编译 + **21 个用例通过** |
 | `core:uistate` | 事件→渲染块归约器 | ✅ 编译 + **6 个用例通过** |
 | `core:platform` | 本地工作区、命令白名单沙箱、4 个基础工具 | ✅ CI 编译 + 正式包产出 |
 | `designsystem` | 主题令牌、组件库、事件渲染器 | ✅ CI 编译 + 正式包产出 |
@@ -165,7 +165,7 @@ M0 已交付并经 CI 全量编译验证；正式签名 + 加固 + 发版流水�
 
 - **M1 能真跑**：接一个真实 `ModelProvider`（OkHttp + SSE），补 `OkHttpProvider`，跑通真实对话
 - **M2 能用**：工作区文件树、Diff 审阅、git 工具、会话列表页
-- **M3 能扛**：Room 持久化存储、前台服务保活、上下文压缩接真实场景
+- **M3 能扛**：数据层深化（SQLDelight 字段/索引演进）、前台服务保活、上下文压缩接真实场景
 - **M4 扩展**：MCP 客户端、子 Agent、Plan Mode、远端沙箱
 
 **强烈建议 M1 先做**：把演示模型换成真实模型后，prompt 工程、工具描述质量、
@@ -180,7 +180,7 @@ M0 已交付并经 CI 全量编译验证；正式签名 + 加固 + 发版流水�
 ./gradlew :app:assembleDebug
 
 # 纯 Kotlin 模块可以脱离 Android SDK 单独验证
-./gradlew :core:agent:test :core:uistate:test
+./gradlew :core:agent:test :core:uistate:test :core:data:test
 ```
 
 技术栈：Kotlin 2.0.21 · Jetpack Compose（Material3）· Coroutines/Flow ·

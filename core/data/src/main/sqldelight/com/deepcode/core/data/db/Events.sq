@@ -1,0 +1,43 @@
+-- 事件日志（schema v1）
+--
+-- 铁律：这里是**事实流**，不是"状态快照"。新增一种事件 = 在 core:model 加一个
+-- @Serializable 类，本文件一个字都不用改（结构在 payload JSON 里，
+-- type 列只用于过滤与统计）。
+-- 加表/加字段走 TableModule 注册协议，详见 DATA_LAYER.md 第五节。
+-- 注意：SQLDelight 按 .sq 文件生成 Queries 类 —— 本文件生成 EventsQueries。
+
+CREATE TABLE IF NOT EXISTS events (
+  seq         INTEGER PRIMARY KEY AUTOINCREMENT,  -- 全局单调，重放顺序的唯一依据
+  session_id  TEXT NOT NULL,
+  turn_id     TEXT,
+  ts          INTEGER NOT NULL,
+  type        TEXT NOT NULL,         -- 多态判别名（@SerialName），非 Kotlin 类名
+  payload     TEXT NOT NULL          -- 完整 JSON（kotlinx.serialization 多态编码）
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_session_seq ON events(session_id, seq);
+
+insertEvent:
+INSERT INTO events(session_id, turn_id, ts, type, payload)
+VALUES (:session_id, :turn_id, :ts, :type, :payload);
+
+eventsForSession:
+SELECT seq, session_id, turn_id, ts, type, payload
+FROM events
+WHERE session_id = :session_id
+ORDER BY seq;
+
+eventsByType:
+SELECT seq, session_id, turn_id, ts, type, payload
+FROM events
+WHERE session_id = :session_id AND type = :type
+ORDER BY seq;
+
+lastEventSeq:
+SELECT MAX(seq) FROM events WHERE session_id = :session_id;
+
+countEvents:
+SELECT COUNT(*) FROM events;
+
+deleteEventsForSession:
+DELETE FROM events WHERE session_id = :session_id;

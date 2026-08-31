@@ -11,7 +11,7 @@
 | --- | --- | --- |
 | **M0 架构地基** | 骨架 + 主循环 + UI 统一机制跑通完整链路 | ✅ 完成（v0.1.0） |
 | **M0.5 发布基线** | 正式签名 + 加固 + CI 发版流水线 | ✅ 完成（v0.1.3） |
-| **M0.6 数据层 SQLite 化** | SQLDelight 接管持久化（events/sessions 表 + TableModule 扩展协议） | 🔄 设计定稿（见 DATA_LAYER.md），待实现 |
+| **M0.6 数据层 SQLite 化** | SQLDelight 接管持久化（events/sessions 表 + TableModule 扩展协议） | ✅ 代码实现完成（`:core:data` 单测 21/21 绿，`:app` 装配完成，待 CI 全量验证） |
 | **M1 能真跑** | 接真实模型（OkHttp + SSE 的 `ModelProvider`），真实对话 | 🔜 下一步 |
 | **M2 能用** | 工作区文件树、Diff 审阅、git 工具、会话列表页 | ⏳ 规划中 |
 | **M3 能扛** | 上下文压缩实战化、前台服务保活、数据层深化 | ⏳ 规划中 |
@@ -44,13 +44,24 @@
 
 - [x] README / agent.md / PLAN.md / Version.md / CHANGELOG.md / RELEASING.md 全套
 
+### M0.6 数据层 SQLite 化（2026-08-31）
+
+- [x] `:core:data` 引入 SQLDelight 2.0.2 + sqlite-3-18 方言（JVM 内存库即可跑测试，零 Android 依赖）
+- [x] `SqliteDatabase` 门面 SPI（transaction / observe / rawQuery / rawExecute），所有 IO 切单线程
+- [x] `TableModule` 注册制扩展协议 + `SchemaManager` 版本链（首装建最新形态、升级补跑迁移）
+- [x] `SQLiteEventStore`：events + sessions 同事务，多态事件 JSON 编解码（`EventCodec`）
+- [x] `:app` 装配 `AndroidSqliteDriver` + `dataTableModules` 注册表，一行切换 `EventStore` 实现
+- [x] JVM 全链路单测 21/21 绿（含迁移链、多态往返、会话索引、事务一致性）
+- [x] CI：core-test 纳入 `:core:data:test`
+- [x] 设计定稿与实施记录见 `DATA_LAYER.md`
+
 ---
 
 ## 当前焦点
 
-**M0.6 数据层 SQLite 化**：方案已定稿（SQLDelight 2.x + payload JSON + sessions 表 +
-TableModule 注册制扩展协议 + 统一事务边界），四项决策 2026-08-31 经评审确认，
-见 `DATA_LAYER.md`。下一步按其《实施清单》落地代码，随后进入 M1。
+**M1 能真跑**：接真实模型（OkHttp + SSE 的 `ModelProvider`），让 Demo 链路升级为真实对话。
+数据层 M0.6 已落地（设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单），进入 M1 前建议先
+由 CI 跑一轮全量 `android-build` 验证 `:app` 装配（本地无 Android SDK，无法预验）。
 
 ## M1 设计要点（数据层之后）
 

@@ -187,6 +187,10 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
 
+    // 数据层：Android 端驱动。唯一知道 Android 的模块就是 :app，
+    // :core:data 保持零 Android 依赖（见 DATA_LAYER.md）。
+    implementation(libs.sqldelight.android.driver)
+
     debugImplementation(libs.compose.ui.tooling)
 
     // 设计系统守卫：绕过组件库 = 构建失败

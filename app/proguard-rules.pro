@@ -160,6 +160,23 @@
 
 
 # ---------------------------------------------------------------------------
+# 七·五、数据层（SQLDelight）—— 无需额外 -keep 规则
+# ---------------------------------------------------------------------------
+# SQLDelight 生成的是**纯 Kotlin 类型安全代码**（Database / Queries / Schema），
+# 全部通过编译期引用被调用，没有运行时反射、没有 ServiceLoader 入口，
+# 因此 R8 的收缩/混淆都不会误伤它——**此处刻意不加任何 -keep**，避免无谓膨胀。
+#
+# 唯一要保证的是 `:app` 装配处传的 `DeepCoreDatabase.Schema` 单例：
+# 它被 Koin 单例持有且被代码显式引用，R8 不会丢弃。
+# 若未来 Release 包在打开数据库时抛 ClassNotFound / NoSuchMethod，先排查是否被
+# 误加了多余 -keep，或临时补一条：
+#   -keep class com.deepcode.core.data.db.** { *; }
+# android-driver 间接依赖 androidx.sqlite，R8 可能对其内部类告警，统一静默。
+-dontwarn app.cash.sqldelight.**
+-dontwarn androidx.sqlite.**
+
+
+# ---------------------------------------------------------------------------
 # 八、日志与清理
 # ---------------------------------------------------------------------------
 # Release 包移除所有 android.util.Log 调用，避免日志里带出敏感信息。

@@ -18,6 +18,11 @@ koin = "4.0.0"
 okhttp = "4.12.0"
 datetime = "0.6.1"
 
+# 数据层：SQLDelight 2.x（SQL-first，纯 Kotlin，JVM 内存库即可跑迁移链与 DAO 单测）
+sqldelight = "2.0.2"
+# 方言按 minSdk 26 对齐：Android 8.0(API 26) 内置 SQLite 3.18.2
+sqldelightDialect = "app.cash.sqldelight:sqlite-3-18-dialect:2.0.2"
+
 junit = "4.13.2"
 turbine = "1.2.0"
 
@@ -61,6 +66,11 @@ okhttp-sse = { module = "com.squareup.okhttp3:okhttp-sse", version.ref = "okhttp
 junit = { module = "junit:junit", version.ref = "junit" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
+sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
+sqldelight-coroutines-extensions = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
+sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
+sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
@@ -69,3 +79,4 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }

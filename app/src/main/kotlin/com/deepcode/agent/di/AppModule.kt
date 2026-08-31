@@ -10,8 +10,13 @@ import com.deepcode.core.agent.spi.ModelProvider
 import com.deepcode.core.agent.spi.Sandbox
 import com.deepcode.core.agent.spi.ToolRegistry
 import com.deepcode.core.agent.spi.Workspace
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.deepcode.core.data.EventStore
-import com.deepcode.core.data.InMemoryEventStore
+import com.deepcode.core.data.db.DeepCoreDatabase
+import com.deepcode.core.data.db.SqliteDatabase
+import com.deepcode.core.data.db.TableModule
+import com.deepcode.core.data.db.createSqliteDatabase
+import com.deepcode.core.data.event.SQLiteEventStore
 import com.deepcode.core.model.ModelRef
 import com.deepcode.core.model.SessionId
 import com.deepcode.core.model.WorkspaceRef
@@ -38,13 +43,35 @@ import java.io.File
  * ToolRegistry。想换实现（Room 存储、真实模型、Proot 容器、SSH 远端），
  * 只改这个文件的绑定，业务代码一行不动。
  */
+/**
+ * ★ 数据层扩展注册表。
+ *
+ * 新功能要持久化时，只做一件事：把它的 `TableModule` 加进这个列表。
+ * 建表、迁移、事务边界全部由 `:core:data` 的 SchemaManager 接管，
+ * 核心框架一个字都不用改。协议与示例见 DATA_LAYER.md 第五节。
+ */
+val dataTableModules: List<TableModule> = listOf(
+    // 例：BookmarksTableModule（M2 文件树/收藏）、SettingsTableModule（M3 设置项）
+)
+
 val appModule = module {
 
     single<CoroutineScope>(qualifier = org.koin.core.qualifier.named("agent")) {
         CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 
-    single<EventStore> { InMemoryEventStore() }
+    // 数据层：Android 驱动只在 :app 装配，:core:data 保持零 Android 依赖。
+    // 所有 SQLite 操作都被 SqliteDatabase 切到单线程 IO，主线程永不碰数据库。
+    single<SqliteDatabase> {
+        val driver = AndroidSqliteDriver(
+            schema = DeepCoreDatabase.Schema,
+            context = androidContext(),
+            name = "deepcore.db",
+        )
+        createSqliteDatabase(driver = driver, modules = dataTableModules)
+    }
+
+    single<EventStore> { SQLiteEventStore(db = get()) }
 
     single<Sandbox> { CommandWhitelistSandbox() }
 
