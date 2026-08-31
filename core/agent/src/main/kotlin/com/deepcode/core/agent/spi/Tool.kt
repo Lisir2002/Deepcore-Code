@@ -3,6 +3,7 @@ package com.deepcode.core.agent.spi
 import com.deepcode.core.model.SessionId
 import com.deepcode.core.model.ToolCall
 import com.deepcode.core.model.ToolCallId
+import com.deepcode.core.model.ToolOrigin
 import com.deepcode.core.model.ToolResult
 import com.deepcode.core.model.ToolSpec
 import com.deepcode.core.model.TurnId
@@ -65,7 +66,15 @@ class DefaultToolRegistry : ToolRegistry {
 
     override fun all(): List<Tool> = tools.values.toList()
 
+    /**
+     * 返回当前所有工具的**稳定快照**：BUILTIN 在前、MCP 在后，再按 name 字典序。
+     *
+     * 稳定排序的目的（见 docs/TOOLS_SKILLS.md §6）：turn 内工具清单一旦确定就不应
+     * 再变化，否则会击穿 prompt cache、让模型看到"抖动"的工具列表。MCP 的
+     * listChanged 动态通知在**下一个 turn** 才会反映到这里——本方法本身不订阅通知。
+     */
     override fun specs(): List<ToolSpec> = tools.values.map { it.spec }
+        .sortedWith(compareBy({ it.origin != ToolOrigin.BUILTIN }, { it.name }))
 }
 
 // ───────────────────────── 参数读取辅助 ─────────────────────────

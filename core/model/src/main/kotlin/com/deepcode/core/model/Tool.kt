@@ -42,19 +42,50 @@ enum class ToolKind {
     @SerialName("other") OTHER,
 }
 
-/** 工具声明。由各工具模块注册进 ToolRegistry，Runtime 只认这个结构。 */
+/**
+ * 工具来源。
+ *
+ * 对齐 MCP 的互操作模型（见 docs/TOOLS_SKILLS.md §4）：
+ * 本地内置工具与外部 MCP Server 桥接来的工具在 Runtime 眼里同构，
+ * 仅用 origin 标记来源供 UI / 排序 / 权限策略区分。
+ */
+@Serializable
+enum class ToolOrigin {
+    /** 随 App 内置的工具（本地能力实现）。 */
+    @SerialName("builtin") BUILTIN,
+
+    /** 经 MCP Client 桥接的外部工具（来自某个 MCP Server）。 */
+    @SerialName("mcp") MCP,
+}
+
+/**
+ * 工具声明。由各工具模块注册进 ToolRegistry，Runtime 只认这个结构。
+ *
+ * 字段对齐 MCP Tool（name/title/description/inputSchema/annotations）：
+ * - [parameters] 与 MCP 的 inputSchema 同构（JSON Schema），透传给模型层做 function calling；
+ * - [annotations] 是 MCP server 声明的能力提示，**视为不可信**（规范要求），
+ *   仅存档展示，风险裁决只认本地 [RiskLevel] + PermissionGate。
+ */
 @Serializable
 data class ToolSpec(
     val name: String,
     val description: String,
     val kind: ToolKind,
     val riskLevel: RiskLevel,
-    /** JSON Schema，交给 LLM 做 function calling。 */
+    /** JSON Schema，交给 LLM 做 function calling。与 MCP inputSchema 同构。 */
     val parameters: JsonObject = JsonObject(emptyMap()),
     /** 是否需要工作区已就绪。 */
     val requiresWorkspace: Boolean = true,
     /** 是否支持流式输出增量（如 shell 的实时 stdout）。 */
     val streamsOutput: Boolean = false,
+    /** 人类可读标题（MCP tool.title）。 */
+    val title: String? = null,
+    /** 工具来源。 */
+    val origin: ToolOrigin = ToolOrigin.BUILTIN,
+    /** 来源标识：MCP 工具为 server 名，本地工具为 null。 */
+    val sourceId: String? = null,
+    /** MCP annotations 原样存档（readOnlyHint/destructiveHint/idempotentHint/openWorldHint/title）。 */
+    val annotations: JsonObject? = null,
 )
 
 /** LLM 发起的一次工具调用请求。 */
@@ -127,6 +158,32 @@ sealed interface ToolOutput {
     @SerialName("key_values")
     data class KeyValues(
         val pairs: List<Pair<String, String>>,
+    ) : ToolOutput
+
+    /** 图片产物（MCP content type=image）。 */
+    @Serializable
+    @SerialName("image")
+    data class Image(
+        val mimeType: String,
+        val base64: String,
+    ) : ToolOutput
+
+    /** 资源链接产物（MCP content type=resource_link）。 */
+    @Serializable
+    @SerialName("resource_link")
+    data class ResourceLink(
+        val uri: String,
+        val name: String? = null,
+    ) : ToolOutput
+
+    /**
+     * 结构化 JSON 产物（MCP structuredContent）。
+     * 模型回灌时直接序列化为 JSON 文本；UI 可按需做键值视图。
+     */
+    @Serializable
+    @SerialName("structured")
+    data class Structured(
+        val json: JsonObject,
     ) : ToolOutput
 
     @Serializable

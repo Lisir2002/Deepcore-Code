@@ -72,8 +72,12 @@
 - [x] 四项决策定稿：MCP Client 先行 / SKILL.md 全兼容 / `core:agent` 加 skill 子包 + 新建 `core:mcp` /
   Streamable HTTP 先行 stdio 后补。
 - [x] 设计文档 `docs/TOOLS_SKILLS.md`（类型映射表、风险映射、渐进披露三层落地、调度定稿、接口草案、测试策略）。
-- [ ] 实施清单 T1–T7 见 `TOOLS_SKILLS.md` 九（T1 model 扩展 → T2 skill 包 → T3 主循环接入 →
-  T4 core:mcp → T5 app 装配 → T6 文档 → T7 发版走四段式门禁 `0.2.0.x`）。
+- [x] 实施清单 **T1–T4 已完成**（设计见 `TOOLS_SKILLS.md` 九）：T1 `core:model` 扩展、T2
+  `core:agent/skill/` 三件套 + 单测、T3 主循环两处感知点、T4 `core:mcp` 自实现 MCP 客户端
+  （OkHttp，因官方 Kotlin SDK 需 Kotlin 2.2+ 与本项目 2.0.21 不兼容而弃用）+ 桥接/管理器/风险映射
+  + 单测全绿（15 例）。
+- [ ] 实施清单 **T5–T7 待做**：T5 `:app` DI 装配（MCP 配置存储 + skill 目录声明）+ settings
+  server 管理界面（`:app` 沙箱无 Android SDK，仅 CI 验证）；T6 文档同步；T7 发版走四段式门禁 `0.2.0.x`。
 
 ---
 
@@ -93,8 +97,9 @@ M1 首发预计为 `0.2.0.x`。
    `MessageDelta` 事件；超时/重试策略进 `ContextPolicy` 之外的独立配置。
 2. **模型配置面**：API Key 存 `EncryptedSharedPreferences`；`PermissionGate`
    增加网络访问确认（复用现有风险等级模型）。
-3. **工具与技能标准化**（设计见 `TOOLS_SKILLS.md`）：`core:mcp`（官方 Kotlin SDK
-   Client，Streamable HTTP）+ `core:agent/skill/`（Agent Skills 标准解析与渐进披露注入）；
+3. **工具与技能标准化**（设计见 `TOOLS_SKILLS.md`，实施 T1–T4 已完成）：`core:mcp`
+   （**OkHttp 自实现** MCP 客户端，弃用官方 Kotlin SDK——因其需 Kotlin 2.2+ 与本项目
+   2.0.21 元数据冲突）+ `core:agent/skill/`（Agent Skills 标准解析与渐进披露注入）；
    主循环仅两处感知点（specs 快照、system prompt 技能段），其余零改动。
 4. **验收标准**：真实模型流式对话跑通一轮完整工具调用；`core:agent` 全部用例保持绿；
    事件序列可重放恢复；MCP 内存服务器端到端单测绿。

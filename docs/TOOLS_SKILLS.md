@@ -85,9 +85,20 @@
 - **依赖方向**：`core:mcp → core:agent(SPI) → core:model`；`core:agent` 保持纯 Kotlin
   零第三方依赖（skill 解析只依赖文件读取抽象，不引 YAML 库——frontmatter 用
   逐行解析实现，字段集合小且封闭）。
-- **传输依赖隔离**：Ktor（MCP SDK 的网络栈）只出现在 `core:mcp`，不向上渗透。
-- **可测性**：官方 `kotlin-sdk-testing` 提供 in-memory transport，客户端↔服务端
-  直连不落网络，`core:mcp` 全量单测可在 JVM 跑。
+- **传输依赖隔离**：OkHttp + kotlinx-serialization 只出现在 `core:mcp`，不向上渗透；
+  `core:agent` 仍保持纯 Kotlin 零第三方依赖。
+- **可测性**：`McpClient` 接口把传输与桥接/管理逻辑解耦——单测用 `FakeMcpClient`
+  （零网络）覆盖桥接/管理器，另用 okhttp `MockWebServer` 真·起本地端点覆盖
+  `HttpJsonRpcMcpClient` 握手与 JSON/SSE 解析，`core:mcp` 全量单测可在 JVM 跑。
+- **实施偏差（重要）**：设计稿原定引入官方 `io.modelcontextprotocol:kotlin-sdk`，
+  但该 SDK 自 0.6+ 起需 **Kotlin 2.2+**，传递依赖 Ktor 3.5.1 / kotlin-stdlib 2.4.0 /
+  coroutines 1.11.0（Kotlin 2.3/2.4 元数据），与项目锁定的 **Kotlin 2.0.21** 元数据
+  **硬冲突**（编译 Internal compiler error）。因此 `core:mcp` 改为用项目已有的
+  OkHttp + kotlinx-serialization **自实现协议级兼容的最小 MCP 客户端**
+  （`McpClient` 接口 + `HttpJsonRpcMcpClient`，JSON-RPC 2.0 握手 / SSE 抽取 /
+  `Mcp-Session-Id` 回写）。`McpClient` 接口把传输隔离在单一实现类，**未来升级 Kotlin
+  后换官方 SDK 只需新增一个实现本接口的类，桥接/管理器逻辑不动**。测试也从
+  `kotlin-sdk-testing` in-memory 改为 `FakeMcpClient` + `MockWebServer`。
 
 ---
 
@@ -332,8 +343,8 @@ class McpServerManager(
 | --- | --- | --- |
 | skill 解析 | 合法 frontmatter / name 超长 / 目录名不一致 / description 空 / 保留词 | 纯 JVM 单测 |
 | skill 注入 | L1 段格式稳定（快照）、空 skill 列表省略段 | 纯 JVM |
-| MCP 映射 | tools/list→ToolSpec（含 annotations/命名空间）；callTool content 四类型→ToolOutput；isError→ToolError | `kotlin-sdk-testing` in-memory server |
-| MCP 生命周期 | list_changed→Registry 差量更新；断线→RETRYING；turn 内不刷新（快照断言） | in-memory + 虚拟时钟 |
+| MCP 映射 | tools/list→ToolSpec（含 annotations/命名空间）；callTool content 四类型→ToolOutput；isError→ToolError | `FakeMcpClient` + MockWebServer |
+| MCP 生命周期 | list_changed→重新拉取清单；单点失败不传染；turn 内不刷新（快照断言） | `FakeMcpClient` + 协程测试调度器 |
 | 调度集成 | MCP 工具走完整主循环（权限门/事件流/回灌） | `DefaultAgentRuntimeTest` 增补 |
 | 缓存友好 | specs 稳定排序、turn 内快照不变 | 断言两次 specs() 相等 |
 
@@ -341,10 +352,10 @@ class McpServerManager(
 
 ## 九、实施清单（进 M1，随 0.2.0.x 发布）
 
-- [ ] **T1** `core:model`：`ToolSpec` 扩展 + `ToolOutput` 三种新形态（向后兼容，默认值兜底）
-- [ ] **T2** `core:agent/skill/`：`SkillParser` / `SkillLoader` / `SkillInjector` + 单测
-- [ ] **T3** 主循环两处感知点落地（specs 快照规则 + system prompt 技能段）
-- [ ] **T4** 新建 `core:mcp`：`McpToolBridge` / `McpServerManager` / 风险映射 + in-memory 全量单测
+- [x] **T1** `core:model`：`ToolSpec` 扩展 + `ToolOutput` 三种新形态（向后兼容，默认值兜底）
+- [x] **T2** `core:agent/skill/`：`SkillParser` / `SkillLoader` / `SkillInjector` + 单测
+- [x] **T3** 主循环两处感知点落地（specs 快照规则 + system prompt 技能段）
+- [x] **T4** 新建 `core:mcp`：`McpClient` 接口 + `HttpJsonRpcMcpClient`（OkHttp 自实现）+ `McpToolBridge` / `McpServerManager` / 风险映射 + FakeMcpClient/MockWebServer 单测（15 例全绿）
 - [ ] **T5** `:app` DI 装配（MCP 配置存储、skill 目录声明）+ settings 界面接 server 管理（feature 层）
 - [ ] **T6** 文档同步（本文件勾进度、ARCHITECTURE 扩展点表、CHANGELOG）
 - [ ] **T7** 发版走四段式版本门禁（`0.2.0.x`，正式版前 AskUserQuestion 确认）

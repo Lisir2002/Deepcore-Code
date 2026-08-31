@@ -20,6 +20,7 @@ import com.deepcode.core.model.ToolCallDenied
 import com.deepcode.core.model.ToolCallId
 import com.deepcode.core.model.ToolCallSucceeded
 import com.deepcode.core.model.ToolKind
+import com.deepcode.core.model.ToolOrigin
 import com.deepcode.core.model.ToolOutput
 import com.deepcode.core.model.ToolResult
 import com.deepcode.core.model.ToolSpec
@@ -242,6 +243,67 @@ class DefaultAgentRuntimeTest {
         assertTrue(failure.error.retryable)
     }
 
+    @Test
+    fun `工具清单快照_BUILTIN 优先_其余按名稳定排序`() {
+        val registry = DefaultToolRegistry()
+        // 故意乱序注册：先 mcp 后 builtin，名字也故意乱
+        registry.register(fakeTool("zulu", ToolOrigin.MCP))
+        registry.register(fakeTool("alpha", ToolOrigin.BUILTIN))
+        registry.register(fakeTool("mike", ToolOrigin.MCP))
+        registry.register(fakeTool("bravo", ToolOrigin.BUILTIN))
+
+        val specs = registry.specs().map { it.name to it.origin }
+        // BUILTIN 必须整体在前；同组内按 name 字典序
+        assertEquals(
+            listOf(
+                "alpha" to ToolOrigin.BUILTIN,
+                "bravo" to ToolOrigin.BUILTIN,
+                "mike" to ToolOrigin.MCP,
+                "zulu" to ToolOrigin.MCP,
+            ),
+            specs,
+        )
+    }
+
+    @Test
+    fun `技能 L1 段被注入 system prompt`() = runTest {
+        val skillSection = "# Available Skills\n- pdf — 处理 PDF\n- ocr — 识别图片文字"
+        val provider = ScriptedProvider(
+            listOf(listOf(CompletionChunk.Text("好的，我看看。")))
+        )
+        val tool = EchoTool()
+        val store = InMemoryEventStore()
+        val runtime = buildRuntime(
+            provider, tool, store,
+            skillSectionProvider = { skillSection },
+        )
+
+        val seen = mutableListOf<AgentEvent>()
+        val collectJob = launch { runtime.events().collect { seen.add(it) } }
+        runtime.submit("帮我把这个 PDF 处理一下")
+        awaitTerminal(seen)
+        collectJob.cancel()
+
+        assertNotNull(seen.filterIsInstance<TurnCompleted>().singleOrNull(), "应正常结束")
+        // system prompt 里应该含有我们注入的技能段
+        val req = provider.requests.single()
+        assertTrue(req.system?.contains("Available Skills") == true, "system 应包含技能段")
+        assertTrue(req.system?.contains("处理 PDF") == true, "system 应包含 pdf 技能描述")
+    }
+
+    private fun fakeTool(name: String, origin: ToolOrigin) = object : Tool {
+        override val spec = ToolSpec(
+            name = name,
+            description = name,
+            kind = ToolKind.OTHER,
+            riskLevel = RiskLevel.READ_ONLY,
+            requiresWorkspace = false,
+            origin = origin,
+        )
+        override suspend fun execute(context: ToolContext, call: ToolCall) =
+            ToolResult(call.id, ToolOutput.Text("ok"))
+    }
+
     // ─────────────────────────── 辅助 ───────────────────────────
 
     private fun TestScope.buildRuntime(
@@ -249,6 +311,8 @@ class DefaultAgentRuntimeTest {
         tool: Tool,
         store: InMemoryEventStore,
         autoApprove: Boolean = true,
+        systemPromptProvider: (suspend () -> String?)? = null,
+        skillSectionProvider: (suspend () -> String?)? = null,
     ): DefaultAgentRuntime {
         val registry = DefaultToolRegistry().apply { register(tool) }
         return DefaultAgentRuntime(
@@ -262,6 +326,8 @@ class DefaultAgentRuntimeTest {
             contextPolicy = NoCompaction,
             scope = this,
             config = AgentConfig(autoApproveReadOnly = autoApprove, maxIterations = 4),
+            systemPromptProvider = systemPromptProvider,
+            skillSectionProvider = skillSectionProvider,
         )
     }
 

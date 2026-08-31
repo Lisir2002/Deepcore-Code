@@ -127,6 +127,15 @@ internal fun renderForLlm(result: ToolResult): String {
         is ToolOutput.KeyValues ->
             output.pairs.joinToString("\n") { "${it.first}: ${it.second}" }
 
+        is ToolOutput.Image ->
+            "[图片结果：${output.mimeType}，base64 ${output.base64.length} 字符]"
+
+        is ToolOutput.ResourceLink ->
+            "[资源链接：${output.name ?: "未命名"} — ${output.uri}]"
+
+        is ToolOutput.Structured ->
+            "[结构化结果]\n${output.json}"
+
         ToolOutput.Empty -> "（无输出）"
     }
     return result.error?.let { "$body\n\n错误：${it.code} ${it.message}" } ?: body

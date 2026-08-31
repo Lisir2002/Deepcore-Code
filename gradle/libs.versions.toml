@@ -23,6 +23,12 @@ sqldelight = "2.0.2"
 # 方言按 minSdk 26 对齐：Android 8.0(API 26) 内置 SQLite 3.18.2
 sqldelightDialect = "app.cash.sqldelight:sqlite-3-18-dialect:2.0.2"
 
+# 工具互操作：MCP 线协议（JSON-RPC 2.0，initialize/tools/list/tools/call/list_changed）。
+# 注：官方 Kotlin SDK（io.modelcontextprotocol:kotlin-sdk）自 0.6+ 起需 Kotlin 2.2+，
+# 与本项目锁定的 Kotlin 2.0.21 元数据不兼容；core:mcp 因此用 okhttp + kotlinx-serialization
+# 自实现协议级兼容的最小客户端（见 core/mcp 与 docs/TOOLS_SKILLS.md §3）。
+# 未来项目升级 Kotlin 后，仅需替换 McpClient 实现即可换用官方 SDK，桥接/管理器逻辑不变。
+
 junit = "4.13.2"
 turbine = "1.2.0"
 
@@ -62,6 +68,8 @@ koin-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = 
 
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 okhttp-sse = { module = "com.squareup.okhttp3:okhttp-sse", version.ref = "okhttp" }
+# 仅测试用：在 JVM 单测里真·起本地 HTTP 端点，验证 HttpJsonRpcMcpClient 握手/解析
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }

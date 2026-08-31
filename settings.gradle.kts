@@ -22,6 +22,9 @@ include(":core:agent")
 include(":core:data")
 include(":core:uistate")
 
+// ---- L0/L1 扩展：MCP 客户端（工具互操作，对齐 MCP 规范；Android 约束下仅客户端先行） ----
+include(":core:mcp")
+
 // ---- L2 能力实现（Android 相关） ----
 include(":core:platform")
 

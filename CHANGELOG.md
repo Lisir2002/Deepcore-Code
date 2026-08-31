@@ -12,6 +12,24 @@
     禁止自造私有协议，保证外部生态插件可直接适配。
   - 模块规划：`core:mcp` 新模块（MCP Client，Streamable HTTP 先行）；
     `core:agent` 新增 `skill/` 子包（保持纯 Kotlin 零第三方依赖）。
+
+- **工具与技能层 T1–T4 实施完成**（代码随 M1，未发版）：
+  - T1 `core:model`：`ToolSpec` 扩展（title/origin/sourceId/annotations）+ `ToolOutput`
+    新增 `Image` / `ResourceLink` / `Structured` 三种形态（向后兼容）。
+  - T2 `core:agent/skill/`：`SkillParser`（frontmatter 校验）/ `SkillLoader`（多 root
+    按目录名去重）/ `SkillInjector`（L1 段）三件套 + 单测全绿。
+  - T3 主循环两处感知点：`DefaultToolRegistry.specs()` 改为 BUILTIN 优先 + name 稳定排序
+    （保 prompt cache）；`DefaultAgentRuntime` 注入 system prompt 技能段；
+    `TranscriptReconstructor` 补三种新产物渲染。
+  - T4 `core:mcp`：`McpClient` 接口 + `HttpJsonRpcMcpClient`（OkHttp 自实现，JSON-RPC 2.0
+    握手 / SSE data 抽取 / `Mcp-Session-Id` 回写）+ `McpToolBridge`（tools/list→ToolSpec、
+    callTool→ToolResult、风险映射：未信任=NETWORK、受信任按 hints 降档、命名空间 `server__tool`）
+    + `McpServerManager`（connectAll / list_changed 重拉 / 单点失败不传染）+ FakeMcpClient /
+    MockWebServer 单测（15 例全绿）。
+  - **偏差**：设计稿原定官方 Kotlin SDK（`io.modelcontextprotocol:kotlin-sdk`），但其 0.6+
+    需 Kotlin 2.2+、与本项目锁定的 Kotlin 2.0.21 元数据硬冲突，故改为 OkHttp +
+    kotlinx-serialization 自实现协议级兼容客户端；`McpClient` 接口隔离传输，未来升级
+    Kotlin 后换官方 SDK 仅需新增一个实现类。
   - 调度定稿：Skill 永不伪装成 Tool（L1 元数据注 system prompt、L2 用现有 read 工具
     触发加载、L3 资源按需）；MCP 工具经桥接进统一 `ToolRegistry`，annotations 视为
     不可信、风险裁决只认本地 `PermissionGate`；turn 内工具清单快照以保证 prompt cache 命中。

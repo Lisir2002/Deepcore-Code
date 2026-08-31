@@ -85,6 +85,9 @@ class DefaultAgentRuntime(
     private val gate: PermissionGate = InteractivePermissionGate(policyStore, config.autoApproveReadOnly),
     /** 项目记忆（CLAUDE.md 等）注入口。 */
     private val systemPromptProvider: (suspend () -> String?)? = null,
+    /** 技能 L1 段注入口（见 docs/TOOLS_SKILLS.md §5/§6）。由上层把扫描结果渲染成文本后传入，
+     *  本类只负责把它追加进 system prompt——加载与解析不在主循环里。 */
+    private val skillSectionProvider: (suspend () -> String?)? = null,
 ) : AgentRuntime {
 
     private val _events = MutableSharedFlow<AgentEvent>(
@@ -339,6 +342,12 @@ class DefaultAgentRuntime(
     private suspend fun buildSystemPrompt(): String = buildString {
         append(config.systemPrompt)
         systemPromptProvider?.invoke()?.takeIf { it.isNotBlank() }?.let {
+            appendLine()
+            appendLine()
+            append(it)
+        }
+        // 技能 L1 段（已装 skill 的 name + description）。模型据此决定何时加载 SKILL.md（L2）。
+        skillSectionProvider?.invoke()?.takeIf { it.isNotBlank() }?.let {
             appendLine()
             appendLine()
             append(it)
