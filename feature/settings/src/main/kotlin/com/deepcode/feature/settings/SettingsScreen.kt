@@ -22,13 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.deepcode.designsystem.components.AppCard
 import com.deepcode.designsystem.components.AppPrimaryButton
-import com.deepcode.designsystem.components.AppScaffold
 import com.deepcode.designsystem.components.AppStatusChip
 import com.deepcode.designsystem.components.AppSwitch
 import com.deepcode.designsystem.components.AppText
 import com.deepcode.designsystem.components.AppTextButton
 import com.deepcode.designsystem.components.AppTextField
 import com.deepcode.designsystem.components.overlay.AppNoticeDialog
+import com.deepcode.designsystem.components.scaffold.DetailScaffold
 import com.deepcode.designsystem.theme.AppTextStyle
 import com.deepcode.designsystem.theme.AppTextTone
 import com.deepcode.designsystem.theme.DarkMode
@@ -125,8 +125,9 @@ fun SettingsScreen(
         )
     }
 
-    AppScaffold(
+    DetailScaffold(
         title = "MCP 服务器",
+        largeTitle = "MCP 服务器",
         onBack = onBack,
         modifier = modifier,
         actions = {

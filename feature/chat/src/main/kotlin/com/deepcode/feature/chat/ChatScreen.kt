@@ -10,8 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.deepcode.designsystem.components.AppEmptyState
 import com.deepcode.designsystem.components.AppInputBar
-import com.deepcode.designsystem.components.AppScaffold
 import com.deepcode.designsystem.components.AppTextButton
+import com.deepcode.designsystem.components.AppTopAppBar
+import com.deepcode.designsystem.components.scaffold.ChatScaffold
 import com.deepcode.designsystem.render.TranscriptList
 import org.koin.androidx.compose.koinViewModel
 
@@ -40,22 +41,27 @@ fun ChatScreen(
         }
     }
 
-    AppScaffold(
-        title = "会话",
-        subtitle = when {
-            running -> "运行中…"
-            blocks.isEmpty() -> "空闲"
-            else -> "${blocks.size} 个块"
-        },
+    ChatScaffold(
         onBack = onBack,
-        actions = {
-            if (running) {
-                AppTextButton(text = "停止", onClick = viewModel::stop)
-            } else {
-                AppTextButton(text = "设置", onClick = { onOpenSettings?.invoke() })
-            }
+        topBar = {
+            AppTopAppBar(
+                title = "会话",
+                subtitle = when {
+                    running -> "运行中…"
+                    blocks.isEmpty() -> "空闲"
+                    else -> "${blocks.size} 个块"
+                },
+                onBack = onBack,
+                actions = {
+                    if (running) {
+                        AppTextButton(text = "停止", onClick = viewModel::stop)
+                    } else {
+                        AppTextButton(text = "设置", onClick = { onOpenSettings?.invoke() })
+                    }
+                },
+            )
         },
-        bottomBar = {
+        inputBar = {
             AppInputBar(
                 value = draft,
                 onValueChange = viewModel::onDraftChange,

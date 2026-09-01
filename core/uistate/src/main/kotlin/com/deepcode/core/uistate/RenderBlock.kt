@@ -55,6 +55,16 @@ sealed interface RenderBlock {
         val durationMs: Long = 0,
     ) : RenderBlock
 
+    /**
+     * 执行组（§6.8.3）：经 [com.deepcode.core.uistate.AppBlockGroupReducer] 把**连续**的
+     * thinking/tool_use 块聚为一组的容器。text 块独立截断分组，不进入组内。
+     * 组件侧渲染为 [AppBlockGroup]（左缘紫条 + 「N 步」徽标；任一子块 RUNNING → 自动展开）。
+     */
+    data class Group(
+        override val key: String,
+        val blocks: List<RenderBlock>,
+    ) : RenderBlock
+
     data class Notice(
         override val key: String,
         val kind: NoticeKind,

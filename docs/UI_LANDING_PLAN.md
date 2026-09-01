@@ -78,16 +78,16 @@ P0 基线冻结 → P1 T8.1 令牌层 → P2 T8.2 主题包(编译期) ┐
   - [x] 改存量 `AppScaffold`/`AppScaffoldWithState` → 内部转发最接近骨架变体；
 - P3c 存量组件接入 + 回归
   - [x] `AppComponents.kt`/`AppInputBar.kt` 全组件接入 `appStateLayer`（§4.3 清单，弃 ripple）；
-  - [ ] `ChatScreen`/`SettingsScreen` 迁移到 `ChatScaffold`/详情骨架，逐像素对比 P0 基线快照；
+  - [x] `ChatScreen`/`SettingsScreen` 迁移到 `ChatScaffold`/详情骨架，逐像素对比 P0 基线快照；
 - P3d 浮层子组件
   - [x] 增 `components/overlay/`：`AppDialog`(三变体)/`AppDropdownMenu`/`AppMultiSelectSheet`/`AppToast`+`ToastHost`/`AppBanner`+`BannerHost`；
   - [x] `NavScaffoldHost` 内置 `AppToast` 位（底栏上方 inset）；
 - P3e 表单子组件
   - [ ] 增 `components/form/`：`AppTextField` 补全（浮动标签/error 图标/形态分工）+ `AppSearchField` + `AppCheckbox`/`AppRadio`；
-  - [ ] 增 `components/messaging/`：`AppToolCard`+`ToolCardRegistry`/`AppBlockGroup`/`AppBlockGroupReducer`(core:uistate)`/
+  - [x] 增 `components/messaging/`：`AppToolCard`+`ToolCardRegistry`/`AppBlockGroup`/`AppBlockGroupReducer`(core:uistate)`/
     `AppApprovalCard`/`AppProgressSummary`/`StreamEmittedCursor` + `render/MarkdownRenderer.kt`；
-  - [ ] 改 `core:uistate`：增 `RenderBlock.Group`（纯 Kotlin）+ reducer 分支；
-  - [ ] 改 `render/RenderBlockView.kt`：按 §6.8 路由（AI 全宽流、思考「✦ 摘要」、思考/tool 聚组、进度移动化）；
+  - [x] 改 `core:uistate`：增 `RenderBlock.Group`（纯 Kotlin）+ reducer 分支；
+  - [x] 改 `render/RenderBlockView.kt`：按 §6.8 路由（AI 全宽流、思考「✦ 摘要」、思考/tool 聚组、进度移动化）；
   - [ ] 改 `AppInputBar`：发/stop 同槽位替换 + Ime 避让。
 
 交付：五型骨架承载 chat/settings 全页面；消息链路八类消息块落地。门禁：12.7–12.10 全绿；

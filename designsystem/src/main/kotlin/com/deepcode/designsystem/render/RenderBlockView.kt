@@ -36,22 +36,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.deepcode.core.model.ApprovalScope
 import com.deepcode.core.model.RiskLevel
 import com.deepcode.core.model.ToolCall
 import com.deepcode.core.model.ToolKind
 import com.deepcode.core.model.ToolOutput
+import com.deepcode.core.uistate.AppBlockGroupReducer
 import com.deepcode.core.uistate.NoticeKind
 import com.deepcode.core.uistate.RenderBlock
 import com.deepcode.core.uistate.ToolVisualStatus
 import com.deepcode.designsystem.components.AppCodeBlock
+import com.deepcode.designsystem.components.messaging.AppBlockGroup
+import com.deepcode.designsystem.components.messaging.StreamEmittedCursor
+import com.deepcode.designsystem.components.messaging.ToolCardRegistry
+import com.deepcode.designsystem.components.messaging.defaultRegistry
 import com.deepcode.designsystem.components.AppPrimaryButton
 import com.deepcode.designsystem.components.AppSecondaryButton
 import com.deepcode.designsystem.components.AppStatusChip
@@ -73,11 +80,14 @@ fun TranscriptList(
     blocks: List<RenderBlock>,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
+    registry: ToolCardRegistry = defaultRegistry,
     onApprove: (ToolCall, ApprovalScope) -> Unit = { _, _ -> },
     onDeny: (ToolCall) -> Unit = {},
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
+    // §6.8.3 聚组：连续 thinking/tool 聚为 Group（纯 Kotlin），text 块截断分组。
+    val grouped = remember(blocks) { AppBlockGroupReducer.group(blocks) }
     LazyColumn(
         modifier = modifier,
         state = listState,
@@ -90,9 +100,10 @@ fun TranscriptList(
         if (leading != null) {
             item("__leading") { leading() }
         }
-        items(items = blocks, key = { it.key }) { block ->
+        items(items = grouped, key = { it.key }) { block ->
             RenderBlockView(
                 block = block,
+                registry = registry,
                 onApprove = onApprove,
                 onDeny = onDeny,
             )
@@ -107,6 +118,7 @@ fun TranscriptList(
 fun RenderBlockView(
     block: RenderBlock,
     modifier: Modifier = Modifier,
+    registry: ToolCardRegistry = defaultRegistry,
     onApprove: (ToolCall, ApprovalScope) -> Unit = { _, _ -> },
     onDeny: (ToolCall) -> Unit = {},
 ) {
@@ -115,6 +127,13 @@ fun RenderBlockView(
         is RenderBlock.AssistantText -> AssistantTextView(block, modifier)
         is RenderBlock.Thinking -> ThinkingView(block, modifier)
         is RenderBlock.ToolInvocation -> ToolInvocationView(block, modifier, onApprove, onDeny)
+        is RenderBlock.Group -> AppBlockGroup(
+            blocks = block.blocks,
+            registry = registry,
+            onApprove = onApprove,
+            onDeny = onDeny,
+            modifier = modifier,
+        )
         is RenderBlock.Notice -> NoticeView(block, modifier)
         is RenderBlock.TurnFooter -> TurnFooterView(block, modifier)
     }
@@ -147,19 +166,13 @@ private fun UserMessageView(block: RenderBlock.UserMessage, modifier: Modifier) 
 
 @Composable
 private fun AssistantTextView(block: RenderBlock.AssistantText, modifier: Modifier) {
-    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-        Surface(
-            shape = RoundedCornerShape(Dimens.bubbleRadius),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        ) {
-            Column(modifier = Modifier.padding(horizontal = Dimens.spaceM, vertical = Dimens.spaceS)) {
-                Text(text = block.text, style = MaterialTheme.typography.bodyMedium)
-                if (block.streaming) {
-                    Spacer(Modifier.height(Dimens.spaceXXS))
-                    Text(text = "▌", style = MaterialTheme.typography.bodySmall)
-                }
-            }
+    // §6.8.5 AI 全宽文档流：不使用气泡，直接铺满内容区渲染 Markdown。
+    // 零 layout shift：代码块空壳 + 渐进填充；活光标贴文本末尾，流结束自动消失。
+    Column(modifier = modifier.fillMaxWidth()) {
+        MarkdownContent(markdown = block.text)
+        if (block.streaming) {
+            Spacer(Modifier.height(Dimens.spaceXS))
+            StreamEmittedCursor(active = true)
         }
     }
 }

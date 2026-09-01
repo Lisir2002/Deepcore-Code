@@ -23,12 +23,21 @@ data class ToolCardSpec(
     val summary: (argumentsSummary: String) -> String = { it },
 )
 
+/**
+ * 默认（空）工具卡注册表（§6.8.2）：未接业务工具注册表时的兜底。
+ * 所有工具都走 `Unknown` 灰色 Build 图标 + 名称字面量，保证渲染不崩、语义可读。
+ */
+val defaultRegistry: ToolCardRegistry = ToolCardRegistry.empty()
+
 class ToolCardRegistry private constructor(
     private val specs: Map<String, ToolCardSpec>,
 ) {
     operator fun get(name: String): ToolCardSpec = specs[name] ?: Unknown
 
     companion object {
+        /** 空注册表（兜底）：所有工具走灰色 `Unknown` 图标。 */
+        fun empty(): ToolCardRegistry = ToolCardRegistry(emptyMap())
+
         /** MCP 外来工具灰色兜底：名称字面量 + 通用图标。 */
         private val Unknown = ToolCardSpec(
             icon = Icons.Filled.Build,
