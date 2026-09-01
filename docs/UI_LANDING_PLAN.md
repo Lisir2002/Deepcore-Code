@@ -92,12 +92,12 @@ P0 基线冻结 → P1 T8.1 令牌层 → P2 T8.2 主题包(编译期) ┐
 chat/settings 相对 P0 基线 **零视觉回归**（唯一放行：交互态与转场按设计就该变动的部分）。
 
 ### P4 T8.3 运行时可插拔
-- [ ] 增 `theme/validator/`：`ThemeJsonCodec`(v1)+`ThemePackMerger`(delta)+`ThemeValidator`+`Contrast.kt`(sRGB/线性化)；
-- [ ] 增 `theme/ThemePackLoader.kt`（assets/filesDir 双根，复用 `SkillLoader` 模式）；
-- [ ] `:app` 装配 `ThemePackLoader` + 设置页导入入口（§7.3 合并 / §7.4 校验报告）；
-- [ ] 测试：`ThemeLoaderTableTest`（12.3 表驱动：正常 delta / 未知键告警 / 类型冲突拒载 / 显式 null 拒载 / 版本过高拒载 / 越界回退 + 导入报告）。
+- [x] 增 `theme/validator/`：`ThemeJsonCodec`(v1)+`ThemePackMerger`(delta)+`ThemeValidator`+`Contrast.kt`(sRGB/线性化)；
+- [x] 增 `theme/validator/ThemePackLoader.kt`(纯管线，双根复用 `SkillLoader` 模式，读字节由 :app 装配)；
+- [x] `:app` 装配 `ThemePackLoader` + 设置页导入入口（§7.3 合并 / §7.4 校验报告）；
+- [x] 测试：`ThemeLoaderTableTest`（12.3 表驱动）+ `ThemeJsonCodecTest`/`ThemeValidatorTest`/`ThemeTokenCatalogTest` 全绿。
 
-上门禁：12.3 绿；手写 delta 包切换成功、非法包拒载出报告。
+上门禁：12.3 绿；手写 delta 包切换成功、非法包拒载出报告——**已达成**（设置页「外观→导入主题包…」粘贴 theme.json：整包拒载列错误，成功列 applied/A11y 回退/告警）。
 
 ### P5 T8.4 lint 扩展 + 全量验收
 - [ ] 改 `lint/.../DesignSystemDetector.kt` + `DesignSystemIssueRegistry.kt`：注册 §十一 八条新规则
