@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepCore-Code · 设计体系 Showcase</title>
+<style>
+:root{--font-ui:"PingFang SC","HarmonyOS Sans SC","Noto Sans SC",-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;--font-mono:"JetBrains Mono","SF Mono",Consolas,"Courier New",monospace}
+html[data-theme="light"]{
+  --surface:#FAFAFA;--surfaceV:#F0F1F3;--surfaceE:#FFFFFF;
+  --text:#16181D;--text2:#5A6070;--text3:#9BA1AD;
+  --border:#E4E6EA;--divider:#EEEFF2;
+  --primary:#2563EB;--onPrimary:#FFFFFF;--primaryC:#EFF3FF;
+  --ai:#7C3AED;--aiC:#F3EFFE;
+  --success:#16A34A;--successC:#E9F9EF;--warning:#D97706;--warningC:#FDF3E3;--danger:#DC2626;--dangerC:#FDECEC;
+  --codeS:#F4F4F6;--shadow:0 1px 2px rgba(22,24,29,.04),0 8px 24px rgba(22,24,29,.07);--shadowLift:0 2px 4px rgba(22,24,29,.05),0 16px 40px rgba(22,24,29,.12);
+  --heroGrad:linear-gradient(135deg,#16181D 0%,#2A2F3A 60%,#3B2F63 100%)}
+html[data-theme="dark"]{
+  --surface:#0D0F14;--surfaceV:#16191F;--surfaceE:#1E222A;
+  --text:#F2F3F5;--text2:#A8AEBB;--text3:#6E747F;
+  --border:#262B33;--divider:#1C2027;
+  --primary:#7A93FF;--onPrimary:#0D1230;--primaryC:#1B2A5E;
+  --ai:#A78BFA;--aiC:#221B38;
+  --success:#4ADE80;--successC:#12291B;--warning:#FBBF24;--warningC:#2E2210;--danger:#F87171;--dangerC:#331A1A;
+  --codeS:#16191F;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);--shadowLift:0 2px 4px rgba(0,0,0,.35),0 16px 40px rgba(0,0,0,.5);
+  --heroGrad:linear-gradient(135deg,#0D0F14 0%,#151A24 60%,#1E1837 100%)}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{font-family:var(--font-ui);background:var(--surface);color:var(--text);line-height:1.5;font-size:15px;transition:background .3s,color .3s}
+::selection{background:var(--primaryC)}
+.topnav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--divider)}
+.topnav-in{max-width:1200px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;gap:18px}
+.logo{font-weight:800;font-size:15px;display:flex;align-items:center;gap:9px;white-space:nowrap}
+.logo-dot{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--primary),var(--ai));display:grid;place-items:center;color:#fff;font-size:11px;font-weight:900}
+html[data-theme="dark"] .logo-dot{color:#0D1230}
+.topnav a.navlink{color:var(--text2);text-decoration:none;font-size:13px;transition:color .2s}
+.topnav a.navlink:hover{color:var(--primary)}
+.topnav .spacer{flex:1}
+.theme-toggle{width:64px;height:32px;border-radius:99px;background:var(--surfaceV);border:1px solid var(--border);cursor:pointer;position:relative;flex-shrink:0}
+.theme-toggle::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--surfaceE);box-shadow:var(--shadow);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+html[data-theme="dark"] .theme-toggle::after{transform:translateX(32px)}
+.theme-toggle .ico{position:absolute;top:6px;font-size:12px;transition:opacity .3s}
+.theme-toggle .sun{left:8px}html[data-theme="dark"] .theme-toggle .sun{opacity:.3}
+.theme-toggle .moon{right:8px}html[data-theme="light"] .theme-toggle .moon{opacity:.3}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.hero{background:var(--heroGrad);color:#F2F3F5;border-radius:24px;padding:56px 48px 48px;margin:24px 0;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 300px at 85% -10%,rgba(122,147,255,.18),transparent 60%),radial-gradient(500px 260px at 8% 110%,rgba(167,139,250,.14),transparent 60%);pointer-events:none}
+.hero .kicker{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.14em;color:#A8AEBB;border:1px solid rgba(255,255,255,.14);padding:6px 14px;border-radius:99px;margin-bottom:22px}
+.hero .kicker i{width:6px;height:6px;border-radius:50%;background:#7A93FF;display:inline-block;animation:pulse 2.2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.hero h1{font-size:clamp(30px,4.6vw,46px);font-weight:800;line-height:1.18;position:relative}
+.hero h1 .grad{background:linear-gradient(100deg,#7A93FF,#A78BFA);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.sub{margin-top:16px;font-size:15.5px;color:#A8AEBB;max-width:660px;line-height:1.7;position:relative}
+.hero .stats{display:flex;gap:36px;margin-top:34px;flex-wrap:wrap;position:relative}
+.hero .stat b{display:block;font-size:24px;font-weight:800;color:#fff}
+.hero .stat span{font-size:12.5px;color:#8A90A0}
+section{margin:52px 0}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.sec-head .no{font-family:var(--font-mono);font-size:12px;color:var(--primary);font-weight:700}
+.sec-head h2{font-size:24px;font-weight:800}
+.sec-desc{color:var(--text2);font-size:14px;max-width:780px;margin-bottom:22px;line-height:1.7}
+.sec-desc b{color:var(--text)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:960px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.g2,.g3,.g4{grid-template-columns:1fr}.hero{padding:36px 26px}.topnav a.navlink{display:none}}
+.card{background:var(--surfaceE);border:1px solid var(--border);border-radius:16px;padding:22px;transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadowLift)}
+.card h3{font-size:14.5px;font-weight:700;margin-bottom:4px}
+.card .cap{font-size:12.5px;color:var(--text3);margin-bottom:14px;line-height:1.6}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--surfaceV);color:var(--text2);margin-left:8px;vertical-align:2px}
+.note{font-size:12px;color:var(--text3);line-height:1.6;margin-top:12px;padding-top:12px;border-top:1px dashed var(--divider)}
+.swatch{border-radius:12px;height:60px;display:flex;align-items:flex-end;padding:7px 9px;cursor:pointer;transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.swatch:hover{transform:scale(1.05)}.swatch:active{transform:scale(.95)}
+.swatch .hex{font-family:var(--font-mono);font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.85);color:#16181D;font-weight:600}
+.swatch .hex.dk{background:rgba(13,15,20,.75);color:#F2F3F5}
+.gray-row{display:grid;grid-template-columns:repeat(14,1fr);gap:6px}
+.gray-item .g{height:42px;border-radius:8px;transition:transform .25s;cursor:pointer}
+.gray-item .g:hover{transform:scale(1.15)}
+.gray-item .gl{font-family:var(--font-mono);font-size:9px;color:var(--text3);text-align:center;margin-top:4px}
+.lights{display:flex;flex-direction:column;gap:9px}
+.lightbar{display:flex;align-items:center;gap:10px;font-size:12.5px}
+.lightbar .nm{width:92px;color:var(--text2);flex-shrink:0;font-size:11.5px}
+.lightbar .bar{flex:1;height:13px;border-radius:6px}
+.lightbar .val{font-family:var(--font-mono);font-size:10.5px;color:var(--text3);width:42px;text-align:right}
+.type-row{display:flex;align-items:baseline;gap:18px;padding:13px 0;border-bottom:1px solid var(--divider)}
+.type-row:last-child{border-bottom:none}
+.type-row .meta{width:200px;flex-shrink:0;font-family:var(--font-mono);font-size:11px;color:var(--text3);line-height:1.5}
+.type-row .meta b{color:var(--text2);font-size:12px}
+.radius-demo{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.rd{background:var(--primaryC);border:1.5px solid var(--primary);width:72px;height:72px;display:grid;place-items:center;font-family:var(--font-mono);font-size:10.5px;color:var(--primary);font-weight:600}
+.space-demo .sb{height:14px;border-radius:4px;background:linear-gradient(90deg,var(--primary),var(--ai));margin-top:6px}
+.state-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:960px){.state-grid{grid-template-columns:repeat(2,1fr)}}
+.state-item{background:var(--surfaceV);border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.state-item .lbl{font-family:var(--font-mono);font-size:10.5px;color:var(--text3)}
+.demo-btn{border:none;cursor:pointer;font-family:var(--font-ui);font-size:13.5px;font-weight:600;border-radius:12px;padding:0 22px;height:44px;background:var(--primary);color:var(--onPrimary);position:relative;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s;outline:none}
+.demo-btn.s-hover{box-shadow:inset 0 0 0 99px rgba(255,255,255,.08)}
+.demo-btn.s-press{transform:scale(.94);box-shadow:inset 0 0 0 99px rgba(0,0,0,.12)}
+.demo-btn.s-focus{box-shadow:0 0 0 2px var(--surfaceE),0 0 0 4px var(--primary)}
+.demo-btn.s-select{background:var(--primaryC);color:var(--primary);box-shadow:inset 0 0 0 99px rgba(37,99,235,.12)}
+html[data-theme="dark"] .demo-btn.s-select{box-shadow:inset 0 0 0 99px rgba(122,147,255,.18)}
+.demo-btn.s-disable{opacity:.38;pointer-events:none}
+.demo-btn.s-loading{color:transparent;pointer-events:none}
+.demo-btn.s-loading::after{content:"";position:absolute;inset:0;margin:auto;width:18px;height:18px;border-radius:50%;border:2.5px solid color-mix(in srgb,var(--onPrimary) 30%,transparent);border-top-color:var(--onPrimary);animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.demo-btn.s-drag{transform:scale(1.05);box-shadow:var(--shadowLift)}
+.spring-stage{background:var(--surfaceV);border-radius:14px;height:110px;position:relative;overflow:hidden;margin-top:10px;container-type:inline-size}
+.spring-box{position:absolute;top:33px;left:16px;width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--ai))}
+.spring-box.anim-spring{transition:transform .8s cubic-bezier(.34,1.56,.64,1)}
+.spring-box.anim-tween{transition:transform .8s cubic-bezier(.25,.1,.25,1)}
+.spring-box.go{transform:translateX(calc(100cqw - 78px))}
+.morph-demo{display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.morph-pill{width:62px;height:62px;background:var(--aiC);border:1.5px solid var(--ai);transition:border-radius .6s cubic-bezier(.34,1.56,.64,1);cursor:pointer}
+.micro-demo{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}
+.mshake.err{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
+@keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:800;color:var(--primary)}
+.comp-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.c-btn{border:none;cursor:pointer;height:44px;padding:0 20px;border-radius:12px;font-family:var(--font-ui);font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s}
+.c-btn:active{transform:scale(.96)}
+.c-btn.primary{background:var(--primary);color:var(--onPrimary)}
+.c-btn.primary:hover{box-shadow:0 6px 18px color-mix(in srgb,var(--primary) 32%,transparent)}
+.c-btn.secondary{background:var(--surfaceV);color:var(--text);border:1px solid var(--border)}
+.c-btn.textbtn{background:transparent;color:var(--primary)}
+.c-btn.danger{background:var(--danger);color:#fff}
+.c-btn.ai{background:linear-gradient(120deg,var(--ai),var(--primary));color:#fff}
+.field{width:100%}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.field .box{height:52px;border-radius:12px;border:1px solid var(--border);background:var(--surfaceV);display:flex;align-items:center;padding:0 14px;transition:border-color .2s}
+.field .box.focused{border:2px solid var(--primary);padding:0 13px}
+.field .box.error{border-color:var(--danger)}
+.field .box input{border:none;background:transparent;outline:none;flex:1;font-size:14px;color:var(--text);font-family:var(--font-ui);min-width:0}
+.field .help{font-size:11.5px;color:var(--text3);margin-top:5px}
+.field .errtx{font-size:11.5px;color:var(--danger);margin-top:5px}
+.switch{width:52px;height:32px;border-radius:99px;background:var(--surfaceV);border:1px solid var(--border);position:relative;cursor:pointer;transition:background .25s;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--surfaceE);box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.switch.on{background:var(--primary);border-color:var(--primary)}
+.switch.on::after{transform:translateX(20px)}
+.check{width:20px;height:20px;border-radius:6px;border:2px solid var(--border);display:grid;place-items:center;cursor:pointer;transition:background .2s,border-color .2s;flex-shrink:0}
+.check.on{background:var(--primary);border-color:var(--primary)}
+.check svg{width:12px;height:12px;stroke:#fff;stroke-width:3;fill:none;opacity:0;transform:scale(.4);transition:all .25s cubic-bezier(.34,1.56,.64,1)}
+.check.on svg{opacity:1;transform:scale(1)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:99px;font-size:12px;font-weight:600}
+.chip i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.chip.run{background:var(--primaryC);color:var(--primary)}.chip.run i{background:var(--primary);animation:pulse 1.4s infinite}
+.chip.ok{background:var(--successC);color:var(--success)}.chip.ok i{background:var(--success)}
+.chip.fail{background:var(--dangerC);color:var(--danger)}.chip.fail i{background:var(--danger)}
+.chip.wait{background:var(--warningC);color:var(--warning)}.chip.wait i{background:var(--warning)}
+.chip.ai{background:var(--aiC);color:var(--ai)}.chip.ai i{background:var(--ai)}
+.toast-demo{background:var(--text);color:var(--surface);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:var(--shadowLift)}
+html[data-theme="dark"] .toast-demo{background:var(--surfaceE);color:var(--text);border:1px solid var(--border)}
+.toast-demo .undo{color:var(--primary);font-weight:700;margin-left:auto;cursor:pointer}
+.banner{border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-size:13px;margin-top:12px}
+.banner.warn{background:var(--warningC);color:var(--warning)}
+.banner.dang{background:var(--dangerC);color:var(--danger)}
+.banner .bx{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:11px;font-weight:900;background:currentColor;flex-shrink:0}
+.banner .bx span{color:#fff}
+.banner b{display:block;font-size:13px}
+.banner p{font-size:12px;opacity:.85;margin-top:2px;line-height:1.5}
+.dd-menu{background:var(--surfaceE);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadowLift);width:220px;overflow:hidden;animation:menuIn .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes menuIn{from{opacity:0;transform:scaleY(.9)}to{opacity:1;transform:scaleY(1)}}
+.dd-menu .item{height:44px;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:13.5px;cursor:pointer;transition:background .15s}
+.dd-menu .item:hover{background:var(--surfaceV)}
+.dd-menu .item.sel{color:var(--primary);background:color-mix(in srgb,var(--primaryC) 55%,transparent);font-weight:600}
+.dd-menu .item.sel::after{content:"✓";margin-left:auto}
+.dd-menu .grp{font-size:11px;color:var(--text3);padding:8px 14px 4px;font-weight:600}
+.dd-menu .div{height:1px;background:var(--divider);margin:4px 0}
+.dlg{background:var(--surfaceE);border-radius:24px;box-shadow:var(--shadowLift);padding:24px}
+.dlg h4{font-size:15.5px;font-weight:700}
+.dlg p{font-size:13px;color:var(--text2);margin-top:6px;line-height:1.6}
+.dlg .acts{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.dlg .acts .c-btn{height:38px;padding:0 16px;font-size:13px}
+.dlg .st-ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px;font-size:20px}
+.phone{width:270px;border-radius:30px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadowLift);overflow:hidden;flex-shrink:0}
+.phone .ptb{height:52px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--divider);font-size:13.5px;font-weight:700}
+.phone .ptb .bk{color:var(--text2);font-size:15px}
+.phone .pmsg{padding:14px;display:flex;flex-direction:column;gap:8px;min-height:238px}
+.bub{max-width:82%;padding:9px 13px;border-radius:16px;font-size:12.5px;line-height:1.55}
+.bub.user{align-self:flex-end;background:var(--primary);color:var(--onPrimary);border-bottom-right-radius:5px}
+.bub.bot{align-self:flex-start;background:var(--surfaceV);border:1px solid var(--border);border-bottom-left-radius:5px}
+.bub.ai-think{align-self:flex-start;background:var(--aiC);color:var(--ai);font-size:11.5px;border-radius:12px;padding:6px 11px;display:flex;align-items:center;gap:7px}
+.bub.ai-think i{width:6px;height:6px;background:var(--ai);border-radius:50%;animation:pulse 1.2s infinite}
+.phone .pinbar{border-top:1px solid var(--divider);padding:10px 12px;display:flex;gap:8px;align-items:center}
+.phone .pinbar .ib{flex:1;height:42px;background:var(--surfaceV);border:1px solid var(--border);border-radius:21px;display:flex;align-items:center;padding:0 14px;font-size:12px;color:var(--text3)}
+.phone .pinbar .send{width:42px;height:42px;border-radius:50%;background:var(--primary);color:var(--onPrimary);display:grid;place-items:center;font-size:15px}
+.phone .pnav{height:64px;border-top:1px solid var(--divider);display:flex}
+.phone .pnav .nt{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;color:var(--text3);position:relative}
+.phone .pnav .nt.on{color:var(--primary)}
+.phone .pnav .nt.on::before{content:"";position:absolute;top:0;width:26px;height:3px;border-radius:0 0 3px 3px;background:var(--primary)}
+.phone .pnav .nt .ic{font-size:16px}
+.phone .pnav .nt .badge{position:absolute;top:8px;margin-left:28px;background:var(--danger);color:#fff;font-size:8.5px;min-width:15px;height:15px;border-radius:8px;display:grid;place-items:center;padding:0 4px;font-weight:700}
+.skel-line{height:9px;border-radius:5px;background:var(--surfaceV);position:relative;overflow:hidden}
+.skel-line::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--text) 8%,transparent),transparent);animation:shimmer 1.6s infinite}
+@keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.skel-box{border:1.5px dashed var(--border);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--surfaceV);flex:1;min-height:128px}
+.skel-box .cap2{font-size:11px;font-weight:700;color:var(--text2);font-family:var(--font-mono)}
+.skel-box .bar{height:11px;border-radius:4px;background:color-mix(in srgb,var(--text) 11%,transparent)}
+.skel-box .bar.b-top{height:22px;background:color-mix(in srgb,var(--primary) 26%,transparent)}
+.skel-box .bar.b-bot{height:17px;background:color-mix(in srgb,var(--ai) 24%,transparent)}
+.skel-box .row{display:flex;gap:6px;flex:1}
+.skel-box .row .c{flex:1;background:color-mix(in srgb,var(--text) 6%,transparent);border-radius:4px}
+.contrast-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;font-size:13px;margin-top:8px}
+.contrast-row .r{font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+.pass{background:var(--successC);color:var(--success)}
+.touch{display:flex;align-items:center;gap:14px}
+.t48{width:48px;height:48px;border-radius:12px;background:var(--primaryC);border:1.5px dashed var(--primary);display:grid;place-items:center;font-size:10px;color:var(--primary);font-family:var(--font-mono);font-weight:700;flex-shrink:0}
+.timeline{position:relative;padding-left:26px}
+.timeline::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--primary),var(--ai))}
+.tl-item{position:relative;padding:0 0 16px 14px}
+.tl-item::before{content:"";position:absolute;left:-24px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--surfaceE);border:2.5px solid var(--primary)}
+.tl-item b{font-size:13.5px}
+.tl-item b .dn{font-family:var(--font-mono);color:var(--primary);font-size:11.5px;margin-right:8px}
+.tl-item p{font-size:12.5px;color:var(--text2);margin-top:3px;line-height:1.6}
+footer{border-top:1px solid var(--divider);margin-top:64px;padding:28px 0 40px;color:var(--text3);font-size:12.5px;text-align:center;line-height:1.8}
+.toast-host{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:99}
+.pop-toast{background:var(--text);color:var(--surface);border-radius:12px;padding:11px 18px;font-size:13px;box-shadow:var(--shadowLift);animation:toastIn .35s cubic-bezier(.34,1.56,.64,1)}
+html[data-theme="dark"] .pop-toast{background:var(--surfaceE);color:var(--text);border:1px solid var(--border)}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.92)}to{opacity:1;transform:none}}
+.pop-toast.out{opacity:0;transform:translateY(8px);transition:all .3s}
+code.tok{font-family:var(--font-mono);font-size:11.5px;background:var(--codeS);border:1px solid var(--border);border-radius:6px;padding:1.5px 7px;color:var(--text2);white-space:nowrap}
+</style>
+</head>
+<body>
+<nav class="topnav"><div class="topnav-in">
+  <div class="logo"><span class="logo-dot">DC</span>DeepCore · Design System</div>
+  <span class="spacer"></span>
+  <a class="navlink" href="#color">色彩</a><a class="navlink" href="#state">交互态</a><a class="navlink" href="#motion">动效</a><a class="navlink" href="#components">组件</a><a class="navlink" href="#skeleton">骨架</a><a class="navlink" href="#a11y">无障碍</a>
+  <button class="theme-toggle" id="themeToggle" aria-label="切换明暗主题"><span class="ico sun">☀️</span><span class="ico moon">🌙</span></button>
+</div></nav>
+
+<div class="wrap">
+<div class="hero">
+  <span class="kicker"><i></i>DESIGN TOKENS v4 · D5–D17 · 已定稿</span>
+  <h1>黑白灰立骨，蓝紫点睛。<br><span class="grad">一套令牌，全程自洽。</span></h1>
+  <p class="sub">DeepCore-Code（Android AI Agent）UI 层统一设计接口。吸收 Material 3 Expressive 运动物理、深色海拔体系、W3C 无障碍排版四要素与 2026 趋势调研定稿——本页即用该体系渲染，你看到的每个颜色、圆角、动效都来自同一套令牌。</p>
+  <div class="stats">
+    <div class="stat"><b>17</b><span>项决策 D5–D17</span></div>
+    <div class="stat"><b>4</b><span>层令牌模型</span></div>
+    <div class="stat"><b>8</b><span>态交互状态机</span></div>
+    <div class="stat"><b>6</b><span>枚 spring 物理档</span></div>
+    <div class="stat"><b>5</b><span>型页面骨架</span></div>
+  </div>
+</div>
+<section id="color">
+  <div class="sec-head"><span class="no">01</span><h2>色彩系统</h2><span class="tag">3.2 · Semantic</span></div>
+  <p class="sec-desc">铁律：<b>灰阶负责结构与留白，蓝 = 可操作，紫 = AI 身份，红绿黄 = 状态</b>，三者互不越界。深色板整体去饱和（M3 暗色规则：高饱和色在暗底产生光学振动）。点击任意色块复制 Hex。</p>
+  <div class="grid g4">
+    <div class="card"><h3>品牌蓝 <span class="tag">可操作</span></h3><div class="cap">主按钮 / 链接 / 选中 / 运行中</div>
+      <div class="grid g2" style="gap:8px">
+        <div class="swatch" style="background:#2563EB" data-hex="#2563EB"><span class="hex">L #2563EB</span></div>
+        <div class="swatch" style="background:#7A93FF" data-hex="#7A93FF"><span class="hex dk">D #7A93FF</span></div>
+        <div class="swatch" style="background:#EFF3FF" data-hex="#EFF3FF"><span class="hex">容器 L</span></div>
+        <div class="swatch" style="background:#1B2A5E" data-hex="#1B2A5E"><span class="hex dk">容器 D</span></div>
+      </div><div class="note">L：白字 5.1:1 ✓ ｜ D：深字 6.0:1 ✓</div></div>
+    <div class="card"><h3>AI 紫 <span class="tag">身份色</span></h3><div class="cap">思考流 / 技能徽标 / Agent 标识</div>
+      <div class="grid g2" style="gap:8px">
+        <div class="swatch" style="background:#7C3AED" data-hex="#7C3AED"><span class="hex">L #7C3AED</span></div>
+        <div class="swatch" style="background:#A78BFA" data-hex="#A78BFA"><span class="hex dk">D #A78BFA</span></div>
+        <div class="swatch" style="background:#F3EFFE" data-hex="#F3EFFE"><span class="hex">容器 L</span></div>
+        <div class="swatch" style="background:#221B38" data-hex="#221B38"><span class="hex dk">容器 D</span></div>
+      </div><div class="note">紫是「AI 在场」的唯一信号色，禁用于普通操作</div></div>
+    <div class="card"><h3>状态色 <span class="tag">红绿黄</span></h3><div class="cap">工具执行 / 校验 / 提示</div>
+      <div class="grid g2" style="gap:8px">
+        <div class="swatch" style="background:#16A34A" data-hex="#16A34A"><span class="hex">success L</span></div>
+        <div class="swatch" style="background:#4ADE80" data-hex="#4ADE80"><span class="hex dk">success D</span></div>
+        <div class="swatch" style="background:#DC2626" data-hex="#DC2626"><span class="hex">danger L</span></div>
+        <div class="swatch" style="background:#F87171" data-hex="#F87171"><span class="hex dk">danger D</span></div>
+        <div class="swatch" style="background:#D97706" data-hex="#D97706"><span class="hex">warning L</span></div>
+        <div class="swatch" style="background:#FBBF24" data-hex="#FBBF24"><span class="hex dk">warning D</span></div>
+      </div><div class="note">暗板全部去饱和，防暗底光学振动</div></div>
+    <div class="card"><h3>深色海拔体系 <span class="tag">v4 · M3</span></h3><div class="cap">暗色下阴影失效 → 抬升变亮表层级</div>
+      <div class="lights">
+        <div class="lightbar"><span class="nm">0 页面底</span><span class="bar" style="background:#0D0F14;border:1px solid #262B33"></span><span class="val">基准</span></div>
+        <div class="lightbar"><span class="nm">1 卡片</span><span class="bar" style="background:#16191F"></span><span class="val">+1~2</span></div>
+        <div class="lightbar"><span class="nm">2 浮层</span><span class="bar" style="background:#1E222A"></span><span class="val">+3~4</span></div>
+        <div class="lightbar"><span class="nm">3 模态</span><span class="bar" style="background:#262B33"></span><span class="val">+遮罩</span></div>
+      </div><div class="note">对比度校验基准 15.8:1；禁 glow 替代阴影</div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>冷灰阶 14 档 <span class="tag">Primitive</span></h3>
+    <div class="gray-row" id="grayRow"></div>
+    <div class="note">亮板取 gray-0~650 · 暗板取 gray-750~950（冷调蓝灰）——同一把尺子量明暗</div></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="no">02</span><h2>字体与角色</h2><span class="tag">3.3 · Typography</span></div>
+  <p class="sec-desc">六个角色覆盖全部场景，<b>业务只选角色、不调字号</b>。全部 <code class="tok">sp</code> 跟随系统缩放；行高按 A11y 四要素（正文 ≥1.5×，见 10.5）。v4 新增 <b>emphasized 强调修饰</b>：关键操作字重 +1 档，正文禁用。</p>
+  <div class="card">
+    <div class="type-row"><div class="meta"><b>display</b><br>24sp / w800 / lh1.2</div><div style="font-size:24px;font-weight:800;line-height:1.2">会话详情大标题</div></div>
+    <div class="type-row"><div class="meta"><b>title</b><br>17sp / w700 / lh1.3</div><div style="font-size:17px;font-weight:700">页面顶栏标题 · 弹窗标题</div></div>
+    <div class="type-row"><div class="meta"><b>body</b><br>14sp / w400 / lh1.5</div><div style="font-size:14px">正文流。Agent 的回答、工具执行说明、设置说明文字。</div></div>
+    <div class="type-row"><div class="meta"><b>label</b><br>11sp / w600 / +0.12em</div><div style="font-size:11px;font-weight:600;letter-spacing:.12em">底栏标签 · 分组标题 · 时间戳</div></div>
+    <div class="type-row"><div class="meta"><b>mono</b><br>13sp / 等宽</div><div style="font-family:var(--font-mono);font-size:13px">code block · hex 值 · token 计数 1,024</div></div>
+    <div class="type-row"><div class="meta"><b>emphasized</b><br>v4 · weight +1</div><div style="font-size:17px;font-weight:800">开始执行 <span style="color:var(--ai);font-size:12px;font-weight:600">← CTA 与未读信息允许，正文禁</span></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="no">03</span><h2>圆角与间距</h2><span class="tag">3.4 · 形状语言</span></div>
+  <p class="sec-desc">圆角四档 + 气泡档，<b>半径即层级</b>：越大越「浮」。形状对比策略（v4）：强调元素可打破相邻圆角节奏（如 FAB 全圆 vs 卡片 radiusL）。</p>
+  <div class="grid g2">
+    <div class="card"><h3>圆角四档</h3><div class="cap">radiusS 8 · radiusM 12 · radiusL 16 · radiusXL 24（+ bubble 22）</div>
+      <div class="radius-demo"><div class="rd" style="border-radius:8px">S 8</div><div class="rd" style="border-radius:12px">M 12</div><div class="rd" style="border-radius:16px">L 16</div><div class="rd" style="border-radius:24px">XL 24</div><div class="rd" style="border-radius:50%">full</div></div>
+      <div class="note">菜单/输入框 M → 卡片/横幅 L → 弹窗/大面板 XL</div></div>
+    <div class="card"><h3>间距阶</h3><div class="cap">4dp 基数：S 8 · M 12 · L 16 · XL 24 · 屏幕 20</div>
+      <div class="space-demo"><div class="sb" style="width:8px"></div><div class="sb" style="width:12px"></div><div class="sb" style="width:16px"></div><div class="sb" style="width:24px"></div><div class="sb" style="width:40px"></div></div>
+      <div class="note">相邻可点元素间距 ≥8dp（v4 触控规则）；表单分组间距 = spaceL</div></div>
+  </div>
+</section>
+
+<section id="state">
+  <div class="sec-head"><span class="no">04</span><h2>交互态八态机</h2><span class="tag">四 · D12 · State Overlay</span></div>
+  <p class="sec-desc">弃 Material ripple，统一 <b>State Overlay</b>（前景色透明度叠加 + 微缩放），由 <code class="tok">Modifier.appStateLayer()</code> 唯一封装。overlay 用 onColor α 混合，任何主题包下自动成立。下方按钮为各状态静态模拟：</p>
+  <div class="state-grid">
+    <div class="state-item"><button class="demo-btn">Default</button><span class="lbl">default · 无叠加</span></div>
+    <div class="state-item"><button class="demo-btn s-hover">Hovered</button><span class="lbl">hovered · 8% overlay</span></div>
+    <div class="state-item"><button class="demo-btn s-press">Pressed</button><span class="lbl">pressed · 12% + 0.94</span></div>
+    <div class="state-item"><button class="demo-btn s-focus">Focused</button><span class="lbl">focused · 2dp 描边</span></div>
+    <div class="state-item"><button class="demo-btn s-select">Selected</button><span class="lbl">selected · 12% 底</span></div>
+    <div class="state-item"><button class="demo-btn s-drag">Dragged</button><span class="lbl">dragged · 1.05 抬升</span></div>
+    <div class="state-item"><button class="demo-btn s-disable">Disabled</button><span class="lbl">disabled · 38%</span></div>
+    <div class="state-item"><button class="demo-btn s-loading">Loading</button><span class="lbl">loading · 进度接管</span></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>功能微交互三件套 <span class="tag">4.4 · v4</span></h3><div class="cap">微交互是沟通，不是装饰——组件内实现、业务零感知。shake 可触发，数字是滚动动画：</div>
+      <div class="micro-demo">
+        <div class="field" id="shakeField" style="max-width:190px"><label>输入框校验</label><div class="box error"><input placeholder="API Key" value="sk-bad_"></div><div class="errtx">⚠ 格式错误</div></div>
+        <button class="demo-btn secondary" id="shakeBtn" style="height:44px">触发 shake</button>
+        <div><span class="num" id="cnt">0</span><div style="font-size:11px;color:var(--text3)">tokens · countUp</div></div>
+      </div></div>
+    <div class="card"><h3>拇指区规则 <span class="tag">6.4 · v4</span></h3><div class="cap">指尖 1.6–2cm、拇指按压区 ~2.5cm → 48dp 最低触控；高频操作落下半屏</div>
+      <div class="touch"><div class="t48">48dp</div><div style="font-size:12.5px;color:var(--text2);line-height:1.7">底栏 tab · 输入坞 · 主 CTA · 悬浮操作<br><span style="color:var(--text3)">→ 全部位于拇指自然弧内；顶栏只放低频（返回/菜单）</span></div></div></div>
+  </div>
+</section>
+<section id="motion">
+  <div class="sec-head"><span class="no">05</span><h2>动效：Spring 物理双轨</h2><span class="tag">3.5 · 五 · D16 · v4 吸收 M3 Expressive</span></div>
+  <p class="sec-desc">v4 核心升级：吸收 M3 Expressive 运动物理——<b>spring 取代固定时长曲线</b>。spring 可中断、速度感知：手势中途接管平滑续接，正是流式 AI 输出高频重定目标的场景所需。<b>Spatial 类允许 ≤6% 过冲回弹；Effects 类（色彩/透明度）禁止过冲（damping=1.0）</b>。点击对比 spring 与 tween 的手感差异：</p>
+  <div class="grid g2">
+    <div class="card"><h3>Spatial · spring(0.6, 800) <span class="tag">fast · 过冲</span></h3><div class="cap">小元素最弹一档——可中断续接（本页所有交互动效即此曲线）</div>
+      <div class="spring-stage"><div class="spring-box" id="boxSpring"></div></div>
+      <button class="c-btn secondary" style="margin-top:12px" onclick="fireSpring('boxSpring')">发射 spring</button></div>
+    <div class="card"><h3>Spatial · tween 0.8s <span class="tag">兜底轨 · 无过冲</span></h3><div class="cap">仅不可中断序列（引导页）使用</div>
+      <div class="spring-stage"><div class="spring-box" id="boxTween"></div></div>
+      <button class="c-btn secondary" style="margin-top:12px" onclick="fireSpring('boxTween')">发射 tween</button></div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><h3>Spring 六档参数</h3><div class="cap">damping / stiffness</div>
+      <table style="width:100%;font-size:11.5px;font-family:var(--font-mono);border-collapse:collapse;color:var(--text2)">
+        <tr style="color:var(--text3);text-align:left"><td></td><td>spatial</td><td>effects</td></tr>
+        <tr><td>fast</td><td>0.6 / 800</td><td>1.0 / 3800</td></tr>
+        <tr><td>normal</td><td>0.8 / 380</td><td>1.0 / 1600</td></tr>
+        <tr><td>slow</td><td>0.8 / 200</td><td>1.0 / 800</td></tr>
+      </table><div class="note">reduce motion → 一律直切（10.3）</div></div>
+    <div class="card"><h3>形状变形 Shape Morph <span class="tag">M3E 35 形状库</span></h3><div class="cap">点击变形：圆角动画表达状态切换（播放中/完成、按钮组联动）</div>
+      <div class="morph-demo"><div class="morph-pill" onclick="this.style.borderRadius=this.style.borderRadius==='50%'?'14px':'50%'"></div><div class="morph-pill" style="border-radius:4px" onclick="this.style.borderRadius=this.style.borderRadius==='50%'?'4px':'50%'"></div><span style="font-size:12px;color:var(--text3)">↖ 点我</span></div></div>
+    <div class="card"><h3>转场模式 × 档位 <span class="tag">5.2 · 八模式</span></h3><div class="cap">全局唯一接线处，页面不写动画数值</div>
+      <div style="font-size:11.5px;color:var(--text2);line-height:2.1">
+      PagePush/Pop → spatial slow<br>ModalSheet → spatial normal<br>DialogShow → effects fast<br>MenuShow → spatial fast<br>ToastShow → effects fast<br>Collapse/Expand → spatial normal</div></div>
+  </div>
+</section>
+
+<section id="components">
+  <div class="sec-head"><span class="no">06</span><h2>组件库</h2><span class="tag">6.6 / 6.7 · D15 子组件收编</span></div>
+  <p class="sec-desc">全部组件按令牌规格 1:1 模拟（真实实现为 Compose，T8.5 落地）。<b>开关与复选框可交互</b>，注意 spring 手感。</p>
+  <div class="grid g3">
+    <div class="card"><h3>按钮族</h3><div class="cap">主 / 次 / 文字 / 危险 / AI</div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:stretch">
+        <button class="c-btn primary">开始执行</button>
+        <button class="c-btn secondary">取消</button>
+        <button class="c-btn textbtn">查看文档</button>
+        <button class="c-btn danger">删除 MCP 服务器</button>
+        <button class="c-btn ai">✦ 调用 Agent</button>
+      </div></div>
+    <div class="card"><h3>选择与开关</h3><div class="cap">Switch 52×32 · Checkbox 20dp · 选中 = primary</div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:12px"><div class="switch on" onclick="this.classList.toggle('on')"></div><span style="font-size:13px">深色模式跟随系统</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><div class="switch" onclick="this.classList.toggle('on')"></div><span style="font-size:13px">自动执行工具</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><div class="check on" onclick="this.classList.toggle('on')"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 7"/></svg></div><span style="font-size:13px">读取工作区文件（已授权）</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><div class="check" onclick="this.classList.toggle('on')"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 7"/></svg></div><span style="font-size:13px">网络访问（需确认）</span></div>
+      </div></div>
+    <div class="card"><h3>状态芯片 + 输入框</h3><div class="cap">工具四态映射状态色 · Field 状态机</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap"><span class="chip run"><i></i>运行中</span><span class="chip ok"><i></i>成功</span><span class="chip fail"><i></i>失败</span><span class="chip wait"><i></i>等待确认</span><span class="chip ai"><i></i>✦ 思考中</span></div>
+      <div class="field" style="margin-top:14px"><label>模型名称</label><div class="box focused"><input value="deepseek-chat"></div><div class="help">focused：primary 2dp 描边</div></div>
+      <div class="field" style="margin-top:10px"><label>Base URL</label><div class="box error"><input value="htp:/wrong"></div><div class="errtx">⚠ URL 格式不合法（errorText 替换 helper）</div></div>
+    </div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><h3>浮层选型金字塔 <span class="tag">6.6</span></h3><div class="cap">按打断程度从轻到重；选型错误 = 交互债务</div>
+      <div style="font-size:12.5px;line-height:2.15;color:var(--text2)">
+        <div><span class="tag">1</span> <b>inline</b> 输入框下校验文字</div>
+        <div><span class="tag">2</span> <b>banner</b> 页内常驻横幅（可关闭）</div>
+        <div><span class="tag">3</span> <b>toast</b> 悬浮回执 3s 自动消失</div>
+        <div><span class="tag">4</span> <b>dialog</b> 模态决策（打断）</div>
+        <div><span class="tag">5</span> <b>modalSheet</b> 重决策富表单</div>
+      </div><div class="note">铁律：禁止用 dialog 做操作回执</div></div>
+    <div class="card"><h3>Toast / Banner 实感</h3><div class="cap">反相底 · 同屏 1 条新顶替旧 · 禁平台 Toast</div>
+      <div class="toast-demo">已复制 #7A93FF<span class="undo">撤销</span></div>
+      <div class="banner warn"><div class="bx"><span>!</span></div><div><b>MCP 服务器连接超时</b><p>将自动重试（2/3 次），期间工具调用排队等待。</p></div></div>
+      <button class="c-btn secondary" style="margin-top:12px" onclick="popToast('已展示 3s 自动消失的回执')">触发页面 Toast</button></div>
+    <div class="card"><h3>下拉菜单 <span class="tag">6.6.2 · MenuShow</span></h3><div class="cap">Field/Button 双触发 · 分组 + 选中态 · 多选走 ModalSheet</div>
+      <div class="dd-menu">
+        <div class="grp">模型服务商</div>
+        <div class="item sel">DeepSeek</div>
+        <div class="item">GLM · 智谱</div>
+        <div class="item">Kimi · 月之暗面</div>
+        <div class="div"></div>
+        <div class="grp">本地</div>
+        <div class="item">Ollama · llama3.2</div>
+      </div></div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><h3>确认弹窗 <span class="tag">confirm · danger</span></h3>
+      <div class="dlg"><h4>删除 MCP 服务器？</h4><p>「filesystem」将被移除，其挂载的 12 个工具立即失效。此操作不可撤销。</p>
+      <div class="acts"><button class="c-btn textbtn">取消</button><button class="c-btn danger">删除</button></div></div></div>
+    <div class="card"><h3>状态弹窗 <span class="tag">status · Progress 无按钮</span></h3>
+      <div class="dlg" style="text-align:center"><div class="st-ic" style="background:var(--primaryC);color:var(--primary)">⟳</div><h4>正在建立连接…</h4><p>等待中不出按钮防误触；成功/失败才出单「知道了」。</p></div></div>
+    <div class="card"><h3>提示弹窗 <span class="tag">notice · 中性</span></h3>
+      <div class="dlg"><h4>✦ 技能已加载</h4><p>「release-helper」已注入 system prompt 技能段，渐进披露生效。</p>
+      <div class="acts"><button class="c-btn secondary">知道了</button></div></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="no">07</span><h2>品牌色落地实景：ChatScaffold</h2><span class="tag">6.1 五型骨架之一</span></div>
+  <p class="sec-desc">用全部令牌渲染的对话界面——<b>蓝 = 可操作、紫 = AI 在场、灰阶承载结构</b>。输入坞 insets 由骨架统一消化，业务零感知。</p>
+  <div class="grid g3">
+    <div class="card" style="display:flex;justify-content:center;background:var(--surfaceV)"><div class="phone">
+      <div class="ptb"><span class="bk">‹</span>会话：重构 EventStore<span style="flex:1"></span><span style="color:var(--primary)">⋯</span></div>
+      <div class="pmsg">
+        <div class="bub user">帮我把 SQLite 事件存储改成批量写入</div>
+        <div class="bub ai-think"><i></i>正在思考执行方案…</div>
+        <div class="bub bot">好的。我先读 <b>SQLiteEventStore.kt</b>，然后给出事务批量化方案。</div>
+        <div class="bub bot" style="display:flex;gap:8px;align-items:center"><span class="chip run" style="font-size:10.5px"><i></i>read_file</span><span style="font-size:11px;color:var(--text3)">event_store.kt</span></div>
+        <div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:55%"></div>
+      </div>
+      <div class="pinbar"><div class="ib">输入消息…</div><div class="send">↑</div></div>
+      <div class="pnav"><div class="nt on"><span class="ic">💬</span>会话</div><div class="nt"><span class="ic">🧰</span>工具</div><div class="nt"><span class="ic">📚</span>技能</div><div class="nt"><span class="ic">⚙️</span>设置</div><div class="nt"><span class="ic">👤</span>我的<div class="badge">3</div></div></div>
+    </div></div>
+    <div class="card" style="display:flex;justify-content:center;background:var(--surfaceV)"><div class="phone">
+      <div class="ptb"><span class="bk">‹</span>工具执行审批</div>
+      <div class="pmsg" style="gap:10px">
+        <div class="bub bot" style="max-width:100%">Agent 请求执行以下高风险操作：</div>
+        <div style="background:var(--codeS);border:1px solid var(--border);border-radius:12px;padding:10px;font-family:var(--font-mono);font-size:10px;line-height:1.7;color:var(--text2)"><span style="color:var(--danger)">shell</span>(<span style="color:var(--primary)">"git push --force origin main"</span>)<br><span style="color:var(--text3)">→ 风险等级：HIGH</span></div>
+        <div style="display:flex;gap:8px"><button class="c-btn secondary" style="flex:1;height:40px;font-size:12px">拒绝</button><button class="c-btn danger" style="flex:1;height:40px;font-size:12px">仅本次</button><button class="c-btn primary" style="flex:1;height:40px;font-size:12px">本会话允许</button></div>
+        <div class="banner dang"><div class="bx"><span>!</span></div><div><b>强推将覆盖远端历史</b><p>PermissionGate 高风险确认（M1 设计）。</p></div></div>
+      </div>
+      <div class="pnav"><div class="nt on"><span class="ic">💬</span>会话</div><div class="nt"><span class="ic">🧰</span>工具</div><div class="nt"><span class="ic">📚</span>技能</div><div class="nt"><span class="ic">⚙️</span>设置</div><div class="nt"><span class="ic">👤</span>我的</div></div>
+    </div></div>
+    <div class="card"><h3>此处演示的设计要点</h3><div class="cap">每一条都有文档编号可查</div>
+      <div style="font-size:12.5px;color:var(--text2);line-height:2.05">
+      ① <b>紫 = AI 在场</b>：思考流气泡用 AI 紫（3.2）<br>
+      ② <b>蓝 = 可操作</b>：发送键/选中 tab（铁律）<br>
+      ③ <b>工具芯片四态</b>：运行中脉冲（4.1 loading）<br>
+      ④ <b>底栏 64dp</b> + 3dp 指示条 + badge（6.3）<br>
+      ⑤ <b>输入坞 Bare 形态</b>：无框 + 全圆发送键（6.7.1）<br>
+      ⑥ <b>骨架屏 shimmer</b>：流式等待占位<br>
+      ⑦ <b>三按钮并排</b>：审批场景宽度均衡<br>
+      ⑧ <b>危险确认</b>：红实心钮仅破坏性操作（6.6.1）
+    </div></div>
+  </div>
+</section>
+<section id="skeleton">
+  <div class="sec-head"><span class="no">08</span><h2>页面骨架五型</h2><span class="tag">6.1 · D14 三段式切割</span></div>
+  <p class="sec-desc">所有页面 = <b>顶栏 + 内容 + 底栏</b> 三段式切割，每段是骨架组件的槽位；业务页面只做槽位填充，insets 骨架层统一消化。D14：</p>
+  <div class="grid g5" style="grid-template-columns:repeat(5,1fr)">
+    <div class="skel-box"><div class="cap2">ChatScaffold</div><div class="bar b-top"></div><div class="row"><div class="c"></div></div><div class="bar b-bot"></div><div style="font-size:10px;color:var(--text3)">聊天 / Agent 会话</div></div>
+    <div class="skel-box"><div class="cap2">TabbedScaffold</div><div class="bar b-top"></div><div class="bar" style="height:9px;width:60%;background:color-mix(in srgb,var(--primary) 40%,transparent)"></div><div class="row"><div class="c"></div><div class="c"></div></div><div style="font-size:10px;color:var(--text3)">工具市场 / 设置分组</div></div>
+    <div class="skel-box"><div class="cap2">NavScaffold</div><div class="bar"></div><div class="row"><div class="c"></div><div class="c"></div></div><div class="bar b-bot"></div><div style="font-size:10px;color:var(--text3)">主导航容器（3–5 tab）</div></div>
+    <div class="skel-box"><div class="cap2">DetailScaffold</div><div class="bar" style="height:30px"></div><div class="row"><div class="c"></div></div><div class="bar"></div><div style="font-size:10px;color:var(--text3)">会话详情 / 文档详情</div></div>
+    <div class="skel-box"><div class="cap2">FormScaffold</div><div class="bar b-top"></div><div class="bar"></div><div class="bar"></div><div class="bar b-bot"></div><div style="font-size:10px;color:var(--text3)">表单 / 向导</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>断点与双列预留 <span class="tag">6.4</span></h3><div class="cap">Compact &lt;600 · Medium 600–840 · Expanded &gt;840</div>
+      <div class="lights">
+        <div class="lightbar"><span class="nm">Compact</span><span class="bar" style="background:linear-gradient(90deg,var(--primary) 60%,var(--surfaceV) 60%);opacity:.85"></span><span class="val">单列</span></div>
+        <div class="lightbar"><span class="nm">Medium</span><span class="bar" style="background:linear-gradient(90deg,var(--primary) 78%,var(--surfaceV) 78%);opacity:.85"></span><span class="val">居中</span></div>
+        <div class="lightbar"><span class="nm">Expanded</span><span class="bar" style="background:linear-gradient(90deg,var(--ai) 30%,var(--primary) 30%);opacity:.85"></span><span class="val">双列预留</span></div>
+      </div></div>
+    <div class="card"><h3>2026 趋势采纳：Bento 排布 <span class="tag">13.4 · D17</span></h3><div class="cap">模块化网格进内容槽，不动骨架与色板；玻璃拟态/新拟态/高饱和撞色进黑名单</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;height:96px">
+        <div style="background:var(--primaryC);border-radius:12px;display:grid;place-items:center;font-size:11px;color:var(--primary);font-weight:600">会话统计</div>
+        <div style="background:var(--aiC);border-radius:12px;display:grid;place-items:center;font-size:11px;color:var(--ai);font-weight:600">✦ 技能</div>
+        <div style="background:var(--successC);border-radius:12px;display:grid;place-items:center;font-size:11px;color:var(--success);font-weight:600">MCP</div>
+        <div style="background:var(--surfaceV);border-radius:12px;display:grid;place-items:center;font-size:11px;color:var(--text3)">M2 首页启用</div>
+        <div style="background:var(--surfaceV);border-radius:12px"></div>
+        <div style="background:var(--surfaceV);border-radius:12px"></div>
+      </div></div>
+  </div>
+</section>
+
+<section id="a11y">
+  <div class="sec-head"><span class="no">09</span><h2>无障碍工程</h2><span class="tag">十 · D10 · 硬约束</span></div>
+  <p class="sec-desc">A11y 由系统解析、<b>风格包不可覆盖</b>（D10）。loader 强制校验对比度矩阵；12.2 单测锁死 brand 包全部配对。</p>
+  <div class="grid g3">
+    <div class="card"><h3>对比度硬校验</h3><div class="cap">WCAG 2.1 相对亮度模型（10.1）</div>
+      <div class="contrast-row" style="background:var(--primaryC);color:var(--primary)"><span>onPrimary ↔ primary（正文）</span><span class="r pass">5.1:1 ≥4.5 ✓</span></div>
+      <div class="contrast-row" style="background:var(--surfaceV);color:var(--text)"><span>textPrimary ↔ surface</span><span class="r pass">16.2:1 ✓</span></div>
+      <div class="contrast-row" style="background:var(--surfaceV);color:var(--text2)"><span>textSecondary ↔ surface</span><span class="r pass">6.8:1 ✓</span></div>
+      <div class="contrast-row" style="background:var(--surfaceV);color:var(--text3)"><span>textTertiary ↔ surface（弱信息）</span><span class="r pass">3.2:1 ≥3 ✓</span></div>
+      <div class="note">暗色最高层表面按 15.8:1 底面亮度上限倒推（v4）</div></div>
+    <div class="card"><h3>排版四要素 <span class="tag">10.5 · v4 吸收 W3C</span></h3><div class="cap">系统字号缩放到 200% 不破版</div>
+      <div style="font-size:12.5px;color:var(--text2);line-height:2.1">
+      行高 ≥ <b>1.5×</b> 字号（正文默认）<br>段后距 ≥ <b>2.0×</b> 字号（富文本块）<br>字距 ≥ <b>0.12×</b>（label 小字号）<br>词距 ≥ <b>0.16×</b>（西文混排）</div>
+      <div class="note">另两条铁律：不靠 hover 传信息；关键信息不进 placeholder</div></div>
+    <div class="card"><h3>reduce motion 与读屏</h3><div class="cap">10.3 / 10.4</div>
+      <div style="font-size:12.5px;color:var(--text2);line-height:2.1">
+      系统动画缩放 = 0 → 全部转场<b>直切</b><br>pressed/dragged 缩放同步禁用<br>minTouchTarget=<b>48dp</b> 不可被风格包覆盖<br>返回/图标按钮 contentDescription 必填</div>
+      <div class="note">弹簧动画在 reduce motion 下退化为瞬移，spring 的可中断特性保留</div></div>
+  </div>
+</section>
+
+<section id="timeline">
+  <div class="sec-head"><span class="no">10</span><h2>设计决策时间线</h2><span class="tag">1.3 · D5–D17</span></div>
+  <div class="grid g2">
+    <div class="card"><div class="timeline">
+      <div class="tl-item"><b><span class="dn">D5–D7</span>v1 定稿</b><p>风格包可切换/可插拔/高度自定义；dynamicColor 关；先定稿后实施。</p></div>
+      <div class="tl-item"><b><span class="dn">D8–D11</span>v2 深化</b><p>语义令牌唯一真理 + M3 单向派生（镜像断言）；theme.json delta 覆盖；A11y 硬约束；新增令牌走评审。</p></div>
+      <div class="tl-item"><b><span class="dn">brand</span>色板定调</b><p>黑白灰主调、蓝紫点缀、红绿状态——冷灰 14 档 + 明暗双板 + 对比度全标注。</p></div>
+      <div class="tl-item"><b><span class="dn">D12–D14</span>v3 行为层</b><p>八态机 + State Overlay 弃 ripple；八转场模式 × 档位绑定；三段式五型骨架。</p></div>
+      <div class="tl-item"><b><span class="dn">D15</span>v3.1 子组件</b><p>浮层三变体（confirm/status/notice）/ 下拉 / Toast+Banner / 表单族收编，lint 四条新规则。</p></div>
+    </div></div>
+    <div class="card"><div class="timeline">
+      <div class="tl-item"><b><span class="dn">D16</span>v4 · spring 双轨</b><p>全网调研吸收 M3 Expressive 运动物理：spatial（可过冲）/ effects（禁过冲）× 三档速度；tween 仅兜底。</p></div>
+      <div class="tl-item"><b><span class="dn">v4</span>深色海拔体系</b><p>暗色抬升变亮四档表 + 15.8:1 基准 + 去饱和规则 + 禁 glow。</p></div>
+      <div class="tl-item"><b><span class="dn">v4</span>A11y 排版四要素</b><p>行高/段后/字距/词距下限进组件默认值；拇指区 + 8dp 间距规则。</p></div>
+      <div class="tl-item"><b><span class="dn">D17</span>v4 · 趋势立场</b><p>白名单：Bento 排布 / emphasized 字体 / 微交互三件套 / 微肌理。黑名单：玻璃拟态 / 新拟态 / 高饱和 / 炫技粒子。</p></div>
+      <div class="tl-item"><b><span class="dn">NEXT</span>T8 实施</b><p>T8.1 →（T8.2 ∥ T8.5）→ T8.3 → T8.4；与 M1 真实模型并行推进。</p></div>
+    </div></div>
+  </div>
+</section>
+
+<footer>
+  DeepCore-Code · Design System Showcase —— 本页由 DESIGN_TOKENS.md v4 驱动（docs/design-system-showcase.html）<br>
+  每个颜色 / 圆角 / 动效都对应一条令牌与决策编号 · 明暗双模式 = 同一套语义令牌的两份Primitive 值
+</footer>
+</div>
+
+<div class="toast-host" id="toastHost"></div>
+
+<script>
+// 明暗切换
+const root=document.documentElement;
+document.getElementById('themeToggle').onclick=()=>{root.dataset.theme=root.dataset.theme==='light'?'dark':'light'};
+
+// 冷灰 14 档（Primitive）
+const grays=[["0","#F7F8FA"],["50","#F4F4F6"],["100","#E8EAEE"],["150","#D9DCE2"],["200","#C3C7CF"],["300","#A8ADB8"],["400","#8A90A0"],["500","#6E747F"],["550","#5A6070"],["650","#3A3F4B"],["750","#262B33"],["850","#16191F"],["900","#10131A"],["950","#0D0F14"]];
+const row=document.getElementById('grayRow');
+grays.forEach(([n,h])=>{const d=document.createElement('div');d.className='gray-item';d.innerHTML=`<div class="g" style="background:${h}" data-hex="${h}" title="gray-${n} ${h}"></div><div class="gl">${n}</div>`;row.appendChild(d)});
+
+// 复制 hex + toast（AppToast 演示：同屏 1 条顶替）
+let toastTimer=null;
+function popToast(msg){
+  const host=document.getElementById('toastHost');
+  host.innerHTML='';const t=document.createElement('div');t.className='pop-toast';t.textContent=msg||'已复制 '+lastHex;
+  host.appendChild(t);clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),320)},3000);
+}
+let lastHex='#2563EB';
+document.addEventListener('click',e=>{
+  const s=e.target.closest('[data-hex]');if(!s)return;
+  lastHex=s.dataset.hex;
+  if(navigator.clipboard)navigator.clipboard.writeText(lastHex).catch(()=>{});
+  popToast('已复制 '+lastHex);
+});
+
+// spring vs tween 对比
+function fireSpring(id){
+  const b=document.getElementById(id);
+  b.classList.remove('go','anim-spring','anim-tween');void b.offsetWidth;
+  b.classList.add(id==='boxSpring'?'anim-spring':'anim-tween');
+  requestAnimationFrame(()=>b.classList.add('go'));
+  setTimeout(()=>{b.classList.remove('go')},900);
+}
+// countUp 微交互（等宽数字滚动）
+let cv=0;const target=1024,cEl=document.getElementById('cnt');
+const iv=setInterval(()=>{cv=Math.min(cv+37,target);cEl.textContent=cv.toLocaleString();if(cv>=target)clearInterval(iv)},40);
+// shake 微交互
+document.getElementById('shakeBtn').onclick=()=>{
+  const f=document.getElementById('shakeField');f.classList.remove('mshake','err');void f.offsetWidth;f.classList.add('mshake','err');
+  setTimeout(()=>f.classList.remove('err'),600);
+};
+</script>
+</body>
+</html>
