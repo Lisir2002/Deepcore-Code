@@ -4,6 +4,11 @@
 > 工具卡注册表 + 进度移动化变体，决策 D19/D20；含 v4 体系调研 + v4.1 子组件专项），未实施**。
 > 实施清单见 十四（T8.1–T8.5，消息链路组件并入 T8.5）。决策记录见 1.3（D5–D20）；本文档是 `designsystem`
 > 模块从「单主题组件库」演进为「多风格包运行时」的唯一权威设计。
+>
+> **落地细化（v4.2.1，2026-09-01 深化）**：在 v4.2 策略定稿之上，补齐可实施粒度——新增
+> `十七 落地实施映射（文件级）`（目标目录树、现状→目标差距表、每 T8 步 new/modify/test 文件清单、
+> 依赖与 CI 门禁），并给 § 7.1/7.3、+ 六.8/六.5 补上完整 API 签名与数据契约。
+> **本文档 = 语义令牌/主题包的唯一 source of truth；落地映射 = 把设计平移成可评审的代码清单。**
 
 ## 一、定位与铁律
 
@@ -85,6 +90,20 @@ Component（组件层）    AppCard / AppScaffold 等组件内部，只读语义
 6. **动效无编排**：只有 3.5 时长档位定义，转场未接线（Navigation 默认转场 = 平台样板）；
 7. **骨架不完整**：无顶栏 tab、无底栏导航组件，insets 未统一处理；
 8. lint 不拦颜色字面量。
+
+### 2.3 现状 → 目标差距表（落地映射，锚点 17.3）
+
+> 每一行 = 现有实现文件 → 目标形态，标出**改/增**，是评审与排期的依据。具体文件级清单见 17.3。
+
+| 现状（现有文件） | 差距 | 目标（落点文件） | T8 步 |
+| --- | --- | --- | --- |
+| `theme/AppTheme.kt`：`AppColors` 仅 9 个聊天业务色；`lightColorScheme()`/`darkColorScheme()` 空参（品牌色从未进 M3）；`dynamicColor` 仍默认开 | 无品牌主色、无通用语义面板、品牌色未映射到 M3 槽位 | → 重构为 `theme/` 下 `AppTokens`/`AppBrandTokens`/`AppThemeSpec`/`AppTheme(spec)`；M3 全槽位按 §九.1 映射 | T8.1/T8.2 |
+| `theme/Dimens.kt`：`TypeScale` 仅字号；`radius` 5 档固定 | 无字重/字族/行高角色；radius 不可被风格包覆盖 | → `TypeScale` 扩展为角色 `TextStyle`（§3.3）；radius 派生 `Shapes` 供 theme.json 覆盖 | T8.1/T8.3 |
+| `components/AppComponents.kt`：按钮/卡片/状态片用 M3 ripple；各组件自写 hover/selected | 交互态无统一模型 | → 全部接入 `Modifier.appStateLayer()`（§4）；新建 `behavior/AppInteraction.kt` | T8.5 |
+| `components/AppScaffold.kt`：单骨架、`Scaffold` 直用、insets 未统一、snackbar 挂平台 | 无五型骨架/无 tab/无底栏 nav | → 拆分子组件 + 五型骨架（§6.1）；`AppToast`/`AppBanner` 取代平台 snackbar | T8.5 |
+| `components/AppInputs.kt`：`AppTextStyle` 7 枚举（Display/TitleLarge/Title/BodyLarge/Body/Label/Caption，缺 SectionHeader/Code，且 Style×Tone 分离已做） | 角色未对齐 §3.3 六角色；`AppTextField` 无浮动标签/error 图标/形态分工 | → 角色定稿六类（§3.3）；`AppTextField` 补全（§6.7.1） | T8.1/T8.5 |
+| `render/RenderBlockView.kt`：`UserMessage`/`AssistantText` 均为气泡；`ThinkingView` 折叠但无紫身份色；`ToolInvocationView` 一次性卡片（非注册表/非展开折叠）；审批行内三钮 | 消息链路未对齐 §6.8：AI 全宽流、思考块「✦ 摘要」、工具卡注册表+运行中展开/完成折叠、执行组聚组、审批卡、进度条 | → 新增 `components/messaging/`：`AppToolCard`/`AppBlockGroup`/`AppApprovalCard`/`AppProgressSummary` + 流式 Composer；`RenderBlockView` 按 §6.8 路由 | T8.5 |
+| `:lint`：`DesignSystemDetector.kt` 3 条规则，行为层未拦 | lint 未覆盖新的语义/组件出口 | → 扩 6 条新规则（§十一），含颜色字面量/裸表单/裸工具卡 | T8.4 |
 
 ## 三、令牌体系类型设计
 
@@ -291,24 +310,39 @@ success/danger 浅底形态`、`codeSurface/codeBorder→gray-50/100（L）· gr
 | `loading` | 处理中 | 进度指示器接管（按钮内嵌，尺寸 = 图标档） |
 | `dragged` | 拖拽中 | `surfaceElevated` + `scale(1.02)` + 阴影抬升 |
 
-### 4.2 实现契约：`Modifier.appStateLayer()`
+### 4.2 实现契约：`Modifier.appStateLayer()`（完整签名，落点 `behavior/AppInteraction.kt`）
 
 ```kotlin
 // designsystem 内部唯一实现；组件只传 InteractionSource 与形状
+// 完整签名（T8.5 实现定稿）：
 fun Modifier.appStateLayer(
     interactionSource: InteractionSource,
     shape: Shape,
     enabled: Boolean = true,
+    selected: Boolean = false,        // 显式 selected：主色 12% 底 + 内容主色（4.1.select）
+    overlayColor: Color? = null,      // 默认 = 组件当前内容前景色（onColor 模型）；仅特殊组可传
+    scalePressed: Float = 0.98f,      // Draggable 组件可关：scalePressed = 1f
 ): Modifier
+
+// 用法：AppButton 等封装统一把 overlay + indication 交给 appStateLayer，
+// M3 组件的 indication 参数传它返回的 Indication（ripple 由此消失）：
+val interactionSource = remember { MutableInteractionSource() }
+Surface(
+    onClick = { ... },
+    interactionSource = interactionSource,
+    indication = rememberIndication(interactionSource, shape),   // appStateLayer 派生的 Indication
+)
 ```
 
-- overlay 色 = 组件当前**内容前景色**的 α 叠加（onColor 模型）——任何主题包、任何
-  语义底色下自动成立，**交互态因此不需要进颜色令牌面板**；
-- `pressed` 缩放与 `dragged` 抬升为内置常量，不暴露给组件层；
-- **弃用 ripple（D12）**：`AppButton` 等封装里 M3 组件的 `indication` 参数统一传
-  `appStateLayer` 生成的 indication，ripple 不再出现；
-- 交互态常量（8%/12%/38%/scale 值）定义在 designsystem/theme/behavior，属行为层
-  常量非颜色令牌，改动走评审（与令牌同流程）。
+- `appStateLayer` 内部 = `Modifier.graphicsLayer`（叠加 overlay 色）+ `Modifier.scale`（pressed/dragged）+
+  生成 `Indication`（`LocalIndication`）；**一个 Modifier 同时吃 overlay 与 indication，组件层只调一次**；
+- overlay 色取值：`InteractionSource` 合成 `pressed/hovered/selected` 为**二值叠加表**，按 §4.1 常量
+  （8% / 12% / 38%）在前景色上算 α——**任何主题包、任何语义底色下自动成立，交互态因此不进颜色面板**；
+- `pressed` 缩放与 `dragged` 抬升、`focused` 描边为内置常量，不暴露给组件层；
+- **弃用 ripple（D12）**：`AppButton` 等封装里 M3 组件的 `indication` 参数统一传 `appStateLayer` 生成的
+  indication，ripple 不再出现；
+- **行为常量集中定义** `behavior/AppInteraction.kt`：`val OVERLAY_HOVER = 0.08f`、`OVERLAY_PRESS = 0.12f`、
+  `ALPHA_DISABLED = 0.38f`、`SCALE_PRESS = 0.98f`、`SCALE_DRAG = 1.02f`，**改走评审**（非颜色令牌）；
 
 ### 4.3 接入清单
 
@@ -420,6 +454,78 @@ T8.5 全量接入；新增组件 PR 必须含 appStateLayer 接入，否则 desi
 | `AppTopTabs` / `AppNavBar` / `AppModalSheet` | 新建 | 顶栏 tab / 底栏导航 / 模态壳（转场接 5.2） |
 | `AppDialog`（含三语义变体，见 6.6）/ `AppMediaBlock` | 新建 | 对话框壳（禁裸 Dialog，lint）/ 媒体比例块 |
 | `AppScaffold`（五型化）/ `AppInputBar` | 改造 | 拆分为骨架变体；insets 统一进骨架 |
+
+#### 6.5.1 五型骨架函数契约（落点：`components/scaffold/`）
+
+> 骨架 = 顶栏 + 内容 + 底栏三段槽位。业务页面只选骨架 + 填槽位，**不自己拼 `Scaffold`/`Row`**（§6.1）。
+> insets（`NavigationBars`/`Ime`）全部在骨架内部 `windowInsetsPadding` 消化，业务零感知。
+
+```kotlin
+// 统一 ContentScaffold 基底（内部吃 insets、衬 background、包 LimitedWidth for Expanded）
+@Composable
+fun ChatScaffold(
+    topBar: @Composable () -> Unit,               // 紧凑栏（返回/标题/操作）
+    inputBar: @Composable () -> Unit,             // AppInputBar 槽（含 Ime 避让）
+    onBack: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    progressSticky: @Composable () -> Unit = {},  // 6.8.6 摘要条 / 6.8.4 审批卡 sticky 位
+    content: @Composable (PaddingValues) -> Unit, // TranscriptList（AI 全宽文档流，中线居中）
+)
+
+@Composable
+fun TabbedScaffold(
+    tabs: List<TabItem>,                          // AppTopTabs 数据
+    selectedIndex: Int,
+    onTabSelected: (Int) -> Unit,
+    topBarExtra: @Composable () -> Unit = {},
+    modifier: Modifier = Modifier,
+    content: @Composable (index: Int, PaddingValues) -> Unit,
+)
+
+@Composable
+fun NavScaffold(
+    tabs: List<NavItem>,                          // 3–5 项，AppNavBar
+    selectedIndex: Int,
+    onSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable (index: Int, PaddingValues) -> Unit,
+)
+// navScaffoldHost = AppToast 内置位（底栏上方 inset，业务零感知，§6.6.3）
+
+@Composable
+fun DetailScaffold(
+    title: String, largeTitle: String,            // 滚动收合：displaySmall→17sp（与滚动 1:1 跟手）
+    onBack: (() -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+    bottomActions: @Composable () -> Unit = {},   // 可选操作条
+    modifier: Modifier = Modifier,
+    content: @Composable (PaddingValues) -> Unit,
+)
+
+@Composable
+fun FormScaffold(
+    title: String, onBack: (() -> Unit)? = null,
+    confirm: @Composable () -> Unit = {},         // 确认条：主按钮 + 副操作
+    modifier: Modifier = Modifier,
+    content: @Composable (ColumnScope.() -> Unit),// group 间距 = spaceL，Expanded 双列短字段
+)
+
+// 数据模型
+data class TabItem(val id: String, val text: String, val icon: ImageVector? = null, val badge: Int? = null)
+data class NavItem(val id: String, val text: String, val icon: ImageVector, val badge: Int? = null)
+
+// 组件级（`components/`）：
+@Composable fun AppTopTabs(tabs: List<TabItem>, selectedIndex: Int, onSelected: (Int) -> Unit, modifier: Modifier = Modifier)
+@Composable fun AppNavBar(tabs: List<NavItem>, selectedIndex: Int, onSelected: (Int) -> Unit, modifier: Modifier = Modifier)
+@Composable fun AppModalSheet(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,                // 拖拽柄 32×4dp、居顶 22dp、嵌套滚动接底
+    content: @Composable ColumnScope.() -> Unit,
+)
+```
+
+> `AppScaffold`（现状单骨架）改造为内部转发到最接近的骨架变体；`AppScaffoldWithState` 保留
+> 作为「有 UiState 的便捷壳」，底层仍走上述骨架。**存量页面（Chat/Settings）零视觉回归**。
 
 ### 6.6 浮层子组件规范（Behavior 级，D15）
 
@@ -621,9 +727,69 @@ Claude Code/Cursor/Cline/Aider 四家趋同的「进度面板」在 Compact 端�
 - 每轮 AI 回复尾部可选追问 chips（≤3 个，`AppTopTabs` 同款滑动语义）——
   **v1 不做**（M2 首页一并排期），仅预留组件位。
 
+#### 6.8.8 消息链路组件函数契约（落点：`components/messaging/`）
+
+> 消费 `core:uistate` 的 `RenderBlock`（现状已产出 ViewModel 块）。**工具卡注册表与
+> `core:mcp` 工具注册同构**；MCP 外来工具走灰色兜底（未命中注册表的工具名）。
+> 折叠/展开状态由组件内部 `rememberSaveable` 持有（单一意图显式展开不自动收起，§6.8.2）。
+
+```kotlin
+// ── 工具卡注册表（静态单一映射）──
+data class ToolCardSpec(
+    val icon: ImageVector,
+    val title: (icon?, name, localArgs) -> String,      // 人类标题模式
+    val summary: (Map<String, JsonElement>) -> String,  // 关键参数摘要提取器（§6.8.2）
+)
+data class ToolCardRegistry(val specs: Map<String, ToolCardSpec>) // onUnknown 灰色兜底 + 名称字面量
+
+@Composable
+fun AppToolCard(
+    block: RenderBlock.ToolInvocation,
+    registry: ToolCardRegistry,
+    modifier: Modifier = Modifier,                // 三区：头/身/脚；默认高 ≤120dp
+    onApprove: (ToolCall, ApprovalScope) -> Unit,
+    onDeny: (ToolCall) -> Unit,
+)
+// 展开策略：visible && RUNNING → 展开并流式进卡；完成后自动折叠为一行摘要；用户手动展开则不自动收起
+// 结果内联按 ToolOutput 类型路由（diff/代码块/文件路径/表格）；原始 JSON 仅入折叠区
+
+@Composable
+fun AppBlockGroup(
+    blocks: List<RenderBlock>,                    // 连续 thinking/tool_use 聚组（AppBlockGroupReducer 输出）
+    registry: ToolCardRegistry,
+    onApprove: (ToolCall, ApprovalScope) -> Unit,
+    onDeny: (ToolCall) -> Unit,
+    modifier: Modifier = Modifier,                // 组壳：左缘 2dp 紫条 + 「N 步」徽标；任子块 RUNNING → 自动展开
+)
+
+@Composable
+fun AppApprovalCard(
+    call: ToolCall, spec: ToolSpec, riskLabel: String,
+    onApprove: (ApprovalScope) -> Unit, onDeny: () -> Unit,
+    modifier: Modifier = Modifier,                // 三选择竖排；破坏性 main → danger + 后果一句；sticky 由骨架槽位承载
+)
+
+@Composable
+fun AppProgressSummary(
+    doneSteps: Int, totalSteps: Int?,
+    currentLabel: String,                          // 阶段领域语言短语
+    onOpenTimeline: () -> Unit,
+    modifier: Modifier = Modifier,                // 置顶摘要条 + 细进度线；完成整体淡出；<3s 短任务不出现
+)
+// 时间线抽屉 = AppModalSheet + 每步折叠工具卡 + 「下载运行日志」
+
+@Composable
+fun StreamEmittedCursor(active: Boolean, modifier: Modifier = Modifier)
+// 活光标：2dp×18dp 竖条 primary 色，脉冲 800ms；流结束才移除（非最后 token，§6.8.5）
+```
+
+**状态机（render-side，`RenderBlockView` 改造）**：
+`UserMessage`/`AssistantText` → 保留；`Thinking` → 折叠摘要「✦ 已思考 Ns」+ 点开全文；连续
+thinking/tool_use 经 `AppBlockGroupReducer` 聚为 `RenderBlock.Group`（text 块独立截断分组）。
+
 ## 七、主题包（ThemePack）机制
 
-### 7.1 运行时形态
+### 7.1 运行时形态（落地契约：完整类型定义）
 
 ```
 AppThemeSpec（运行时不可变数据）＝ 一套语义令牌取值
@@ -637,15 +803,79 @@ StyleController（:app 装配；designsystem 只定义接口与默认实现）
     └─ 持久化到 TableModule
 ```
 
+**完整类型定义（落点：`theme/AppThemeSpec.kt`、`theme/StyleController.kt`）**
+
+> 具名属性 = 编译期完整性：加令牌 = 加属性 + 明暗值 + 配对声明（§10.1 校验矩阵同步登记）。
+> `@Immutable` 全覆盖，Spec 跨重组稳定引用（§8.1）。**可空字段只允许出现在 `Pair` 声明上，
+> 不允许出现在 `AppTokens` 本体**——style 包差别的二元组，`AppColors` 只存解析完成的定值。
+
+```kotlin
+/** 明/暗两套值的载体；缺省 = 回退 brand 对应模式（§7.3.1） */
+@Immutable
+data class TokenPair<T>(val light: T, val dark: T)
+
+@Immutable
+data class AppThemeSpec(
+    val id: String,
+    val name: String,
+    val schemaVersion: Int = 1,
+    val light: AppTokens,
+    val dark: AppTokens,
+    val source: Source = Source.BUILT_IN,   // BUILT_IN | USER_IMPORTED
+) { enum class Source { BUILT_IN, USER_IMPORTED } }
+
+/** 一对角色渲染：AppTextStyle 枚举（§3.3，type 色）由 AppTextTone 决定，故这里只给字号行高 */
+@Immutable
+data class AppTokens(
+    val colors: AppColors,        // §3.1 语义色面板（明暗已落在 TokenPair 外，此处为单板）
+    val type: AppTypographyTokens,
+    val motion: AppMotion,
+    val radius: AppRadius,        // card/bubble 等 5 档——theme.json radius 覆盖组入口
+)
+
+/** 主题切换的读取源（designsystem 只定义接口 + 默认实现，装配在 :app） */
+interface StyleController {
+    val spec: StateFlow<AppThemeSpec>
+    val darkMode: StateFlow<DarkMode>
+    suspend fun setSpec(id: String)            // 从已加载的 ThemePackRegistry 取
+    suspend fun setDarkMode(mode: DarkMode)
+    suspend fun import(pack: ThemePackLoader.Result)  // 走 7.3 合并 + 7.4 校验
+    fun registerPack(spec: AppThemeSpec)       // 进程内登记（含 brand 与解析成功的 import）
+}
+
+enum class DarkMode { FOLLOW_SYSTEM, LIGHT, DARK }
+
+/** 默认实现：StateFlow + 持久化到 TableModule（§DATA_LAYER 注册制），:app 装配 */
+val LocalStyleController = staticCompositionLocalOf<StyleController> {
+    error("StyleController 未装配：请先在根 AppTheme 之前提供实例")
+}
+
+@Immutable
+data class AppRadius(
+    val card: Dp, val listItem: Dp, val chip: Dp, val sheet: Dp, val bubble: Dp,
+) {
+    fun toShapes(): Shapes = Shapes(
+        extraSmall = RoundedCornerShape(card), small = RoundedCornerShape(card),
+        medium = RoundedCornerShape(listItem), large = RoundedCornerShape(sheet),
+        extraLarge = RoundedCornerShape(bubble),
+    )
+}
+```
+
+**装配与局部换肤（入口契约，落点 `theme/AppTheme.kt`）**
+
 ```kotlin
 @Composable
 fun AppTheme(
     spec: AppThemeSpec = LocalStyleController.current.spec.collectAsState().value,
     content: @Composable () -> Unit,
 )
-// 页面级局部换肤（不同设计的页面）：
+// 页面级局部换肤（不同设计的页面，至多一层，§8.2）：
 AppTheme(ThemePacks.console) { ToolMarketScreen() }   // 组件层零改动
 ```
+
+- `ThemePacks`：编译期内置包注册表（brand 常驻 + 预留 console 演示包），落点 `theme/ThemePacks.kt`；
+- `AppTheme(spec)` 内部：`TokenPair` 按 `darkMode/spec.dark` 决出单板 → 经 `AppThemeBridge.domesticate(spec, board)`（§九）填满 M3 全槽位 → `CompositionLocalProvider`（`AppTokens` + 语义色 + 行为常量）→ `MaterialTheme(…)`。
 
 ### 7.2 theme.json v1 与 DTCG 的关系（D9）
 
@@ -827,6 +1057,7 @@ ratio = (L_light + 0.05) / (L_dark + 0.05)
 | 12.7 | 交互态一致 | Compose UI 测试 | 接入清单（4.3）组件逐个断言 pressed/hovered/disabled 的 overlay 行为存在（弃 ripple 后防回退） |
 | 12.8 | 骨架槽位 | Compose UI 测试 | 五型骨架的槽位填充、insets 生效、AppTopTabs 指示器选中联动 |
 | 12.9 | 浮层变体 | Compose UI 测试 | AppDialog 三变体（danger 钮色/Progress 无按钮/icon 色）参数化断言；AppToast 单条顶替 + 3s 消失；AppBanner 常驻 + 关闭；DropdownMenu 选中态与分组 |
+| 12.10 | 消息链路组件 | Compose UI 测试 | AppToolCard 展开/折叠策略（运行中展开+完成折叠/手动不收起）、注册表命中 vs MCP 灰色兜底、AppBlockGroup 聚组 + 任子块 RUNNING 自动展开、AppProgressSummary 出现/淡出、活光标结束移除 |
 
 ## 十三、反模式与治理
 
@@ -878,9 +1109,9 @@ schemaVersion 升 1。禁止原地改语义。
 | --- | --- | --- |
 | T8.1 令牌层扩展 | `AppTokens` 聚合 + 3.1–3.6 全部令牌（brand 色板落地）+ 角色枚举 + `dynamicColor` 删除 + **12.1/12.2 单测** | design-guard 全绿；M3 槽位按 9.1 全量映射 |
 | T8.2 主题包机制（编译期） | `AppThemeSpec` + brand 包 + `StyleController` + 设置页切换 UI + `AppTheme(spec)` 参数化 + **12.4/12.5 测试** | 切换即时生效零状态丢失；镜像断言绿 |
-| T8.5 行为层落地 | `appStateLayer()` 统一封装 + 全组件接入（4.3 清单）+ `AppTransitions` + Navigation 转场接线 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppMediaBlock` + 骨架五型化 + insets 统一 + **浮层与表单子组件（6.6/6.6.4/6.7）：AppDialog 三变体 / AppDropdownMenu / AppMultiSelectSheet / AppToast / AppBanner / AppTextField 补全 / 选择族 / AppSearchField** + **消息链路组件（6.8）：`AppToolCard`/`AppBlockGroup`/`AppProgressSummary`/`AppApprovalCard`/流式活光标 Composer + 6.8.5 流式渲染契约** + **12.7/12.8/12.9/12.10 测试** | 全组件交互态一致；五型骨架承载 chat/settings 全页面回归；lint 六条新规则随 T8.4 就绪 |
+| T8.5 行为层落地 | `appStateLayer()` 统一封装 + 全组件接入（4.3 清单）+ `AppTransitions` + Navigation 转场接线 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppMediaBlock` + 骨架五型化 + insets 统一 + **浮层与表单子组件（6.6/6.6.4/6.7）：AppDialog 三变体 / AppDropdownMenu / AppMultiSelectSheet / AppToast / AppBanner / AppTextField 补全 / 选择族 / AppSearchField** + **消息链路组件（6.8）：`AppToolCard`/`AppBlockGroup`/`AppProgressSummary`/`AppApprovalCard`/流式活光标 Composer + 6.8.5 流式渲染契约** + **12.7/12.8/12.9/12.10 测试** | 全组件交互态一致；五型骨架承载 chat/settings 全页面回归；lint 八条新规则随 T8.4 就绪 |
 | T8.3 运行时可插拔 | theme.json v1 解析 + 7.3 合并器 + 7.4 校验器 + `ThemePackLoader`（双根）+ 设置页导入 + **12.3 表驱动** | 手写 delta 包切换成功；非法包拒载并出报告 |
-| T8.4 lint 扩展 | 十一 表三条新规则 | design-guard 四 job 绿 |
+| T8.4 lint 扩展 | 十一 表**八**条新规则（§17.3） | design-guard 四 job 绿 |
 
 依赖与节奏：T8.1 →（T8.2 ∥ T8.5）→ T8.3 → T8.4；T8.2 与 T8.5 相互独立可并行；
 T8.3/T8.4 排在 M1 真实模型之后（真实模型优先级最高）。
@@ -902,3 +1133,126 @@ T8.3/T8.4 排在 M1 真实模型之后（真实模型优先级最高）。
 - `docs/TOOLS_SKILLS.md` §Skill 层 —— 风格包加载模式的参照系
 - `designsystem/theme/`（令牌与 brand 包）、`designsystem/behavior/`（T8.5 新增：
   交互态/转场）、`designsystem/components/`（骨架五型）—— 实施落点
+
+---
+
+## 十七、落地实施映射（文件级）
+
+> v4.2.1 深化新增。把前十六章的设计**平移成可评审的代码清单**：目标目录树、现状→目标
+> 差距（§2.3）、每 T8 步的 new/modify/test 文件、依赖与 CI 门禁。**实现以本文 + 代码为准；
+> 改设计先改本文，再改代码。**
+
+### 17.1 目标目录树（designsystem 改造完形态）
+
+```
+designsystem/src/main/kotlin/com/deepcode/designsystem/
+├── theme/                          ← T8.1/T8.2/T8.3（令牌 + 主题包 + bridge）
+│   ├── AppTheme.kt                 (改)  parameterized AppTheme(spec)；删 dynamicColor
+│   ├── AppTokens.kt                (增)  AppColors 全语义面板 + AppTypographyTokens + AppMotion
+│   ├── AppBrandTokens.kt           (增)  brand 明暗双板（含 Primitive 灰阶/状态，§3.2）
+│   ├── AppThemeSpec.kt             (增)  AppThemeSpec/TokenPair/AppRadius（§7.1）
+│   ├── StyleController.kt          (增)  接口 + 默认实现 + LocalStyleController（§7.1）
+│   ├── ThemePacks.kt               (增)  编译期内置包注册表（brand 常驻 + console 演示）
+│   ├── AppThemeBridge.kt           (增)  M3 全槽位映射（§九.1）+ 镜像断言辅助
+│   ├── Dimens.kt                   (改)  TypeScale 扩展为六角色 TextStyle（§3.3）；radius→AppRadius
+│   ├── TypeRoles.kt                (增)  AppTextStyle 角色定稿 + AppTextTone（§3.3）
+│   └── validator/                  (增)  T8.3：ThemeJsonCodec + ThemePackMerger + ThemeValidator
+│         └── Contrast.kt           (增)  sRGB 线性化 + WCAG 公式（§10.1）
+├── behavior/                       ← T8.5（交互态 + 动效编排）
+│   ├── AppInteraction.kt           (增)  appStateLayer + 行为常量（§4.2）
+│   ├── AppTransitions.kt           (增)  转场模式×档位绑定表常量对象（§5.2）
+│   └── MotionResolver.kt           (增)  unified 出口；reduce-motion 直切（§10.3）
+├── components/
+│   ├── AppComponents.kt            (改)  按钮/卡片/状态片接入 appStateLayer；AppStatusChip 补 busy（4.3/6.6.4）
+│   ├── AppInputs.kt                (改)  AppText 六角色；AppTextField 补全（§6.7.1）
+│   ├── AppInputBar.kt              (改)  发纹/stop 同槽位替换、Ime 避让
+│   ├── scaffold/                    (增)  五型骨架 + 顶/底栏 + ModalSheet（§6.5.1）
+│   │   ├── ChatScaffold.kt / TabbedScaffold.kt / NavScaffold.kt
+│   │   ├── DetailScaffold.kt / FormScaffold.kt
+│   │   ├── AppTopTabs.kt / AppNavBar.kt / AppModalSheet.kt
+│   │   └── AppScaffoldCompat.kt     (增)  现状 AppScaffold/WithState → 转发骨架变体（存量零回归）
+│   └── overlay/
+│       ├── AppDialog.kt            (增)  confirm/status/notice 三变体（§6.6.1）
+│       ├── AppDropdownMenu.kt      (增)  Field/Button 两形态 + AppMultiSelectSheet（§6.6.2）
+│       └── AppToast.kt / AppBanner.kt + ToastHost / BannerHost（§6.6.3）
+│   └── form/
+│       └── AppSearchField.kt + 选择族 AppCheckbox/AppRadio（§6.7.2）
+│   └── messaging/                   (增)  T8.5（§6.8.8）
+│       ├── AppToolCard.kt + ToolCardRegistry
+│       ├── AppBlockGroup.kt + AppBlockGroupReducer（core:uistate）
+│       ├── AppApprovalCard.kt / AppProgressSummary.kt / StreamEmittedCursor.kt
+├── render/
+│   ├── RenderBlockView.kt          (改)  按 §6.8 路由到 messaging 组件；AI 全宽流
+│   └── MarkdownRenderer.kt         (增)  零 layout shift 渐进渲染（§6.8.5）
+└── state/UiState.kt                (改/不变) 补 Empty 建议 chips 等（可选）
+```
+
+### 17.2 每 T8 步拆解（new / modify / test / CI 门禁）
+
+> 节奏：T8.1 →（T8.2 ∥ T8.5）→ T8.3 → T8.4。T8.2 与 T8.5 独立可并；T8.3/T8.4 在 M1 真实模型之后。
+
+| 步 | new | modify | test | CI 门禁 |
+| --- | --- | --- | --- | --- |
+| **T8.1 令牌层** | `AppTokens`/`AppBrandTokens`/`TypeRoles`/`AppTypographyTokens`/`AppMotion`；§3.2 色板落地 | `AppTheme.kt`（删 dynamicColor）、`Dimens.kt`(TypeScale→6 角色) | 12.1 面板完整性、12.2 对比度矩阵 | design-guard 绿；M3 槽位 §9.1 全映射 |
+| **T8.2 主题包(编译期)** | `AppThemeSpec`/`TokenPair`/`AppRadius`/`StyleController`/`ThemePacks`/`AppThemeBridge` | `AppTheme(spec)`；`:app` StyleController 装配 + 设置页风格切换 UI | 12.4 M3 镜像断言、12.5 主题切换 | 镜像断言绿；切换零状态丢失 |
+| **T8.5 行为层** | `behavior/` 三件 + `scaffold/` + `overlay/` + `form/` + `messaging/`（§17.1） | 存量组件接入 appStateLayer(4.3)；`RenderBlockView` 按 §6.8 路由；AppInputBar 同槽位 | 12.7 交互态一致、12.8 骨架槽位、12.9 浮层变体、12.10 消息链路 | chat/settings 零视觉回归；八条新 lint(§11) 随 T8.4 就绪 |
+| **T8.3 运行时可插拔** | `validator/`：`ThemeJsonCodec`+`ThemePackMerger`+`ThemeValidator` | `ThemePackLoader`(assets/filesDir, 复用 SkillLoader) + 设置页导入 | 12.3 loader 表驱动 | 手写 delta 包切换成功；非法包拒载出报告 |
+| **T8.4 lint 扩展** | **八**条新规则（§十一表） | `DesignSystemDetector.kt` / `DesignSystemIssueRegistry.kt` | lint 自测 + design-guard 用例 | design-guard 四 job 全绿 |
+
+### 17.3 每 T8 步文件清单（细粒度，逐文件）
+
+> 「落点」为 **新文件路径**；「改动」为现状文件。验收 = 该步所有 CI 门禁 + 单测绿色。
+
+**T8.1 令牌层（12.1/12.2 为 JVM 单测，放 `designsystem/src/test`，纯 Kotlin 不依赖 Compose）落地文件：**
+- 改 `theme/AppTheme.kt`：`AppColors` 扩展为 §3.1 全语义面板（品牌/表面/文本/边线/状态/业务 6 组）；
+  `lightColorScheme()/darkColorScheme()` 从 `AppBrandTokens` 取色，**品牌色首进 M3**；删 `dynamicColor`。
+- 改 `theme/Dimens.kt`：`TypeScale` → 六角色 `TextStyle`（§3.3：fontSans/fontMono + 字重/行高）；radius → `AppRadius`。
+- 增 `theme/TypeRoles.kt`：`AppTextStyle` 六角色 + `AppTextTone`（与 `AppInputs.kt` 现有枚举对齐合并）。
+- 增 `theme/AppTokens.kt`、`theme/AppBrandTokens.kt`；`local/` 提供 `appTokens()` 读取。
+- 测试：`AppTokensTest`（12.1 反射全属性非默认）+ `ContrastMatrixTest`（12.2 WCAG，§10.1 公式）。
+
+**T8.2 主题包（编译期）（12.4/12.5）落地文件：**
+- 增 `theme/AppThemeSpec.kt`、`theme/StyleController.kt`、`theme/ThemePacks.kt`、`theme/AppThemeBridge.kt`。
+- 改 `theme/AppTheme.kt` → `AppTheme(spec: AppThemeSpec = …)`；`:app` DI 装配 `StyleController`（StateFlow + TableModule 持久化）。
+- 测试：`M3MirrorTest`（Compose UI，12.4 全槽位镜像断言）+ `ThemeSwitchTest`（12.5 切换生效/FOLLOW_SYSTEM）。
+
+**T8.5 行为层 + 组件库（12.7/12.8/12.9/12.10）落地文件：**
+- `behavior/`：`AppInteraction.kt`（appStateLayer）、`AppTransitions.kt`、`MotionResolver.kt`。
+- `components/scaffold/`：五型骨架 + `AppTopTabs`/`AppNavBar`/`AppModalSheet` + `AppScaffoldCompat`。
+- `components/overlay/`：`AppDialog`/`AppDropdownMenu`/`AppMultiSelectSheet`/`AppToast`/`AppBanner`（+Host）。
+- `components/form/`：`AppTextField` 补全 + `AppSearchField` + `AppCheckbox`/`AppRadio`。
+- `components/messaging/`：`AppToolCard`+`ToolCardRegistry`/`AppBlockGroup`+/`AppBlockGroupReducer`（core:uistate）/
+  `AppApprovalCard`/`AppProgressSummary`/`StreamEmittedCursor` + `render/MarkdownRenderer.kt`。
+- 改：存量组件接入 appStateLayer（§4.3 清单）；`render/RenderBlockView.kt` 按 §6.8 路由（AI 全宽流、思考「✦ 摘要」、
+  思考/tool 聚组）；`AppInputBar` 发/stop 同槽位 + Ime 避让。
+- 测试：`InteractionContractTest`(12.7) / `SkeletonSlotTest`(12.8) / `OverlayVariantTest`(12.9) / `MessagingLinkTest`(12.10)。
+
+**T8.3 运行时可插拔（12.3）落地文件：**
+- `theme/validator/ThemeJsonCodec.kt`（theme.json v1 解析）+ `ThemePackMerger.kt`（§7.3 delta）+ `ThemeValidator.kt`（§7.4）+ `Contrast.kt`。
+- 增 `theme/ThemePackLoader.kt`（assets/filesDir 双根，复用 `SkillLoader` 模式）；`:app` 装配 `ThemePackLoader` +
+  设置页导入入口（AI 能力名单）。
+- 测试：`ThemeLoaderTableTest`（12.3 表驱动：正常 delta / 未知键告警 / 类型冲突拒载 / 显式 null 拒载 /
+  版本过高拒载 / 越界回退 + 导入报告内容）。
+
+**T8.4 lint 扩展（seq：T8.5 之后）落地文件：**
+- 改 `lint/.../DesignSystemDetector.kt` + `DesignSystemIssueRegistry.kt`：注册 §十一 6 条新规则
+  （`DirectColorLiteral`/`RawTextStyleConstruction`/`ForbiddenWindowComponent`/`ForbiddenPlatformToast`/
+  `ForbiddenRawDropdown`/`ForbiddenRawTextField`/`ForbiddenRawToolCard`/`ForbiddenRawJsonRender`）。
+- 测试：lint 单元用例 + 在 `feature/*` 引入违规样例断言 design-guard 红。
+
+### 17.4 交叉与依赖
+
+- `AppBlockGroupReducer` 属**纯 Kotlin**（`core:uistate`，可 JVM 单测）——对齐 M0 铁律，聚合逻辑不进 Compose；
+- `ThemePackLoader` 复用 `SkillLoader` 的 assets/filesDir 双根模式（D5 显式对齐）；
+- `RenderBlock.ToolInvocation` 已携带 `kind`（ToolKind）——工具卡图标可先按 kind 兜底，注册表按 name 精确覆盖；
+- 消息链路消费 `core:uistate` 的 `RenderBlock`，UI 层**零改 core**；只新增 `RenderBlock.Group` 以承载聚组，
+  需在 `core:uistate` 补块类型 + reducer 分支（纯 Kotlin）。
+- lint 白名单保持 `com.deepcode.designsystem` 全包 + `:lint` 自身（§十一），新容器/行为包天然豁免。
+
+### 17.5 验收口径（全量落地完成判定）
+
+1. `designs-guard` 四 job（core-test / android-build / design-guard / release-build）全绿；
+2. `ChatScreen`/`SettingsScreen` 迁移到新骨架后**零视觉回归**（用 `design-system-showcase.html` 做基线对照）；
+3. 手写 theme.json delta 包导入成功、非法包拒载并出报告（12.3 通过）；
+4. 八条新 lint 规则分别在 `feature/*` 植入违规样例可按预期命中；
+5. 语义面板/对比度矩阵单测绿（12.1/12.2），M3 镜像断言绿（12.4）。
