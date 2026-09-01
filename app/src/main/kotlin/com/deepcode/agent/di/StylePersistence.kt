@@ -40,7 +40,7 @@ class SqliteStylePreferenceStore(private val db: SqliteDatabase) : StylePreferen
             db.rawQuery(
                 sql = "SELECT value FROM style_settings WHERE key = ?",
                 parameters = 1,
-                binders = { bindString(1, key) },
+                binders = { bindString(0, key) },
             ) { cursor -> if (cursor.next().value) cursor.getString(0) else null }
                 .firstOrNull()
         }
@@ -51,7 +51,7 @@ class SqliteStylePreferenceStore(private val db: SqliteDatabase) : StylePreferen
             db.rawExecute(
                 sql = "INSERT OR REPLACE INTO style_settings(key, value) VALUES(?, ?)",
                 parameters = 2,
-                binders = { bindString(1, key); bindString(2, value) },
+                binders = { bindString(0, key); bindString(1, value) },
             )
             Unit
         }

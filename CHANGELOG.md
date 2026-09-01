@@ -2,6 +2,24 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.2.2.5] — 2026-09-01 · versionCode 20205
+
+> **修复启动闪退**。崩溃捕获（CrashVault）上报的 `IndexOutOfBoundsException` 根因定位：
+> SQLDelight 参数绑定索引写错导致 `StyleController` 初始化即崩，App 无法进入首帧。
+
+### Fixed
+
+- **P0：启动闪退 `Index 1 out of bounds for length 1`（`StyleController` 创建失败）**：
+  [StylePersistence.kt](app/src/main/kotlin/com/deepcode/agent/di/StylePersistence.kt) 的
+  `rawQuery`/`rawExecute` 参数绑定误用 1-based 索引，而 SQLDelight 2.0.2 Android 驱动
+  `AndroidQuery` 以 **0-based** 直接对定长 `ArrayList` 执行 `set(index, ...)`——
+  `parameters=1` 时 `bindString(1, ...)` 越界抛 `IndexOutOfBoundsException`，Koin 无法
+  创建 `StyleController` 单例，`MainActivity` 首帧崩溃。修正为 `bindString(0, ...)`，
+  写路径同步改为 `bindString(0, ...)` / `bindString(1, ...)`（与
+  `core:data` 既有单测的 0-based 约定一致）。
+
+---
+
 ## [v0.2.2.4] — 2026-09-01 · versionCode 20204
 
 > **日志系统全链路落地**。真机闪退拿不到日志的问题根治：崩溃现场自动捕获 + 实时双写外部存储，并修复审计发现的三个 P0 安全问题。
