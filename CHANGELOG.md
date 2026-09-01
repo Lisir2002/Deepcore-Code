@@ -2,7 +2,14 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [Unreleased]
+## [v0.2.1.3] — 2026-09-01 · tag [v0.2.1.3](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.2.1.3) · versionCode 20103
+
+> **UI 层 P0→P5 全里程碑正式发版**。v0.2.0.2 曾打 tag 但 CI 产出的 APK 是 draft（release.yml 默认行为），
+> 本次重打 tag 并修复 workflow 配置，UI 落地闭环首次可分发给端上测试。
+
+## Added
+
+
 
 ### Added
 
@@ -225,9 +232,20 @@
 
 ### Fixed
 
+- **Lint 八规则收尾修复**：Kotlin 普通 class 构造函数 UAST methodName==`<init>`，
+  从 `asSourceString()` 提取类名匹配；Material3 1.3 顶层 `Dialog` 实际是 `AlertDialog`；
+  `Popup` 在 foundation 而非 material3；inline class `Color` 构造函数 methodName 直接是类名。
+  修复后八条新规则（`DirectColorLiteral` / `RawTextStyleConstruction` /
+  `ForbiddenWindowComponent` / `ForbiddenPlatformToast` / `ForbiddenRawDropdown` /
+  `ForbiddenRawTextField` / `ForbiddenRawToolCard` / `ForbiddenRawJsonRender`）
+  在 app 模块植入违规样例时 **17 errors 全命中**，验证完毕清理 probe，design-guard 四 job 零误伤。
+- **release.yml 默认 draft 修复**：`softprops/action-gh-release@v2` 未显式设 `draft` 时默认 `true`，
+  v0.2.0.2 首次推 tag 产出 draft Release（APK 已构建但未发布）。
+  在 workflow 中加 `draft: false`，后续版本推送自动正式发布。
 - Android 编译两处根因（包名对齐、lambda `it` 遮蔽）后首个可编译 tag。
 
-[Unreleased]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.2.0.2...HEAD
+[Unreleased]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.2.1.3...HEAD
+[v0.2.1.3]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.2.0.2...v0.2.1.3
 [0.2.0.2]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.2.0.1-rc1...v0.2.0.2
 [0.1.4]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.2...v0.1.3
