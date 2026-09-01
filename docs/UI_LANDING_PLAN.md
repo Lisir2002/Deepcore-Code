@@ -68,18 +68,18 @@ P0 基线冻结 → P1 T8.1 令牌层 → P2 T8.2 主题包(编译期) ┐
 子顺序：**行为基建 → 骨架 → 存量回归 → 浮层 → 表单 → 消息链路**；每子步都应保持可编译。
 
 - P3a 行为基建
-  - [ ] 增 `behavior/AppInteraction.kt`：`appStateLayer` + 行为常量（§4.2）；
-  - [ ] 增 `behavior/AppTransitions.kt`（转场模式×档位绑定，§5.2）+ `behavior/MotionResolver.kt`（reduce-motion 直切，§10.3）；
+  - [x] 增 `behavior/AppInteraction.kt`：`appStateLayer` + 行为常量（§4.2）；
+  - [x] 增 `behavior/AppTransitions.kt`（转场模式×档位绑定，§5.2）+ `behavior/MotionResolver.kt`（reduce-motion 直切，§10.3）；
 - P3b 骨架五型
-  - [ ] 增 `components/scaffold/`：`ChatScaffold`/`TabbedScaffold`/`NavScaffold`/`DetailScaffold`/`FormScaffold` +
+  - [x] 增 `components/scaffold/`：`ChatScaffold`/`TabbedScaffold`/`NavScaffold`/`DetailScaffold`/`FormScaffold` +
     `AppTopTabs`/`AppNavBar`/`AppModalSheet`（§6.5.1）+ `AppScaffoldCompat`；
-  - [ ] 改存量 `AppScaffold`/`AppScaffoldWithState` → 内部转发最接近骨架变体；
+  - [x] 改存量 `AppScaffold`/`AppScaffoldWithState` → 内部转发最接近骨架变体；
 - P3c 存量组件接入 + 回归
-  - [ ] `AppComponents.kt`/`AppInputBar.kt` 全组件接入 `appStateLayer`（§4.3 清单，弃 ripple）；
+  - [x] `AppComponents.kt`/`AppInputBar.kt` 全组件接入 `appStateLayer`（§4.3 清单，弃 ripple）；
   - [ ] `ChatScreen`/`SettingsScreen` 迁移到 `ChatScaffold`/详情骨架，逐像素对比 P0 基线快照；
 - P3d 浮层子组件
-  - [ ] 增 `components/overlay/`：`AppDialog`(三变体)/`AppDropdownMenu`/`AppMultiSelectSheet`/`AppToast`+`ToastHost`/`AppBanner`+`BannerHost`；
-  - [ ] `NavScaffoldHost` 内置 `AppToast` 位（底栏上方 inset）；
+  - [x] 增 `components/overlay/`：`AppDialog`(三变体)/`AppDropdownMenu`/`AppMultiSelectSheet`/`AppToast`+`ToastHost`/`AppBanner`+`BannerHost`；
+  - [x] `NavScaffoldHost` 内置 `AppToast` 位（底栏上方 inset）；
 - P3e 表单子组件
   - [ ] 增 `components/form/`：`AppTextField` 补全（浮动标签/error 图标/形态分工）+ `AppSearchField` + `AppCheckbox`/`AppRadio`；
   - [ ] 增 `components/messaging/`：`AppToolCard`+`ToolCardRegistry`/`AppBlockGroup`/`AppBlockGroupReducer`(core:uistate)`/

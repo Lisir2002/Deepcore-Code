@@ -25,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.deepcode.designsystem.behavior.appStateLayer
+import com.deepcode.designsystem.behavior.rememberNoInkIndication
 import com.deepcode.designsystem.state.UiState
 import com.deepcode.designsystem.theme.Dimens
 
@@ -152,7 +154,13 @@ fun AppTopAppBar(
         },
         navigationIcon = {
             if (onBack != null) {
-                IconButton(onClick = onBack) {
+                val backInteraction = remember { MutableInteractionSource() }
+                IconButton(
+                    onClick = onBack,
+                    interactionSource = backInteraction,
+                    indication = rememberNoInkIndication(),
+                    modifier = Modifier.appStateLayer(backInteraction),
+                ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowBack,
                         contentDescription = "返回",

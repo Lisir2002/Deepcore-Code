@@ -1,6 +1,7 @@
 package com.deepcode.designsystem.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,9 +20,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.deepcode.designsystem.behavior.appStateLayer
+import com.deepcode.designsystem.behavior.rememberNoInkIndication
 import com.deepcode.designsystem.theme.Dimens
 
 /**
@@ -85,7 +89,13 @@ fun AppInputBar(
             Spacer(Modifier.size(Dimens.spaceS))
 
             if (onStop != null) {
-                IconButton(onClick = onStop, modifier = Modifier.size(Dimens.minTouchTarget)) {
+                val stopInteraction = remember { MutableInteractionSource() }
+                IconButton(
+                    onClick = onStop,
+                    modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(stopInteraction),
+                    interactionSource = stopInteraction,
+                    indication = rememberNoInkIndication(),
+                ) {
                     Icon(
                         imageVector = Icons.Filled.Stop,
                         contentDescription = "停止",
@@ -93,10 +103,13 @@ fun AppInputBar(
                     )
                 }
             } else {
+                val sendInteraction = remember { MutableInteractionSource() }
                 IconButton(
                     onClick = onSend,
                     enabled = enabled && value.isNotBlank(),
-                    modifier = Modifier.size(Dimens.minTouchTarget),
+                    modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(sendInteraction),
+                    interactionSource = sendInteraction,
+                    indication = rememberNoInkIndication(),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowForward,

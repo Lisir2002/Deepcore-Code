@@ -43,8 +43,11 @@ data class AppColors(
     val border: Color,
     // 状态
     val success: Color,
+    val successContainer: Color,
     val warning: Color,
+    val warningContainer: Color,
     val danger: Color,
+    val dangerContainer: Color,
     val info: Color,
     // 业务保留（聊天场景）
     val diffAdd: Color,
@@ -75,8 +78,11 @@ data class AppColors(
             divider = b.divider,
             border = b.border,
             success = b.success,
+            successContainer = b.successContainer,
             warning = b.warning,
+            warningContainer = b.warningContainer,
             danger = b.danger,
+            dangerContainer = b.dangerContainer,
             info = b.info,
             // 业务保留 → 语义兜底（风格包可另覆盖，本轮不开放）
             diffAdd = b.successContainer,

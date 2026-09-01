@@ -1,18 +1,32 @@
 package com.deepcode.designsystem.components
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material3.FilledTextField
+import androidx.compose.material3.FilledTextFieldDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import com.deepcode.designsystem.behavior.appStateLayer
+import com.deepcode.designsystem.behavior.rememberNoInkIndication
 import com.deepcode.designsystem.theme.AppTextStyle
 import com.deepcode.designsystem.theme.AppTextTone
 import com.deepcode.designsystem.theme.Dimens
+import com.deepcode.designsystem.theme.appColors
 import com.deepcode.designsystem.theme.toColor
 import com.deepcode.designsystem.theme.toTextStyle
 
@@ -50,8 +64,14 @@ fun AppText(
 // ─────────────────────────── 输入框 ───────────────────────────
 
 /**
- * 单行的 MCP server 配置输入框（URL / 名称等）。封装 OutlinedTextField，
- * 业务层无需 import material3 即可拿到受控输入框。
+ * 输入框形态（§6.7.1）：`Outlined` 默认（密集表单低强调）/ `Filled` 高强调关键项/ `Bare` 无框特例（AppInputBar 内部）。
+ */
+enum class AppTextFieldVariant { Outlined, Filled }
+
+/**
+ * 统一的输入框（§6.7.1 完整规范）。模型对齐 M3 text field：
+ * 常态 1dp 描边 → focused/error 2dp（primary/danger）；浮动标签；支持 leading/trailing、
+ * prefix/suffix、helper/error 附属。业务层无需 import material3。
  */
 @Composable
 fun AppTextField(
@@ -62,23 +82,117 @@ fun AppTextField(
     placeholder: String? = null,
     enabled: Boolean = true,
     isError: Boolean = false,
+    errorText: String? = null,
     supportingText: String? = null,
+    helperText: String? = null,
     singleLine: Boolean = true,
+    maxLines: Int = 1,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    variant: AppTextFieldVariant = AppTextFieldVariant.Outlined,
+    leadingIcon: ImageVector? = null,
+    showClearWhenFocused: Boolean = false,
+    prefix: String? = null,
+    suffix: String? = null,
+    shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.radiusM),
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        placeholder = placeholder?.let { { Text(it) } },
-        supportingText = supportingText?.let { { Text(it) } },
-        isError = isError,
-        enabled = enabled,
-        singleLine = singleLine,
-        keyboardOptions = keyboardOptions,
-        modifier = modifier,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimens.radiusM),
-    )
+    val colors = appColors()
+    val effectiveSupporting = when {
+        isError -> errorText
+        !helperText.isNullOrBlank() -> helperText
+        else -> supportingText
+    }
+
+    // ---- 统一的参数集中到公共 lambda，供两种形态复用 ----
+    if (variant == AppTextFieldVariant.Outlined) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = modifier,
+            enabled = enabled,
+            isError = isError,
+            label = { Text(label) },
+            placeholder = placeholder?.let { { Text(it) } },
+            supportingText = effectiveSupporting?.let { { Text(it) } },
+            singleLine = singleLine,
+            maxLines = maxLines,
+            keyboardOptions = keyboardOptions,
+            leadingIcon = leadingIcon?.let { icon ->
+                { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+            },
+            trailingIcon = if (showClearWhenFocused && value.isNotEmpty()) {
+                {
+                    val clearInteraction = remember { MutableInteractionSource() }
+                    IconButton(
+                        onClick = { onValueChange("") },
+                        interactionSource = clearInteraction,
+                        indication = rememberNoInkIndication(),
+                        modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(clearInteraction),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Clear,
+                            contentDescription = "清空",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else null,
+            prefix = prefix?.let { { Text(it) } },
+            suffix = suffix?.let { { Text(it) } },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = if (isError) colors.danger else colors.primary,
+                errorBorderColor = colors.danger,
+                unFocusedBorderColor = colors.border,
+                focusedLabelColor = if (isError) colors.danger else colors.primary,
+                errorLabelColor = colors.danger,
+                errorSupportingTextColor = colors.danger,
+            ),
+            shape = shape,
+        )
+    } else {
+        FilledTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = modifier,
+            enabled = enabled,
+            isError = isError,
+            label = { Text(label) },
+            placeholder = placeholder?.let { { Text(it) } },
+            supportingText = effectiveSupporting?.let { { Text(it) } },
+            singleLine = singleLine,
+            maxLines = maxLines,
+            keyboardOptions = keyboardOptions,
+            leadingIcon = leadingIcon?.let { icon ->
+                { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+            },
+            trailingIcon = if (showClearWhenFocused && value.isNotEmpty()) {
+                {
+                    val clearInteraction = remember { MutableInteractionSource() }
+                    IconButton(
+                        onClick = { onValueChange("") },
+                        interactionSource = clearInteraction,
+                        indication = rememberNoInkIndication(),
+                        modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(clearInteraction),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Clear,
+                            contentDescription = "清空",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else null,
+            prefix = prefix?.let { { Text(it) } },
+            suffix = suffix?.let { { Text(it) } },
+            colors = FilledTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                errorContainerColor = MaterialTheme.colorScheme.dangerContainer,
+                focusedLabelColor = if (isError) colors.danger else colors.primary,
+                errorLabelColor = colors.danger,
+                errorSupportingTextColor = colors.danger,
+            ),
+            shape = shape,
+        )
+    }
 }
 
 // ─────────────────────────── 开关 ───────────────────────────
@@ -93,11 +207,14 @@ fun AppSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val interaction = remember { MutableInteractionSource() }
     Switch(
         checked = checked,
         onCheckedChange = onCheckedChange,
         enabled = enabled,
-        modifier = modifier,
+        modifier = modifier.appStateLayer(interaction),
+        interactionSource = interaction,
+        indication = rememberNoInkIndication(),
         colors = SwitchDefaults.colors(
             checkedTrackColor = MaterialTheme.colorScheme.primary,
             checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
