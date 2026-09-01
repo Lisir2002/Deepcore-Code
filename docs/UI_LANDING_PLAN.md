@@ -42,27 +42,29 @@ P0 基线冻结 → P1 T8.1 令牌层 → P2 T8.2 主题包(编译期) ┐
 
 门禁：四 job 绿。交付：基线快照目录 + 工人起点。
 
-### P1 T8.1 令牌层（新/改文件见 DESIGN_TOKENS §17.3）
-- [ ] 增 `theme/TypeRoles.kt`：`AppTextStyle` 六角色 + `AppTextTone`，与 `AppInputs.kt` 现有枚举对齐合并；
-- [ ] 增 `theme/AppBrandTokens.kt`：brand 明暗双板（Primitive 灰阶/状态，§3.2）；
-- [ ] 增 `theme/AppTokens.kt`：`AppColors` 全语义面板（品牌/表面/文本/边线/状态/业务 6 组）+ `AppTypographyTokens` + `AppMotion`；
-- [ ] 改 `theme/Dimens.kt`：`TypeScale` → 六角色 `TextStyle`（§3.3 fontSans/fontMono + 字重/行高）；radius → `AppRadius`；
-- [ ] 改 `theme/AppTheme.kt`：从 `AppBrandTokens` 取色，**品牌色首次进 M3**（§9.1 全槽位）；删 `dynamicColor`；
-- [ ] JVM 测试：`AppTokensTest`（12.1 面板完整性）、`ContrastMatrixTest`（12.2 WCAG）。
+### P1 T8.1 令牌层（新/改文件见 DESIGN_TOKENS §17.3）— **已完成**
+- [x] 增 `theme/TypeRoles.kt`：`AppTextStyle` 六角色 + `AppTextTone`，与 `AppInputs.kt` 现有枚举对齐合并；
+- [x] 增 `theme/AppBrandTokens.kt`：brand 明暗双板（Primitive 灰阶/状态，§3.2）；
+- [x] 增 `theme/AppTokens.kt`：`AppColors` 全语义面板（品牌/表面/文本/边线/状态/业务 6 组）+ `AppTypographyTokens` + `AppMotion`；
+- [x] 改 `theme/Dimens.kt`：`TypeScale` → 六角色 `TextStyle`（§3.3 fontSans/fontMono + 字重/行高）；radius → `AppRadius`；
+- [x] 改 `theme/AppTheme.kt`：从 `AppBrandTokens` 取色，**品牌色首次进 M3**（§9.1 全槽位）；删 `dynamicColor`；
+- [x] JVM 测试：`AppTokensTest`（12.1 面板完整性）、`ContrastMatrixTest`（12.2 WCAG）。
 
 交付：语义面板 + 六角色 + brand 明暗双板可用。门禁：design-guard 绿；§9.1 M3 槽位全映射；12.1/12.2 绿；
 `design-system-showcase.html` 无回归（此时仅换色，不应有视觉变化——**有变化即映射错**）。
+上门禁兑现：`theme/` 下 `TypeRoles.kt`/`AppBrandTokens.kt`/`AppTokens.kt`/`Dimens.kt`/`AppTheme.kt` 均在，`AppTheme(spec)` 走 `AppThemeBridge.domesticate` 填满 M3 全槽位、已删 `dynamicColor`；`AppTokensTest`+`ContrastMatrixTest` 在库（12.1/12.2）。
 
-### P2 T8.2 主题包·编译期（可 ∥ P3）
-- [ ] 增 `theme/AppThemeSpec.kt`：`AppThemeSpec`/`TokenPair`/`AppRadius`；
-- [ ] 增 `theme/StyleController.kt`：接口 + 默认实现（StateFlow + TableModule 持久化）+ `LocalStyleController`；
-- [ ] 增 `theme/AppThemeBridge.kt`：M3 全槽位映射 + 镜像断言辅助；
-- [ ] 增 `theme/ThemePacks.kt`：编译期内置包注册表（brand 常驻 + console 演示包）；
-- [ ] 改 `theme/AppTheme.kt`：`AppTheme(spec: AppThemeSpec = …)`；`:app` DI 装配 `StyleController`；
-- [ ] 设置页接入"风格切换"入口（三态 darkMode + 风格包列表）；
-- [ ] Compose 测试：`M3MirrorTest`（12.4 镜像断言）、`ThemeSwitchTest`（12.5 切换生效/FOLLOW_SYSTEM）。
+### P2 T8.2 主题包·编译期（可 ∥ P3）— **已完成**
+- [x] 增 `theme/AppThemeSpec.kt`：`AppThemeSpec`/`TokenPair`/`AppRadius`；
+- [x] 增 `theme/StyleController.kt`：接口 + 默认实现（StateFlow + TableModule 持久化）+ `LocalStyleController`；
+- [x] 增 `theme/AppThemeBridge.kt`：M3 全槽位映射 + 镜像断言辅助；
+- [x] 增 `theme/ThemePacks.kt`：编译期内置包注册表（brand 常驻 + console 演示包）；
+- [x] 改 `theme/AppTheme.kt`：`AppTheme(spec: AppThemeSpec = …)`；`:app` DI 装配 `StyleController`；
+- [x] 设置页接入"风格切换"入口（三态 darkMode + 风格包列表）；
+- [x] Compose 测试：`M3MirrorTest`（12.4 镜像断言）、`ThemeSwitchTest`（12.5 切换生效/FOLLOW_SYSTEM）。
 
 交付：多风格包运行时基线（编译期可换肤）。门禁：12.4/12.5 绿；切换零状态丢失。
+上门禁兑现：`:app` `MainActivity` 经 `getKoin().get()` 装配 `StyleController`，`AppTheme(spec)` 读 `LocalStyleController`；设置页「外观」含 darkMode 三态 + 风格包列表（`setSpec`）；`M3MirrorTest`+`ThemeSwitchTest` 在库（12.4/12.5）。
 
 ### P3 T8.5 行为层 + 组件库（可 ∥ P2）
 子顺序：**行为基建 → 骨架 → 存量回归 → 浮层 → 表单 → 消息链路**；每子步都应保持可编译。
