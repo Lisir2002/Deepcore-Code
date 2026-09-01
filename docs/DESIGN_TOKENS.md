@@ -1,8 +1,8 @@
-# DESIGN_TOKENS.md — UI 令牌体系与主题包设计（designsystem v4.1）
+# DESIGN_TOKENS.md — UI 令牌体系与主题包设计（designsystem v4.2）
 
-> 状态：**设计定稿 v4.1（2026-09-01：体系级调研 v4 + 子组件专项调研——M3 dialog/snackbar/
-> text field 官方规范硬对齐，修正三处偏差，见 D18），未实施**。
-> 实施清单见 十四（T8.1–T8.5）。决策记录见 1.3（D5–D18）；本文档是 `designsystem`
+> 状态：**设计定稿 v4.2（2026-09-01：新增 6.8 消息链路 UI——八类消息块 + 执行组聚组 +
+> 工具卡注册表 + 进度移动化变体，决策 D19/D20；含 v4 体系调研 + v4.1 子组件专项），未实施**。
+> 实施清单见 十四（T8.1–T8.5，消息链路组件并入 T8.5）。决策记录见 1.3（D5–D20）；本文档是 `designsystem`
 > 模块从「单主题组件库」演进为「多风格包运行时」的唯一权威设计。
 
 ## 一、定位与铁律
@@ -63,6 +63,8 @@ Component（组件层）    AppCard / AppScaffold 等组件内部，只读语义
 | D16 | **动效升级为 spring 物理双轨（3.5）**：spatial（允许过冲）/ effects（禁过冲）二分 × 三档速度；tween 时长档仅兜底；参数吸收 M3 Expressive 官方 token | spring 可中断、速度感知——流式 AI 输出场景高频重定目标，tween 会重启动画；时长曲线难以全局一致，spring 参数收敛在 6 个 token 内 |
 | D17 | **视觉趋势立场 = 克制专业路线（13.4 白名单/黑名单）**：采纳 Bento 网格排布/强调字体/功能微交互/深色自适应；拒绝重度玻璃拟态/新拟态/高饱和撞色/装饰性粒子动效 | 目标产品是 AI 工具类（专业工具赛道），2026 趋势调研确认低饱和冷灰系+克制动效正是该赛道主流；趋势只进「排布与微交互」，不进「色板与骨架」——骨架与色板已定稿，不为趋势翻新 |
 | D18 | **弹窗与提示按钮行为 = M3 官方契约硬对齐（6.6.1/6.6.3）**：dialog 最多两钮（第三操作走内联展开）、取消永远在确认左、确认钮可选前置禁用/取消永不禁用、标题三禁、scrim 32%；toast 4s + 横滑关闭 + 单条顶替；输入框 Outlined 为默认形态、error 态自动 ⚠ 图标 + live region 播报 | v4.1 子组件专项全网调研（M3 dialog/snackbar/text field 官方 guidelines）修正 v3.1 三处偏差：三钮竖排违反 M3 上限、scrim 40% 非官方值、输入框形态分工与官方相反——组件级细节以平台规范为准绳，不自行发明 |
+| D19 | **消息链路 = 八类消息块 + 执行组聚组（6.8）**：AI 全宽文档流/用户右对齐气泡；工具卡注册表模式、**运行中展开完成即折叠**；思考块**默认折叠一行摘要**；连续 thinking/tool_use 聚为执行组 | 四项均经用户拍板（2026-09-01）；依据：业界已收敛的流式七模式 + 工具卡七模式（ChatGPT/Claude/Cursor/Anthropic Console）；工具卡注册表与 core:mcp 工具注册同构，MCP 外来工具灰色兜底 |
+| D20 | **进度面板移动化变体 = 置顶摘要条 + 时间线抽屉（6.8.6）**，不做独立第二面板 | Claude Code/Cursor/Cline/Aider 四家趋同的进度面板在 Compact 端不成立（挤压会话区、与五型骨架冲突）；「可导航的日志不是进度条」原则保留：抽屉内每步可折叠可审计 |
 
 ## 二、现状盘点
 
@@ -536,6 +538,89 @@ modalSheet（底部模态面板）      ←  重决策 + 富内容表单
 - 表单布局：FormScaffold 内 label 左对齐顶置、字段全宽；两列仅 Expanded 端
   （6.4 断点）且限短字段（开关/选择）；错误文案不改变行高（预留 20dp helper 槽）。
 
+### 6.8 消息链路 UI（Agent 对话流专项，D19/D20）
+
+> 依据 2026-09 全网调研（ChatGPT/Claude/Perplexity/Cursor/Anthropic Console 模式库 +
+> Claude Code/Cline/Aider 趋同分析）+ 用户四项拍板（工具卡运行中展开/思考折叠/
+> 进度移动化变体/AI 全宽文档流）。消费 M0「事件→渲染块归约器」的输出。
+
+#### 6.8.1 八类消息块
+
+| # | 块类型 | 形态契约 |
+| --- | --- | --- |
+| 1 | **用户消息** | **右对齐气泡**（max 82% 宽，`primary` 底白字——会话内唯一气泡），附件预览条；长按 → 内联编辑重发（原消息保留删除线标记，M1 后排期） |
+| 2 | **AI 正文** | **全宽文档流**（不进气泡——业界已收敛；`maxContentWidth` 居中由骨架管），markdown 稳定渲染（6.8.5）+ 活光标 |
+| 3 | **思考块** | AI 紫（3.2 身份色）；**默认折叠一行**：「✦ 思考中…」（脉冲动画）→ 完成后「✦ 已思考 Ns」；点开全文（浅紫底卡） |
+| 4 | **工具卡** | 见 6.8.2 注册表模式；状态徽章走 tool 四态色映射 |
+| 5 | **审批卡** | 见 6.8.4，内联 PermissionGate |
+| 6 | **阶段状态行** | 流式期间一行轻状态（「正在读取 event_store.kt…」），spatial fast 淡入淡出；阶段用领域语言命名 |
+| 7 | **错误块** | 两型：**可恢复**（重试按钮 + 原因一行）/ **中断**（建议换策略 + 详情折叠）；danger 容器浅底 |
+| 8 | **空状态** | 问候语 + 一句话定位 + **3 个建议 chips 竖排**（移动端横滑 chips 显廉价——调研结论）；新增会话首屏即此 |
+
+#### 6.8.2 工具调用卡：注册表模式（核心组件 `AppToolCard`）
+
+静态注册表 = 工具名 → (图标, 人类标题, 参数摘要提取器) 的单一映射（与
+`core:mcp` 工具注册同构，MCP 外来工具走灰色兜底 + 名称字面量）：
+
+| 工具族 | 标题模式 | 图标语义 |
+| --- | --- | --- |
+| 文件类（read/write/edit） | 读取/写入/编辑 + 路径副标题 | 文档/笔/diff |
+| shell | 终端 + 命令首行截断 | 终端 |
+| 搜索/网络 | 搜索 + query 截断 50 字 | 放大镜/地球 |
+| MCP 外来 | 服务器名·工具名 | 插头 |
+
+- **卡片三区**：头（图标 + 标题 + 状态徽章）/ 身（**关键参数摘要一行**，全文折叠）/ 脚（耗时 + 失败时重试链接）；**默认高度 ≤120dp**（10 步运行一屏可见）；
+- **展开策略（已拍板）：运行中展开 + 结果流式进卡（替代黑盒 spinner），完成即自动折叠**为一行摘要；用户手动展开的卡片不自动收起（尊重显式意图）；
+- 结果内联渲染按类型路由：diff（增删行用 success/danger 浅底形态）/ 代码块（mono + codeSurface）/ 文件路径卡 / 表格；纯文本结果截断 800 字符 + 省略（shell/文件 5000）——截断即信号，全文点开；
+- **未审计内联 JSON 是反模式**：一切原始 JSON 只允许出现在折叠区内。
+
+#### 6.8.3 执行组：连续块聚组（`AppBlockGroup`）
+
+归约器输出的**连续 thinking/tool_use 块聚为一组**（text 块独立截断分组——
+业界验证的 BlockGroup 算法）：
+
+- 组壳：左缘 2dp 紫色条（AI 在场）+ 步数徽标「3 步」；
+- 组内折叠态 = 全部子块折叠后的堆叠摘要；**任一子块运行中 → 组自动展开**；
+- 会话流被 10+ 工具卡撑爆的问题由聚组兜底（默认一屏 = N 个折叠组）。
+
+#### 6.8.4 审批卡（PermissionGate 内联形态）
+
+- 触发：危险等级 ≥ 高的工具调用（M1 PermissionGate 设计）；
+- **知情决策而非盲确认**：命令完整预览（mono）/ diff 侧栏对比（域视觉语义）/ 目标文件卡；
+- 三选择竖排：拒绝（次钮）/ 仅本次允许（次钮）/ 本会话允许（实心主钮）——破坏性
+  操作时主钮转 `danger` 并附后果一句话（6.6.1 标题三禁同样适用：不说「警告！」）；
+- 审批卡**不因滚动消失**：置顶 sticky 于输入坞上方直到决策。
+
+#### 6.8.5 流式渲染契约（ChatScaffold 内容区全局）
+
+| 规则 | 规格 |
+| --- | --- |
+| 活光标 | 2dp×18dp 竖条 `primary` 色，脉冲 800ms；**流结束才移除**（非最后 token） |
+| 稳定布局 | markdown 渐进渲染**零 layout shift**：代码块/表格/引用在起始 token 即渲染空壳（min-height 骨架），内容填充；禁「文本流重排跳变」 |
+| Stop 同槽 | 发送键 ↔ stop 键**同槽位替换**（不新增按钮）；stop 触达面积 = 发送键同尺寸（42dp） |
+| 停止保留 | 停止后已生成部分**保留在会话流**（附「已停止」状态行），非消失 |
+| 首响占位 | 首 token 前：阶段状态行（6.8.1#6）+ 骨架 shimmer——**禁裸 spinner 空等** |
+| 断流两型 | 可恢复（SSE 中断→自动重连提示 + 重试）/ 中断（超时→错误块 #7），UI 词汇区分 |
+
+#### 6.8.6 进度摘要条 + 时间线抽屉（移动化进度面板，D20 已拍板）
+
+Claude Code/Cursor/Cline/Aider 四家趋同的「进度面板」在 Compact 端的翻译
+（独立第二面板在手机不成立——挤压会话区且与五型骨架冲突）：
+
+- **置顶摘要条 `AppProgressSummary`**：多步任务运行时 sticky 于输入坞上方
+  （与审批卡互斥，审批优先）；内容 =「N 步完成 · 当前动作领域语言短语」+
+  细进度线（`primary`）；完成即整体淡出；
+- **时间线抽屉**：点摘要条 → `AppModalSheet` 时间线（每步 = 折叠的工具卡，可
+  逐个展开审计，底部「下载运行日志」）——「可导航的日志，不是进度条」；
+- 单工具短任务（<3s）不出现摘要条，工具卡自足。
+
+#### 6.8.7 空状态与追问 chips
+
+- 空状态 = 问候（`display` 角色）+ 一句话产品定位（`body` `textTertiary`）+
+  3 建议 chips 竖排（`surfaceV` 底、`radiusM`、44dp 高、左侧图标）；
+- 每轮 AI 回复尾部可选追问 chips（≤3 个，`AppTopTabs` 同款滑动语义）——
+  **v1 不做**（M2 首页一并排期），仅预留组件位。
+
 ## 七、主题包（ThemePack）机制
 
 ### 7.1 运行时形态
@@ -723,6 +808,8 @@ ratio = (L_light + 0.05) / (L_dark + 0.05)
 | `ForbiddenPlatformToast`（新） | 业务层裸用平台 `android.widget.Toast` / Compose `Snackbar` | 「请使用 AppToast / AppBanner（6.6.3）」 |
 | `ForbiddenRawDropdown`（新） | 业务层裸用 `DropdownMenu` / `ExposedDropdownMenuBox` | 「请使用 AppDropdownMenu（6.6.2）」 |
 | `ForbiddenRawTextField`（新） | 业务层裸用 `TextField` / `OutlinedTextField` | 「请使用 AppTextField（6.7.1）」 |
+| `ForbiddenRawToolCard`（新） | 业务层裸用 `Card`/`Column` 手拼工具调用卡 / 审批卡 | 「请使用 AppToolCard / AppBlockGroup / AppApprovalCard（6.8）」 |
+| `ForbiddenRawJsonRender`（新） | 业务层将工具原始 JSON/参数直接进 UI（未走注册表摘要提取） | 「工具结果须经注册表摘要路由，原始 JSON 仅入折叠区（6.8.2）」 |
 | 现有三条 | Material3 import / 被禁 Composable / 裸 dp·sp | 不变 |
 
 白名单：`com.deepcode.designsystem` 全包、`:lint` 自身。
@@ -791,7 +878,7 @@ schemaVersion 升 1。禁止原地改语义。
 | --- | --- | --- |
 | T8.1 令牌层扩展 | `AppTokens` 聚合 + 3.1–3.6 全部令牌（brand 色板落地）+ 角色枚举 + `dynamicColor` 删除 + **12.1/12.2 单测** | design-guard 全绿；M3 槽位按 9.1 全量映射 |
 | T8.2 主题包机制（编译期） | `AppThemeSpec` + brand 包 + `StyleController` + 设置页切换 UI + `AppTheme(spec)` 参数化 + **12.4/12.5 测试** | 切换即时生效零状态丢失；镜像断言绿 |
-| T8.5 行为层落地 | `appStateLayer()` 统一封装 + 全组件接入（4.3 清单）+ `AppTransitions` + Navigation 转场接线 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppMediaBlock` + 骨架五型化 + insets 统一 + **浮层与表单子组件（6.6/6.6.4/6.7）：AppDialog 三变体 / AppDropdownMenu / AppMultiSelectSheet / AppToast / AppBanner / AppTextField 补全 / 选择族 / AppSearchField** + **12.7/12.8/12.9 测试** | 全组件交互态一致；五型骨架承载 chat/settings 全页面回归；lint 四条新规则随 T8.4 就绪 |
+| T8.5 行为层落地 | `appStateLayer()` 统一封装 + 全组件接入（4.3 清单）+ `AppTransitions` + Navigation 转场接线 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppMediaBlock` + 骨架五型化 + insets 统一 + **浮层与表单子组件（6.6/6.6.4/6.7）：AppDialog 三变体 / AppDropdownMenu / AppMultiSelectSheet / AppToast / AppBanner / AppTextField 补全 / 选择族 / AppSearchField** + **消息链路组件（6.8）：`AppToolCard`/`AppBlockGroup`/`AppProgressSummary`/`AppApprovalCard`/流式活光标 Composer + 6.8.5 流式渲染契约** + **12.7/12.8/12.9/12.10 测试** | 全组件交互态一致；五型骨架承载 chat/settings 全页面回归；lint 六条新规则随 T8.4 就绪 |
 | T8.3 运行时可插拔 | theme.json v1 解析 + 7.3 合并器 + 7.4 校验器 + `ThemePackLoader`（双根）+ 设置页导入 + **12.3 表驱动** | 手写 delta 包切换成功；非法包拒载并出报告 |
 | T8.4 lint 扩展 | 十一 表三条新规则 | design-guard 四 job 绿 |
 

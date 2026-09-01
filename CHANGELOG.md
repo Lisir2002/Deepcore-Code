@@ -16,6 +16,19 @@
     配对矩阵、`staticCompositionLocalOf` 重组语义与切换行为、Dialog 作用域、线程模型、
     M3 权威映射表、测试策略（六项，底线机器保证）、反模式治理（防语义膨胀/原始值泄漏）。
 
+- **UI 令牌体系 v4.2 — 消息链路 UI 专项**（文档 `docs/DESIGN_TOKENS.md` 6.8 章，实施随 T8.5）：
+  - 新增 **6.8 消息链路 UI**：基于全网调研（ChatGPT/Claude/Cursor/Anthropic Console 流式与
+    工具卡模式 + Claude Code/Cursor/Cline/Aider 进度面板趋同）与用户四项拍板定稿。
+  - **八类消息块**（6.8.1）：用户右对齐气泡 / AI 全宽文档流 / 思考块（AI 紫、默认折叠一行）/
+    工具卡 / 审批卡 / 阶段状态行 / 错误块（可恢复 vs 中断两型）/ 空状态（竖排建议 chips）。
+  - **工具卡注册表模式**（6.8.2 `AppToolCard`）：工具名→图标+人话标题+参数摘要的单一映射
+    （与 `core:mcp` 工具注册同构，MCP 外来工具灰色兜底）；运行中展开、完成即折叠、原始 JSON 仅入折叠区。
+  - **执行组聚组**（6.8.3 `AppBlockGroup`）：连续 thinking/tool_use 聚组，左缘紫条 + 步数徽标，防 10+ 卡撑爆会话流。
+  - **审批卡内联 PermissionGate**（6.8.4）：命令/diff 预览 + 三选择竖排（风险操作主钮转 danger）。
+  - **流式渲染契约**（6.8.5）：活光标、零 layout shift、Stop 同槽、停止保留、首响占位、断流两型。
+  - **进度移动化变体**（6.8.6，D20）：置顶摘要条 + 时间线抽屉，不做独立第二面板。
+  - 决策新增 **D19/D20**；lint 新增 `ForbiddenRawToolCard` / `ForbiddenRawJsonRender`；T8.5 并入消息链路组件。
+
 ## [0.2.0.2] — 2026-09-01 · tag [v0.2.0.2](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.2.0.2) · versionCode 20002
 
 ### Added

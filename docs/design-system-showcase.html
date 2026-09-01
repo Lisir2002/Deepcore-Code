@@ -235,7 +235,7 @@ code.tok{font-family:var(--font-mono);font-size:11.5px;background:var(--codeS);b
   <h1>黑白灰立骨，蓝紫点睛。<br><span class="grad">一套令牌，全程自洽。</span></h1>
   <p class="sub">DeepCore-Code（Android AI Agent）UI 层统一设计接口。吸收 Material 3 Expressive 运动物理、深色海拔体系、W3C 无障碍排版四要素与 2026 趋势调研定稿——本页即用该体系渲染，你看到的每个颜色、圆角、动效都来自同一套令牌。</p>
   <div class="stats">
-    <div class="stat"><b>17</b><span>项决策 D5–D17</span></div>
+    <div class="stat"><b>20</b><span>项决策 D5–D20</span></div>
     <div class="stat"><b>4</b><span>层令牌模型</span></div>
     <div class="stat"><b>8</b><span>态交互状态机</span></div>
     <div class="stat"><b>6</b><span>枚 spring 物理档</span></div>
@@ -459,8 +459,69 @@ code.tok{font-family:var(--font-mono);font-size:11.5px;background:var(--codeS);b
     </div></div>
   </div>
 </section>
+
+<section>
+  <div class="sec-head"><span class="no">08</span><h2>消息链路 UI：八类消息块</h2><span class="tag">6.8 · D19/D20 · 全网调研定稿</span></div>
+  <p class="sec-desc">基于 ChatGPT/Claude/Cursor/Anthropic Console 流式与工具卡模式库调研，加用户四项拍板
+  （工具卡运行中展开 / 思考折叠 / 进度移动化 / AI 全宽文档流）。下面三台手机即
+  <b>AppToolCard / AppBlockGroup / AppApprovalCard</b> 的真实模拟，全部按 6.8 令牌规格渲染：</p>
+  <div class="grid g3">
+    <div class="card" style="display:flex;justify-content:center;background:var(--surfaceV)"><div class="phone">
+      <div class="ptb"><span class="bk">‹</span>会话：批量写入事件<span style="flex:1"></span><span style="color:var(--primary)">⋯</span></div>
+      <div class="pmsg">
+        <div class="bub user">把 SQLite 事件存储改成批量写入</div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ai);background:var(--aiC);border-radius:12px;padding:7px 11px;align-self:flex-start"><i style="width:6px;height:6px;border-radius:50%;background:var(--ai);display:inline-block;animation:pulse 1.2s infinite"></i>✦ 已思考 3s</div>
+        <div style="align-self:stretch;background:var(--surfaceE);border:1px solid var(--border);border-radius:12px;padding:10px;font-size:11px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:var(--primaryC);color:var(--primary);display:grid;place-items:center;font-size:12px">📄</span><b style="font-size:12px">读取文件</b><span class="chip run" style="font-size:9px;padding:0 8px;height:20px"><i></i>运行中</span></div>
+          <div style="color:var(--text3);margin-top:6px;font-family:var(--font-mono);font-size:10px">event_store.kt · 1,204 行…</div>
+          <div class="skel-line" style="width:80%;margin-top:6px"></div>
+        </div>
+        <div style="align-self:stretch;background:var(--surfaceE);border:1px solid var(--border);border-radius:12px;padding:10px;font-size:11px;display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:6px;background:var(--successC);color:var(--success);display:grid;place-items:center;font-size:11px">✓</span><b style="font-size:11.5px">写入文件</b><span style="color:var(--text3);font-size:10px;margin-left:auto">2ms</span></div>
+      </div>
+      <div class="pinbar"><div class="ib">输入消息…</div><div class="send">↑</div></div>
+      <div class="pnav"><div class="nt on"><span class="ic">💬</span>会话</div><div class="nt"><span class="ic">🧰</span>工具</div><div class="nt"><span class="ic">📚</span>技能</div><div class="nt"><span class="ic">⚙️</span>设置</div><div class="nt"><span class="ic">👤</span>我的</div></div>
+    </div></div>
+    <div class="card" style="display:flex;justify-content:center;background:var(--surfaceV)"><div class="phone">
+      <div class="ptb"><span class="bk">‹</span>会话：重构构建脚本<span style="flex:1"></span><span style="color:var(--primary)">⋯</span></div>
+      <div class="pmsg">
+        <div class="bub user">帮我优化 Gradle 构建速度</div>
+        <div style="align-self:stretch;border-left:2px solid var(--ai);border-radius:0 12px 12px 0;background:var(--surfaceE);padding:10px 12px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700"><span style="background:var(--ai);color:#fff;border-radius:99px;font-size:9px;padding:1px 7px">3 步</span> Agent 执行中…</div>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+            <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2)"><span style="color:var(--success)">✓</span> 检查依赖树</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2)"><span style="color:var(--success)">✓</span> 分析任务图</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2)"><span style="color:var(--primary)">⟳</span> 应用缓存配置…</div>
+          </div>
+        </div>
+        <div class="bub bot" style="max-width:100%">已减少 32% 配置阶段耗时，建议启用配置缓存。</div>
+      </div>
+      <div class="pinbar"><div class="ib">输入消息…</div><div class="send">↑</div></div>
+      <div class="pnav"><div class="nt on"><span class="ic">💬</span>会话</div><div class="nt"><span class="ic">🧰</span>工具</div><div class="nt"><span class="ic">📚</span>技能</div><div class="nt"><span class="ic">⚙️</span>设置</div><div class="nt"><span class="ic">👤</span>我的</div></div>
+    </div></div>
+    <div class="card" style="display:flex;justify-content:center;background:var(--surfaceV)"><div class="phone">
+      <div class="ptb"><span class="bk">‹</span>会话：部署到预发<span style="flex:1"></span><span style="color:var(--primary)">⋯</span></div>
+      <div style="background:var(--surfaceE);border-bottom:1px solid var(--border);padding:9px 12px;display:flex;align-items:center;gap:8px;font-size:11px;position:relative"><span style="width:6px;height:6px;border-radius:50%;background:var(--primary);animation:pulse 1.4s infinite"></span><b>3 步完成 · 正在推送镜像…</b><div style="position:absolute;left:12px;right:12px;bottom:5px;height:2px;border-radius:2px;background:var(--surfaceV)"><div style="width:70%;height:100%;background:var(--primary);border-radius:2px"></div></div></div>
+      <div class="pmsg">
+        <div style="align-self:stretch;border:1px solid var(--danger);background:var(--dangerC);border-radius:12px;padding:10px;font-size:11px;color:var(--danger)"><b style="display:flex;align-items:center;gap:6px">⚠ 推送失败</b><div style="margin-top:5px;color:var(--text2)">连接超时（可恢复）。</div><button class="c-btn" style="margin-top:8px;height:32px;font-size:11px;padding:0 12px;background:var(--danger);color:#fff">重试</button></div>
+      </div>
+      <div class="pinbar"><div class="ib">输入消息…</div><div class="send">↑</div></div>
+      <div class="pnav"><div class="nt on"><span class="ic">💬</span>会话</div><div class="nt"><span class="ic">🧰</span>工具</div><div class="nt"><span class="ic">📚</span>技能</div><div class="nt"><span class="ic">⚙️</span>设置</div><div class="nt"><span class="ic">👤</span>我的</div></div>
+    </div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>消息链路设计要点（6.8 全可溯源）</h3>
+    <div style="font-size:12.5px;color:var(--text2);line-height:2.05">
+      <div>① <b>工具卡注册表</b>：人话标题 + 图标，原始 JSON 仅入折叠区（6.8.2）</div>
+      <div>② <b>运行中展开、完成即折叠</b>：慢工具结果流式进卡（6.8.2，已拍板）</div>
+      <div>③ <b>思考块默认折叠一行</b>：紫 = AI 身份，点开看全文（6.8.1#3，已拍板）</div>
+      <div>④ <b>执行组聚组</b>：连续 thinking/tool 聚为紫条组，防 10+ 卡撑爆（6.8.3）</div>
+      <div>⑤ <b>进度移动化</b>：置顶摘要条 + 时间线抽屉，不做独立面板（6.8.6 / D20）</div>
+      <div>⑥ <b>错误两型</b>：可恢复（重试）vs 中断（换策略）（6.8.1#7）</div>
+    </div>
+  </div>
+</section>
+
 <section id="skeleton">
-  <div class="sec-head"><span class="no">08</span><h2>页面骨架五型</h2><span class="tag">6.1 · D14 三段式切割</span></div>
+  <div class="sec-head"><span class="no">09</span><h2>页面骨架五型</h2><span class="tag">6.1 · D14 三段式切割</span></div>
   <p class="sec-desc">所有页面 = <b>顶栏 + 内容 + 底栏</b> 三段式切割，每段是骨架组件的槽位；业务页面只做槽位填充，insets 骨架层统一消化。D14：</p>
   <div class="grid g5" style="grid-template-columns:repeat(5,1fr)">
     <div class="skel-box"><div class="cap2">ChatScaffold</div><div class="bar b-top"></div><div class="row"><div class="c"></div></div><div class="bar b-bot"></div><div style="font-size:10px;color:var(--text3)">聊天 / Agent 会话</div></div>
@@ -489,7 +550,7 @@ code.tok{font-family:var(--font-mono);font-size:11.5px;background:var(--codeS);b
 </section>
 
 <section id="a11y">
-  <div class="sec-head"><span class="no">09</span><h2>无障碍工程</h2><span class="tag">十 · D10 · 硬约束</span></div>
+  <div class="sec-head"><span class="no">10</span><h2>无障碍工程</h2><span class="tag">十 · D10 · 硬约束</span></div>
   <p class="sec-desc">A11y 由系统解析、<b>风格包不可覆盖</b>（D10）。loader 强制校验对比度矩阵；12.2 单测锁死 brand 包全部配对。</p>
   <div class="grid g3">
     <div class="card"><h3>对比度硬校验</h3><div class="cap">WCAG 2.1 相对亮度模型（10.1）</div>
@@ -510,7 +571,7 @@ code.tok{font-family:var(--font-mono);font-size:11.5px;background:var(--codeS);b
 </section>
 
 <section id="timeline">
-  <div class="sec-head"><span class="no">10</span><h2>设计决策时间线</h2><span class="tag">1.3 · D5–D17</span></div>
+  <div class="sec-head"><span class="no">11</span><h2>设计决策时间线</h2><span class="tag">1.3 · D5–D20</span></div>
   <div class="grid g2">
     <div class="card"><div class="timeline">
       <div class="tl-item"><b><span class="dn">D5–D7</span>v1 定稿</b><p>风格包可切换/可插拔/高度自定义；dynamicColor 关；先定稿后实施。</p></div>
