@@ -2,6 +2,31 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.1.1] — 2026-09-01 · versionCode 40101
+
+> **会话隔离 + 列表交互重构**。修复「新建对话进入历史会话、多会话串扰」的隔离问题；
+> 对话列表交互从左滑改为长按操作面板，卡片撑满横向屏幕；修复操作按钮无响应的回归。
+
+### Fixed
+
+- **新建对话进入历史会话 / 会话未隔离**：根因是 `DemoProvider` 内部可变 `round` 计数在
+  DI 中以共享单例装配，多个会话复用同一实例导致行为互相影响、输出雷同；`ChatViewModel`
+  也未按会话隔离。修复：
+  - [AppModule.kt](app/src/main/kotlin/com/deepcode/agent/di/AppModule.kt) 的
+    `AgentRuntimeFactory` 改为在工厂内为每个会话 `new DemoProvider()`，状态随会话隔离；
+  - [ChatScreen.kt](feature/chat/src/main/kotlin/com/deepcode/feature/chat/ChatScreen.kt) 用
+    `koinViewModel(key = conversationId)` 按会话 id 隔离 ViewModel，新对话绝不串到旧会话历史。
+- **对话列表交互重构**（[ConversationList.kt](feature/chat/src/main/kotlin/com/deepcode/feature/chat/ConversationList.kt)）：
+  - 取消左滑（移除 `AppSwipeReveal`），改为**长按列表项弹出 `AppModalSheet` 操作面板**
+    （查看 / 重命名 / 删除）；
+  - 列表卡片 `AppCard` 撑满横向屏幕（边距自适应），不再半卡露出操作区；
+  - 修复「删除 / 改名 / 查看」按钮点击无响应：操作统一收敛到长按面板的 `SheetActionRow`，
+    直接绑定 `ConversationViewModel` 的 `rename` / `delete` / `onOpenConversation`。
+- **设计系统**（[AppComponents.kt](designsystem/src/main/kotlin/com/deepcode/designsystem/components/AppComponents.kt)）：
+  `AppCard` 新增 `onLongClick` 支持（`combinedClickable`），点击 / 长按同时可用。
+
+---
+
 ## [v0.4.0.7] — 2026-09-01 · versionCode 40007
 
 > **对话列表布局重构与功能建设**。骨架页面从"纯静态"走向"数据打通"：会话列表接入真实数据源，

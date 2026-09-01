@@ -1,7 +1,9 @@
 package com.deepcode.designsystem.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +44,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.behavior.appStateLayer
+import com.deepcode.designsystem.behavior.rememberNoInkIndication
 import com.deepcode.designsystem.theme.Dimens
 import com.deepcode.designsystem.theme.TypeScale
 import com.deepcode.designsystem.theme.appColors
@@ -220,10 +223,12 @@ fun AppTextButton(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     containerColor: Color = MaterialTheme.colorScheme.surface,
     contentPadding: PaddingValues = PaddingValues(Dimens.spaceM),
     content: @Composable ColumnScope.() -> Unit,
@@ -233,17 +238,53 @@ fun AppCard(
     val body: @Composable ColumnScope.() -> Unit = {
         Column(modifier = Modifier.padding(contentPadding), content = content)
     }
-    if (onClick != null) {
-        val interaction = remember { MutableInteractionSource() }
-        ElevatedCard(
-            onClick = onClick,
-            modifier = modifier.appStateLayer(interaction),
-            shape = shape,
-            colors = colors,
-            interactionSource = interaction,
-        ) { body() }
-    } else {
-        ElevatedCard(modifier = modifier, shape = shape, colors = colors) { body() }
+    when {
+        // 同时有点击 + 长按：用 combinedClickable 一步接管手势，
+        // 避免与 M3 Card 内部 clickable 叠加导致 onClick 触发两次。
+        onClick != null && onLongClick != null -> {
+            val interaction = remember { MutableInteractionSource() }
+            ElevatedCard(
+                modifier = modifier
+                    .appStateLayer(interaction)
+                    .combinedClickable(
+                        interactionSource = interaction,
+                        indication = rememberNoInkIndication(),
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                    ),
+                shape = shape,
+                colors = colors,
+            ) { body() }
+        }
+
+        onClick != null -> {
+            val interaction = remember { MutableInteractionSource() }
+            ElevatedCard(
+                onClick = onClick,
+                modifier = modifier.appStateLayer(interaction),
+                shape = shape,
+                colors = colors,
+                interactionSource = interaction,
+            ) { body() }
+        }
+
+        onLongClick != null -> {
+            val interaction = remember { MutableInteractionSource() }
+            ElevatedCard(
+                modifier = modifier
+                    .appStateLayer(interaction)
+                    .combinedClickable(
+                        interactionSource = interaction,
+                        indication = rememberNoInkIndication(),
+                        onClick = {},
+                        onLongClick = onLongClick,
+                    ),
+                shape = shape,
+                colors = colors,
+            ) { body() }
+        }
+
+        else -> ElevatedCard(modifier = modifier, shape = shape, colors = colors) { body() }
     }
 }
 

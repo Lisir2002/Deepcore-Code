@@ -27,7 +27,12 @@ import org.koin.core.parameter.parametersOf
 @Composable
 fun ChatScreen(
     conversationId: String,
-    viewModel: ChatViewModel = koinViewModel(parameters = { parametersOf(conversationId) }),
+    viewModel: ChatViewModel = koinViewModel(
+        // 用会话 id 作为 ViewModel key：即便 ViewModelStoreOwner 被复用（如 Activity 级），
+        // 每个会话也拿到独立实例，绝不串到上一个会话的历史。
+        key = conversationId,
+        parameters = { parametersOf(conversationId) },
+    ),
     onBack: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
 ) {

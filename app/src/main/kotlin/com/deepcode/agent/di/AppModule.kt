@@ -6,7 +6,6 @@ import com.deepcode.core.agent.DefaultAgentRuntime
 import com.deepcode.core.agent.spi.ContextPolicy
 import com.deepcode.core.agent.spi.DefaultToolRegistry
 import com.deepcode.core.agent.spi.DefaultContextPolicy
-import com.deepcode.core.agent.spi.ModelProvider
 import com.deepcode.core.agent.spi.Sandbox
 import com.deepcode.core.agent.spi.ToolRegistry
 import com.deepcode.core.agent.spi.Workspace
@@ -176,17 +175,15 @@ val appModule = module {
     }
     single<SkillInjector> { DefaultSkillInjector() }
 
-    // M0 用演示模型跑通链路；接入真实模型时把这一行换成对应 Provider 即可
-    single<ModelProvider> { DemoProvider() }
-
     single<ContextPolicy> { DefaultContextPolicy() }
 
     // 会话工厂：每个会话一个 AgentRuntime，UI 只传 sessionId。
     // 依赖在模块装配时解析一次，工厂只负责换 sessionId。
+    // 演示模型（DemoProvider）在工厂内按会话新建独立实例：内部 round 等状态随会话隔离，
+    // 不会跨会话串扰（否则所有对话行为互相影响、输出雷同）。接入真实模型时换成对应 Provider 工厂即可。
     single<AgentRuntimeFactory> {
         val skillLoader = get<SkillLoader>()
         val skillInjector = get<SkillInjector>()
-        val provider = get<ModelProvider>()
         val toolRegistry = get<ToolRegistry>()
         val workspace = get<Workspace>()
         val sandbox = get<Sandbox>()
@@ -196,7 +193,7 @@ val appModule = module {
         AgentRuntimeFactory { sessionId ->
             DefaultAgentRuntime(
                 sessionId = sessionId,
-                provider = provider,
+                provider = DemoProvider(),
                 modelRef = ModelRef("demo", "demo-1"),
                 toolRegistry = toolRegistry,
                 workspace = workspace,
