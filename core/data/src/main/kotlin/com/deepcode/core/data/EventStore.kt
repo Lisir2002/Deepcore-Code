@@ -19,4 +19,25 @@ interface EventStore {
     suspend fun loadEvents(sessionId: SessionId): List<AgentEvent>
     fun observe(sessionId: SessionId): Flow<AgentEvent>
     suspend fun clear(sessionId: SessionId)
+
+    // ─────────── 会话索引（会话列表页数据源） ───────────
+    // 会话列表页不需要全量重放事件流，只看索引即可；会话内容仍在事件流里。
+    // 新建/重命名/删除都是元数据操作，与事件写入分属不同事务边界。
+
+    /** 观测全部会话，按最近更新排序；首次订阅立即发射当前快照。 */
+    fun observeSessions(): Flow<List<SessionIndex>>
+
+    /** 预创建会话（用户点「新建对话」但尚未发消息时）。标题留空，首个 turn 到来后自动填充。 */
+    suspend fun createSession(
+        id: SessionId,
+        title: String = "",
+        at: Long = System.currentTimeMillis(),
+    )
+
+    /** 重命名会话。 */
+    suspend fun renameSession(
+        sessionId: SessionId,
+        title: String,
+        at: Long = System.currentTimeMillis(),
+    )
 }

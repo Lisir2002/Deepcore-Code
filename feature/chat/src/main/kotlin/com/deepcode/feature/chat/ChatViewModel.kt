@@ -3,7 +3,9 @@ package com.deepcode.feature.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepcode.core.agent.AgentRuntime
+import com.deepcode.core.agent.AgentRuntimeFactory
 import com.deepcode.core.model.ApprovalScope
+import com.deepcode.core.model.SessionId
 import com.deepcode.core.model.ToolCall
 import com.deepcode.core.uistate.RenderBlock
 import com.deepcode.core.uistate.TranscriptReducer
@@ -20,11 +22,16 @@ import kotlinx.coroutines.launch
  * 注意这里**没有**任何"消息列表"状态——界面内容完全由事件日志归约而来。
  * 好处：进程被杀重建后，ViewModel 重新走一遍 history() 就能 100% 还原界面，
  * 不需要 savedInstanceState、不需要自己维护 List<Message>。
+ *
+ * 多会话：构造时由 DI 注入 [AgentRuntimeFactory] + 当前会话 id（导航参数），
+ * 一个会话一个 runtime，互不干扰。
  */
 class ChatViewModel(
-    private val runtime: AgentRuntime,
+    runtimeFactory: AgentRuntimeFactory,
+    conversationId: String,
 ) : ViewModel() {
 
+    private val runtime: AgentRuntime = runtimeFactory.create(SessionId(conversationId))
     private val reducer = TranscriptReducer()
 
     private val _blocks = MutableStateFlow<List<RenderBlock>>(emptyList())

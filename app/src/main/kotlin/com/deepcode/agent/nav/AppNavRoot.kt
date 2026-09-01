@@ -9,9 +9,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.deepcode.designsystem.components.scaffold.NavItem
 import com.deepcode.designsystem.components.scaffold.NavScaffold
 import com.deepcode.designsystem.theme.StyleController
@@ -52,12 +54,19 @@ fun AppNavRoot(styleController: StyleController) {
         composable(AppRoutes.SHELL) {
             HomeShell(
                 onOpenConversation = { id -> navController.navigate(AppRoutes.chat(id)) },
-                onNewConversation = { navController.navigate(AppRoutes.chat("new")) },
+                onNewConversation = { id -> navController.navigate(AppRoutes.chat(id)) },
             )
         }
-        composable(AppRoutes.CHAT) {
+        composable(
+            route = AppRoutes.CHAT,
+            arguments = listOf(navArgument("conversationId") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val conversationId = backStackEntry.arguments?.getString("conversationId") ?: "default"
             // 对话流全屏：复用现有 ChatScreen（自带 AppScaffold 顶栏），隐藏底栏。
-            ChatScreen(onBack = { navController.popBackStack() })
+            ChatScreen(
+                conversationId = conversationId,
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }
@@ -66,7 +75,7 @@ fun AppNavRoot(styleController: StyleController) {
 @Composable
 internal fun HomeShell(
     onOpenConversation: (String) -> Unit,
-    onNewConversation: () -> Unit,
+    onNewConversation: (String) -> Unit,
 ) {
     val tabs = remember {
         listOf(

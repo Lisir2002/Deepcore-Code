@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.deepcode.core.model.SessionStatus
+import com.deepcode.core.uistate.formatRelativeTime
 import com.deepcode.designsystem.components.AppCard
 import com.deepcode.designsystem.components.AppPrimaryButton
 import com.deepcode.designsystem.components.AppScaffold
@@ -40,53 +44,71 @@ import com.deepcode.designsystem.theme.AppTextStyle
 import com.deepcode.designsystem.theme.AppTextTone
 import com.deepcode.designsystem.theme.Dimens
 import com.deepcode.designsystem.theme.appColors
+import org.koin.androidx.compose.koinViewModel
 
 /**
- * 对话列表（tab 首屏）：骨架槽位填充，不新增样式。
+ * 对话列表（tab 首屏）：数据来自会话索引 + 事件归约，不新增样式。
  *
  * 顶栏 = 骨架 `AppTopAppBar` 槽位（左侧标题 + 右侧「新建对话」图标按钮）；
- * 列表项 = `AppCard` 包 `AppSwipeReveal`（左滑半卡露出 重命名/删除/查看 操作区）；
+ * 列表项 = `AppCard` 包 `AppSwipeReveal`（整卡横满，左滑半卡露出 重命名/删除/查看 操作区）；
+ * 列表项信息加强：标题 + 预览 + 相对时间 + 状态角标 + 模型标识（数据源补上后显示）。
  * 整个页面由 `AppScaffold` 承载，顶栏/底栏 insets 骨架层统一消化。
  */
 @Composable
 fun ConversationList(
     onOpenConversation: (String) -> Unit,
-    onNewConversation: () -> Unit,
+    onNewConversation: (String) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    viewModel: ConversationViewModel = koinViewModel(),
 ) {
-    var conversations by remember { mutableStateOf(sampleConversations) }
-    var renameTarget by remember { mutableStateOf<ConversationSummary?>(null) }
-    var deleteTarget by remember { mutableStateOf<ConversationSummary?>(null) }
+    val conversations by viewModel.items.collectAsStateWithLifecycle()
+    val loading by viewModel.loading.collectAsStateWithLifecycle()
+    val created by viewModel.created.collectAsStateWithLifecycle()
+    var renameTarget by remember { mutableStateOf<ConversationItem?>(null) }
+    var deleteTarget by remember { mutableStateOf<ConversationItem?>(null) }
+
+    // 新建成功 → 清空标记并跳转进新会话
+    LaunchedEffect(created) {
+        val id = created ?: return@LaunchedEffect
+        viewModel.consumeCreated()
+        onNewConversation(id.value)
+    }
 
     AppScaffold(
         title = "对话",
         modifier = modifier.padding(contentPadding),
         actions = {
-            IconButton(onClick = onNewConversation) {
+            IconButton(onClick = viewModel::create) {
                 Icon(Icons.Filled.Add, contentDescription = "新建对话")
             }
         },
     ) { padding ->
-        if (conversations.isEmpty()) {
-            // 空态由骨架 AppEmptyState 承载，避免手拼布局。
-            AppText(
+        when {
+            loading -> AppText(
+                "加载中…",
+                style = AppTextStyle.Body,
+                tone = AppTextTone.Muted,
+                modifier = Modifier.padding(padding),
+            )
+
+            conversations.isEmpty() -> AppText(
                 "还没有对话",
                 style = AppTextStyle.Title,
                 modifier = Modifier.padding(padding),
             )
-        } else {
-            LazyColumn(
+
+            else -> LazyColumn(
                 modifier = Modifier.padding(padding),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spaceS),
                 contentPadding = PaddingValues(vertical = Dimens.spaceM, horizontal = Dimens.spaceL),
             ) {
-                items(conversations, key = { it.id }) { conv ->
+                items(conversations, key = { it.id.value }) { item ->
                     ConversationRow(
-                        conv = conv,
-                        onRename = { renameTarget = conv },
-                        onDelete = { deleteTarget = conv },
-                        onOpen = { onOpenConversation(conv.id) },
+                        item = item,
+                        onRename = { renameTarget = item },
+                        onDelete = { deleteTarget = item },
+                        onOpen = { onOpenConversation(item.id.value) },
                     )
                 }
             }
@@ -94,8 +116,8 @@ fun ConversationList(
     }
 
     // 重命名：模态面板承载输入 + 保存/取消。
-    renameTarget?.let { conv ->
-        var name by remember(conv) { mutableStateOf(conv.title) }
+    renameTarget?.let { item ->
+        var name by remember(item) { mutableStateOf(item.title) }
         AppModalSheet(onDismiss = { renameTarget = null }) {
             AppText("重命名对话", style = AppTextStyle.Title)
             Spacer(Modifier.size(Dimens.spaceM))
@@ -117,10 +139,7 @@ fun ConversationList(
                 AppPrimaryButton(
                     text = "保存",
                     onClick = {
-                        val newTitle = name.trim().ifBlank { conv.title }
-                        conversations = conversations.map {
-                            if (it.id == conv.id) it.copy(title = newTitle) else it
-                        }
+                        viewModel.rename(item.id, name)
                         renameTarget = null
                     },
                 )
@@ -129,15 +148,15 @@ fun ConversationList(
     }
 
     // 删除：破坏性操作先确认。
-    deleteTarget?.let { conv ->
+    deleteTarget?.let { item ->
         AppConfirmDialog(
             title = "删除对话",
-            body = "确定删除「${conv.title}」吗？此操作不可恢复。",
+            body = "确定删除「${item.title}」吗？此操作不可恢复。",
             confirmText = "删除",
             danger = true,
             onDismiss = { deleteTarget = null },
             onConfirm = {
-                conversations = conversations.filterNot { it.id == conv.id }
+                viewModel.delete(item.id)
                 deleteTarget = null
             },
         )
@@ -146,7 +165,7 @@ fun ConversationList(
 
 @Composable
 private fun ConversationRow(
-    conv: ConversationSummary,
+    item: ConversationItem,
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onOpen: () -> Unit,
@@ -166,29 +185,54 @@ private fun ConversationRow(
     ) {
         AppCard(onClick = onOpen) {
             Column {
-                AppText(
-                    conv.title,
-                    style = AppTextStyle.Title,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.padding(top = Dimens.spaceXXS))
-                AppText(
-                    conv.preview,
-                    style = AppTextStyle.Caption,
-                    tone = AppTextTone.Muted,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AppText(
+                        item.title,
+                        style = AppTextStyle.Title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    StatusBadge(item.status)
+                    Spacer(Modifier.size(Dimens.spaceS))
+                    AppText(
+                        formatRelativeTime(item.updatedAt),
+                        style = AppTextStyle.Caption,
+                        tone = AppTextTone.Muted,
+                    )
+                }
+                if (item.preview.isNotBlank()) {
+                    Spacer(Modifier.padding(top = Dimens.spaceXXS))
+                    AppText(
+                        item.preview,
+                        style = AppTextStyle.Caption,
+                        tone = AppTextTone.Muted,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                item.modelRef?.let { modelRef ->
+                    Spacer(Modifier.padding(top = Dimens.spaceXXS))
+                    AppText(
+                        modelRef.toString(),
+                        style = AppTextStyle.Label,
+                        tone = AppTextTone.Muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
 }
 
-/** 演示数据占位：接真实会话存储后替换。 */
-private data class ConversationSummary(val id: String, val title: String, val preview: String)
-
-private val sampleConversations = listOf(
-    ConversationSummary("demo-1", "第一个对话", "你好，我是 DeepCode Agent。"),
-    ConversationSummary("demo-2", "修复登录闪退", "正在分析崩溃日志…"),
-)
+/** 状态角标：只有「值得看」的状态才显示，空闲不打扰。 */
+@Composable
+private fun StatusBadge(status: SessionStatus) {
+    when (status) {
+        SessionStatus.RUNNING -> AppText("运行中", style = AppTextStyle.Label, tone = AppTextTone.Primary)
+        SessionStatus.AWAITING_APPROVAL -> AppText("待授权", style = AppTextStyle.Label, tone = AppTextTone.Primary)
+        SessionStatus.FAILED -> AppText("失败", style = AppTextStyle.Label, tone = AppTextTone.Error)
+        SessionStatus.IDLE, SessionStatus.COMPLETED, SessionStatus.CANCELLED -> Unit
+    }
+}

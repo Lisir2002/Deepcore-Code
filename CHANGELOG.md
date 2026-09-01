@@ -2,6 +2,41 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.0.7] — 2026-09-01 · versionCode 40007
+
+> **对话列表布局重构与功能建设**。骨架页面从"纯静态"走向"数据打通"：会话列表接入真实数据源，
+> 引入多会话能力，列表项信息加强（标题 + 预览 + 相对时间 + 状态角标 + 模型标识）。
+> 布局上保持「整卡横满，左滑半卡露出操作区」交互，不改设计语言。
+
+### Added
+
+- **会话索引数据层**（[EventStore.kt](core/data/src/main/kotlin/com/deepcode/core/data/EventStore.kt)）：
+  - 新增 `observeSessions()` / `createSession()` / `renameSession()`，会话列表只读索引、不重放事件流；
+  - SQLite 实现（[SQLiteEventStore.kt](core/data/src/main/kotlin/com/deepcode/core/data/event/SQLiteEventStore.kt)）把「写事件 + 维护索引」放进同一事务，索引与事件流永不脱节；
+  - 内存实现（[InMemoryEventStore.kt](core/data/src/main/kotlin/com/deepcode/core/data/InMemoryEventStore.kt)）行为对齐，供单测与演示。
+- **会话摘要归约器**（[SessionSummaryReducer.kt](core/uistate/src/main/kotlin/com/deepcode/core/uistate/SessionSummaryReducer.kt)）：
+  纯 Kotlin 把事件流归约为列表项所需的标题 / 预览 / 状态角标，JVM 可单测（8 例）。
+- **相对时间格式化**（[RelativeTime.kt](core/uistate/src/main/kotlin/com/deepcode/core/uistate/RelativeTime.kt)）：
+  "刚刚 / N分钟前 / N小时前 / 昨天 / M月d日"，6 例单测覆盖。
+- **会话工厂（多会话）**（[AgentRuntime.kt](core/agent/src/main/kotlin/com/deepcode/core/agent/AgentRuntime.kt)）：
+  新增 `AgentRuntimeFactory` 按 sessionId 创建 runtime；DI 把「构造 runtime 的全部依赖」打包进工厂，
+  [ChatViewModel.kt](feature/chat/src/main/kotlin/com/deepcode/feature/chat/ChatViewModel.kt) 由导航参数 `conversationId` 取对应会话。
+- **对话列表接入真实数据**（[ConversationViewModel.kt](feature/chat/src/main/kotlin/com/deepcode/feature/chat/ConversationViewModel.kt) +
+  [ConversationList.kt](feature/chat/src/main/kotlin/com/deepcode/feature/chat/ConversationList.kt)）：
+  - 列表项信息加强：标题 + 预览 + 相对时间 + 状态角标（运行中/待授权/失败）+ 模型标识槽位；
+  - 重命名走模态面板（真实落库），删除走确认弹窗（清事件 + 索引），新建对话 `createSession` 后自动跳转进新会话。
+- **导航参数化**（[AppNavRoot.kt](app/src/main/kotlin/com/deepcode/agent/nav/AppNavRoot.kt)）：
+  `chat/{conversationId}` 路由 + 列表/新建双入口跳转，会话页由会话 id 驱动。
+
+### 决策
+
+- **列表数据源选「索引 + 事件归约」而非全量重放**：会话少时逐会话读一次事件可接受，
+  会话变多后再把预览/状态落到索引列（schema v2）。
+- **多会话落「会话工厂」而非共享单例 runtime**：一个会话一个 `AgentRuntime`，互不干扰，
+  进程被杀重建后由事件日志 100% 还原界面。
+
+---
+
 ## [v0.3.0.6] — 2026-09-01 · versionCode 30006
 
 > **对话列表首页骨架落地**。首个骨架页面：顶栏 + 列表 + 卡片左滑操作，全部走设计系统组件，为后续「骨架页面系列」定下槽位写法。

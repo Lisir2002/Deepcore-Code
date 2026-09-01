@@ -1,7 +1,7 @@
 package com.deepcode.agent.di
 
 import com.deepcode.core.agent.AgentConfig
-import com.deepcode.core.agent.AgentRuntime
+import com.deepcode.core.agent.AgentRuntimeFactory
 import com.deepcode.core.agent.DefaultAgentRuntime
 import com.deepcode.core.agent.spi.ContextPolicy
 import com.deepcode.core.agent.spi.DefaultToolRegistry
@@ -26,7 +26,6 @@ import com.deepcode.core.data.db.TableModule
 import com.deepcode.core.data.db.createSqliteDatabase
 import com.deepcode.core.data.event.SQLiteEventStore
 import com.deepcode.core.model.ModelRef
-import com.deepcode.core.model.SessionId
 import com.deepcode.core.model.WorkspaceRef
 import com.deepcode.core.platform.sandbox.CommandWhitelistSandbox
 import com.deepcode.core.platform.tools.ListFilesTool
@@ -46,6 +45,7 @@ import com.deepcode.designsystem.theme.StyleController
 import com.deepcode.designsystem.theme.ThemePacks
 import com.deepcode.designsystem.theme.DarkMode
 import com.deepcode.feature.chat.ChatViewModel
+import com.deepcode.feature.chat.ConversationViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -181,26 +181,38 @@ val appModule = module {
 
     single<ContextPolicy> { DefaultContextPolicy() }
 
-    single<AgentRuntime> {
+    // 会话工厂：每个会话一个 AgentRuntime，UI 只传 sessionId。
+    // 依赖在模块装配时解析一次，工厂只负责换 sessionId。
+    single<AgentRuntimeFactory> {
         val skillLoader = get<SkillLoader>()
         val skillInjector = get<SkillInjector>()
-        DefaultAgentRuntime(
-            sessionId = SessionId("default"),
-            provider = get(),
-            modelRef = ModelRef("demo", "demo-1"),
-            toolRegistry = get(),
-            workspace = get(),
-            sandbox = get(),
-            eventStore = get(),
-            contextPolicy = get(),
-            scope = get(qualifier = org.koin.core.qualifier.named("agent")),
-            config = AgentConfig(maxIterations = 12),
-            skillSectionProvider = {
-                val result = skillLoader.load()
-                skillInjector.buildSkillSection(result.skills).takeIf { it.isNotEmpty() }
-            },
-        )
+        val provider = get<ModelProvider>()
+        val toolRegistry = get<ToolRegistry>()
+        val workspace = get<Workspace>()
+        val sandbox = get<Sandbox>()
+        val eventStore = get<EventStore>()
+        val contextPolicy = get<ContextPolicy>()
+        val scope = get<CoroutineScope>(qualifier = org.koin.core.qualifier.named("agent"))
+        AgentRuntimeFactory { sessionId ->
+            DefaultAgentRuntime(
+                sessionId = sessionId,
+                provider = provider,
+                modelRef = ModelRef("demo", "demo-1"),
+                toolRegistry = toolRegistry,
+                workspace = workspace,
+                sandbox = sandbox,
+                eventStore = eventStore,
+                contextPolicy = contextPolicy,
+                scope = scope,
+                config = AgentConfig(maxIterations = 12),
+                skillSectionProvider = {
+                    val result = skillLoader.load()
+                    skillInjector.buildSkillSection(result.skills).takeIf { it.isNotEmpty() }
+                },
+            )
+        }
     }
 
     viewModelOf(::ChatViewModel)
+    viewModelOf(::ConversationViewModel)
 }

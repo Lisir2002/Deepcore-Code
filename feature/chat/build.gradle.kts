@@ -38,6 +38,7 @@ dependencies {
     implementation(project(":designsystem"))
     implementation(project(":core:model"))
     implementation(project(":core:agent"))
+    implementation(project(":core:data"))
     implementation(project(":core:uistate"))
 
     implementation(platform(libs.compose.bom))

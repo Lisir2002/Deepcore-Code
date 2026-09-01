@@ -15,6 +15,7 @@ import com.deepcode.designsystem.components.AppTopAppBar
 import com.deepcode.designsystem.components.scaffold.ChatScaffold
 import com.deepcode.designsystem.render.TranscriptList
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 /**
  * 会话页。
@@ -25,7 +26,8 @@ import org.koin.androidx.compose.koinViewModel
  */
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = koinViewModel(),
+    conversationId: String,
+    viewModel: ChatViewModel = koinViewModel(parameters = { parametersOf(conversationId) }),
     onBack: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
 ) {

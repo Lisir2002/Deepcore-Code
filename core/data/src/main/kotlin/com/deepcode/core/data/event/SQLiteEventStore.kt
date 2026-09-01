@@ -94,7 +94,7 @@ class SQLiteEventStore(
     // ─────────────── 会话索引（M1 会话列表页前置能力） ───────────────
 
     /** 观测全部会话，按最近更新排序；不重放事件流。 */
-    fun observeSessions(): Flow<List<SessionIndex>> =
+    override fun observeSessions(): Flow<List<SessionIndex>> =
         db.observe(db.database.sessionsQueries.allSessions())
             .map { rows ->
                 rows.map { row ->
@@ -107,10 +107,23 @@ class SQLiteEventStore(
                 }
             }
 
-    suspend fun renameSession(
+    override suspend fun createSession(
+        id: SessionId,
+        title: String,
+        at: Long,
+    ) = db.transaction {
+        db.database.sessionsQueries.insertSession(
+            id = id.value,
+            title = title,
+            created_at = at,
+            updated_at = at,
+        )
+    }
+
+    override suspend fun renameSession(
         sessionId: SessionId,
         title: String,
-        at: Long = System.currentTimeMillis(),
+        at: Long,
     ) = db.transaction {
         db.database.sessionsQueries.renameSession(title = title, updated_at = at, id = sessionId.value)
     }

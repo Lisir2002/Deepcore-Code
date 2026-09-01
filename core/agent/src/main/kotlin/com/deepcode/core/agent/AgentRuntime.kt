@@ -60,3 +60,13 @@ interface AgentRuntime {
     /** 当前是否有 turn 在跑。 */
     fun isRunning(): Boolean
 }
+
+/**
+ * 按会话 ID 创建 Agent 运行时。
+ *
+ * 多会话：会话列表页同时存在多个会话，每个会话对应一个 runtime。
+ * DI 层把「构造一个 runtime 所需的全部依赖」打包进工厂，UI 只传 sessionId。
+ */
+fun interface AgentRuntimeFactory {
+    fun create(sessionId: SessionId): AgentRuntime
+}
