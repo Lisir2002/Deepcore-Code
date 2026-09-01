@@ -11,6 +11,7 @@ python3 scripts/release_helper.py plan --type patch        # 正式版，如 0.1
 python3 scripts/release_helper.py plan --type patch --rc   # RC 预发行，如 0.1.5.1-rc1
 
 # 2. 提交版本号改动（与代码同一次 commit）
+#    也可用 `./scripts/push.sh "提交信息"` 一次性完成 commit + 本地验证 + 推送
 git add app/build.gradle.kts && git commit -m "chore(release): 对齐版本号 vX.Y.Z.W"
 
 # 3. 确认门禁：Agent 用 AskUserQuestion 询问是否发正式版
@@ -18,6 +19,14 @@ git add app/build.gradle.kts && git commit -m "chore(release): 对齐版本号 v
 #      • 不选/选 RC/超时 → git tag -a vX.Y.Z.W-rcN -m "..." && 推送（自动 prerelease）
 
 # 4. 推送 tag 触发 release.yml
+#    ⚠️ 推送前确保以下凭据已就绪（否则会报 128 错误退出）：
+#      - GITHUB_TOKEN 环境变量（或 ~/.git-credentials / GIT_ASKPASS 脚本）
+#      - Git user 身份（GIT_AUTHOR_NAME/EMAIL + GIT_COMMITTER_NAME/EMAIL 环境变量，
+#        或 git config user.name/email；tag 需要 annotated 身份）
+export GITHUB_TOKEN=ghp_xxxxxxxxx
+export GIT_ASKPASS=/path/to/askpass.sh     # 可执行，从 env 读 token
+export GIT_AUTHOR_NAME='Lisir2002'; export GIT_AUTHOR_EMAIL='Lisir2002@users.noreply.github.com'
+export GIT_COMMITTER_NAME='Lisir2002'; export GIT_COMMITTER_EMAIL='Lisir2002@users.noreply.github.com'
 ./scripts/github-tunnel.sh git push origin vX.Y.Z.W        # 或 vX.Y.Z.W-rcN
 ```
 

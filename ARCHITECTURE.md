@@ -24,6 +24,7 @@
                     │  :core:mcp     MCP 客户端（自实现）    │
                     │  :core:data      SQLite 持久化(SQLDelight) │
                     │  :core:model     领域模型 + 事件定义   │
+                    │  :core:logging   分级日志门面（Android 日志 + 结构化埋点）│
                     └────────────┬────────────────────────┘
                     ┌────────────▼────────────────────────┐
                     │  :core:platform  Android 能力实现     │
@@ -131,10 +132,21 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 
 ### 防线三：Lint 守卫（构建期硬失败）
 
-`:lint` 模块拦截两类行为，命中即 **编译失败**，不是 code review 时才发现：
+`:lint` 模块当前 **10 条规则**（2 条原有 + 8 条新增），命中即 **编译失败**，不是 code review 时才发现：
 
+**原有 2 条**（T8 开始前已生效）：
 - `DirectMaterial3Usage` —— feature/app 层 import `androidx.compose.material3.*` 或自建 `Scaffold`/`Button`/`TopAppBar`
-- `HardcodedDesignToken` —— 硬编码 `16.dp` / `14.sp`
+- `HardcodedDesignToken` —— 硬编码 `16.dp` / `14.sp` / 颜色字面量
+
+**新增 8 条**（T8.4 落地，完整表见 `docs/DESIGN_TOKENS.md §十一`）：
+- `DirectColorLiteral` —— 业务层 `Color(0x…)` / `Color(red=…)`
+- `RawTextStyleConstruction` —— 业务层直接构造 `TextStyle(...)`
+- `ForbiddenWindowComponent` —— 裸用 `Dialog` / `Popup` / `ModalBottomSheet`
+- `ForbiddenPlatformToast` —— 裸用平台 `Toast` / Compose `Snackbar`
+- `ForbiddenRawDropdown` —— 裸用 `DropdownMenu` / `ExposedDropdownMenuBox`
+- `ForbiddenRawTextField` —— 裸用 `TextField` / `OutlinedTextField`
+- `ForbiddenRawToolCard` —— 裸用 `Card`/`Column` 手拼工具卡/审批卡
+- `ForbiddenRawJsonRender` —— 工具原始 JSON 未走注册表摘要直接进 UI
 
 ---
 
@@ -171,6 +183,7 @@ AgentEvent ──(TranscriptReducer)──▶ RenderBlock ──(TranscriptList)
 | `core:data` | 事件日志（append-only）+ SQLite 持久化（SQLDelight 2.x） | ✅ 编译 + **21 个用例通过** |
 | `core:mcp` | 自实现 MCP 客户端（JSON-RPC 2.0 / Streamable HTTP / SSE）、`McpToolBridge`、`McpServerManager` 热插拔 | ✅ 编译 + **15 个用例通过** |
 | `core:uistate` | 事件→渲染块归约器 | ✅ 编译 + **6 个用例通过** |
+| `core:logging` | 分级日志门面（`Log` 接口 + Android 日志实现 + 结构化埋点骨架，详细设计见 `docs/LOGGING_SYSTEM_DESIGN.md`） | ✅ 编译 + 被 `core:agent` 等模块依赖 |
 | `core:platform` | 本地工作区、命令白名单沙箱、4 个基础工具 | ✅ CI 编译 + 正式包产出 |
 | `designsystem` | 主题令牌、组件库、事件渲染器 | ✅ CI 编译 + 正式包产出 |
 | `feature:chat` | 会话页 + ViewModel | ✅ CI 编译 + 正式包产出 |

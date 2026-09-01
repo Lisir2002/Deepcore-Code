@@ -80,8 +80,9 @@ python3 scripts/release_helper.py plan --type patch --rc   # 计划 RC 预发行
 - 分组用：`Added / Changed / Fixed / Security / 决策`（决策小节记录"为什么"）。
 - 每个版本条目必须包含：版本号、日期、对应 commit/tag、`versionCode`。
 - 未发布内容放在 `Unreleased` 区，发版时改名并补日期。
-- RC 预发行（`-rcN`）通常不单独记 CHANGELOG 条目，随其正式版合并记录；
-  若 RC 间差异重大，可在正式版条目 `### 决策` 中说明。
+- RC 预发行（`-rcN`）**允许单独记 CHANGELOG 条目**，也可随其正式版合并记录；
+  实践：若 RC 间差异重大（如 T8 整体落地、黑边修复、底栏美化等），推荐单独写条目以便追溯；
+  小步迭代的 RC 可合并到正式版。
 
 ## 五、历史版本决策摘要
 

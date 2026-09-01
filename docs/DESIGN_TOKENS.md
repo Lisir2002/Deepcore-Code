@@ -1,13 +1,14 @@
 # DESIGN_TOKENS.md — UI 令牌体系与主题包设计（designsystem v4.2）
 
-> 状态：**设计定稿 v4.2（2026-09-01：新增 6.8 消息链路 UI——八类消息块 + 执行组聚组 +
-> 工具卡注册表 + 进度移动化变体，决策 D19/D20；含 v4 体系调研 + v4.1 子组件专项），未实施**。
-> 实施清单见 十四（T8.1–T8.5，消息链路组件并入 T8.5）。决策记录见 1.3（D5–D20）；本文档是 `designsystem`
+> 状态：**设计定稿 v4.2 · 已落地（2026-09-01 完整实施）**。
+> T8.1 令牌层扩展 / T8.2 主题包机制 / T8.3 运行时可插拔 / T8.4 lint 扩展 / T8.5 行为层落地
+> —— **全部完成**（详见 §十四 勾选清单 / §十七 落地映射）。本文档是 `designsystem`
 > 模块从「单主题组件库」演进为「多风格包运行时」的唯一权威设计。
 >
-> **落地细化（v4.2.1，2026-09-01 深化）**：在 v4.2 策略定稿之上，补齐可实施粒度——新增
+> **落地细化（v4.2.1，2026-09-01 深化并实施）**：在 v4.2 策略定稿之上，补齐可实施粒度——新增
 > `十七 落地实施映射（文件级）`（目标目录树、现状→目标差距表、每 T8 步 new/modify/test 文件清单、
-> 依赖与 CI 门禁），并给 § 7.1/7.3、+ 六.8/六.5 补上完整 API 签名与数据契约。
+> 依赖与 CI 门禁），并给 § 7.1/7.3、§六.8/§六.5 补上完整 API 签名与数据契约。代码实际落地目录
+> 与 §17.1 完全一致；若后续设计有变，**改设计先改本文，再改代码**。
 > **本文档 = 语义令牌/主题包的唯一 source of truth；落地映射 = 把设计平移成可评审的代码清单。**
 
 ## 一、定位与铁律
@@ -73,23 +74,28 @@ Component（组件层）    AppCard / AppScaffold 等组件内部，只读语义
 
 ## 二、现状盘点
 
-### 2.1 已就位（不用改）
+### 2.1 落地前快照（历史基线，保留用于追溯 T8 之前的代码形态）
+
+> 本段是 **T8 开始前** 的盘点快照，仅作历史参考。当前落地形态见 §17.1 目标目录树与
+> 代码仓库。
 
 - `Dimens`（间距 7 档/圆角 5 档/触控/最大宽度）、`TypeScale`（字号 10 档）；
 - `AppColors` 9 个聊天业务色（明暗两套）；`AppTextStyle`/`AppTextTone` 语义枚举；
 - `AppTheme` 全 App 唯一入口；`AppScaffold`（title/onBack/actions/content 槽位）、`AppInputBar`；
 - `:lint`：拦 Material3 import / 自建被禁组件 / 硬编码 dp·sp（已生效）。
 
-### 2.2 缺口（本设计补齐）
+### 2.2 已补齐（T8.1–T8.5 全部落地）
 
-1. 品牌主色无入口（`lightColorScheme()` 空参，品牌色从未配置）；
-2. 字体令牌只有字号（无字重/行高/字族）；
-3. 通用语义色面板缺失（secondary/error 等 M3 槽位全是出厂值）；
-4. 主题写死单套（无主题参数）；
-5. **交互态无统一设计**：ripple 用 M3 默认（色不可控），hover/selected/disabled 各组件自定；
-6. **动效无编排**：只有 3.5 时长档位定义，转场未接线（Navigation 默认转场 = 平台样板）；
-7. **骨架不完整**：无顶栏 tab、无底栏导航组件，insets 未统一处理；
-8. lint 不拦颜色字面量。
+> 下列 8 条缺口**已全部修复**。每一条的实现落点文件见 §17.3 T8 步对应行。
+
+1. ✅ 品牌主色入口：`AppBrandTokens.kt` + `AppTokens.kt` 聚合，品牌色通过 `AppThemeSpec` 注入；
+2. ✅ 字体令牌扩展为 `TypeRoles.kt`：六角色 `TextStyle`（含字重/行高/字族）；
+3. ✅ 通用语义色面板：`AppColors` 全语义扩展 + `AppThemeBridge.kt` 映射 M3 全部槽位；
+4. ✅ 主题写死单套 → `StyleController` 运行时切换 + `ThemePacks.kt` 编译期注册 + `theme.json` 可插拔；
+5. ✅ 交互态统一：`Modifier.appStateLayer()`（`behavior/AppInteraction.kt`）+ 全组件接入；
+6. ✅ 动效编排：`MotionResolver` 双轨制 + `AppTransitions` 转场绑定 + Navigation 接线；
+7. ✅ 骨架五型化：`components/scaffold/` 下五型骨架 + `AppTopTabs` + `AppNavBar` + `AppModalSheet` + insets 统一；
+8. ✅ lint 扩展：从 2 条扩至 **10 条**（`DesignSystemIssueRegistry.kt`），含颜色字面量、裸表单、裸工具卡等新规则。
 
 ### 2.3 现状 → 目标差距表（落地映射，锚点 17.3）
 
@@ -1040,7 +1046,7 @@ ratio = (L_light + 0.05) / (L_dark + 0.05)
 | `ForbiddenRawTextField`（新） | 业务层裸用 `TextField` / `OutlinedTextField` | 「请使用 AppTextField（6.7.1）」 |
 | `ForbiddenRawToolCard`（新） | 业务层裸用 `Card`/`Column` 手拼工具调用卡 / 审批卡 | 「请使用 AppToolCard / AppBlockGroup / AppApprovalCard（6.8）」 |
 | `ForbiddenRawJsonRender`（新） | 业务层将工具原始 JSON/参数直接进 UI（未走注册表摘要提取） | 「工具结果须经注册表摘要路由，原始 JSON 仅入折叠区（6.8.2）」 |
-| 现有三条 | Material3 import / 被禁 Composable / 裸 dp·sp | 不变 |
+| 现有两条 | Material3 import / 硬编码设计令牌（含裸 dp·sp·颜色字面量的 lint 前置拦截） | 不变 |
 
 白名单：`com.deepcode.designsystem` 全包、`:lint` 自身。
 
@@ -1105,16 +1111,20 @@ schemaVersion 升 1。禁止原地改语义。
 
 ## 十四、实施清单（T8）
 
-| 步骤 | 内容 | 验收 |
-| --- | --- | --- |
-| T8.1 令牌层扩展 | `AppTokens` 聚合 + 3.1–3.6 全部令牌（brand 色板落地）+ 角色枚举 + `dynamicColor` 删除 + **12.1/12.2 单测** | design-guard 全绿；M3 槽位按 9.1 全量映射 |
-| T8.2 主题包机制（编译期） | `AppThemeSpec` + brand 包 + `StyleController` + 设置页切换 UI + `AppTheme(spec)` 参数化 + **12.4/12.5 测试** | 切换即时生效零状态丢失；镜像断言绿 |
-| T8.5 行为层落地 | `appStateLayer()` 统一封装 + 全组件接入（4.3 清单）+ `AppTransitions` + Navigation 转场接线 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppMediaBlock` + 骨架五型化 + insets 统一 + **浮层与表单子组件（6.6/6.6.4/6.7）：AppDialog 三变体 / AppDropdownMenu / AppMultiSelectSheet / AppToast / AppBanner / AppTextField 补全 / 选择族 / AppSearchField** + **消息链路组件（6.8）：`AppToolCard`/`AppBlockGroup`/`AppProgressSummary`/`AppApprovalCard`/流式活光标 Composer + 6.8.5 流式渲染契约** + **12.7/12.8/12.9/12.10 测试** | 全组件交互态一致；五型骨架承载 chat/settings 全页面回归；lint 八条新规则随 T8.4 就绪 |
-| T8.3 运行时可插拔 | theme.json v1 解析 + 7.3 合并器 + 7.4 校验器 + `ThemePackLoader`（双根）+ 设置页导入 + **12.3 表驱动** | 手写 delta 包切换成功；非法包拒载并出报告 |
-| T8.4 lint 扩展 | 十一 表**八**条新规则（§17.3） | design-guard 四 job 绿 |
+> **T8.1–T8.5 已于 2026-09-01 全部完成**。以下为实施状态快照，方便后续扩展新 T8 步时参考。
+> 每步的文件级落点见 §17.3 对应行；代码实际结构见 §17.1 目标目录树。
 
-依赖与节奏：T8.1 →（T8.2 ∥ T8.5）→ T8.3 → T8.4；T8.2 与 T8.5 相互独立可并行；
-T8.3/T8.4 排在 M1 真实模型之后（真实模型优先级最高）。
+| 步骤 | 内容 | 验收 | 状态 |
+| --- | --- | --- | --- |
+| ✅ T8.1 令牌层扩展 | `AppTokens` 聚合 + 3.1–3.6 全部令牌（brand 色板落地）+ 角色枚举 + `dynamicColor` 删除 + **12.1/12.2 单测** | design-guard 全绿；M3 槽位按 9.1 全量映射 | ✅ 已落地 |
+| ✅ T8.2 主题包机制（编译期） | `AppThemeSpec` + brand 包 + `StyleController` + 设置页切换 UI + `AppTheme(spec)` 参数化 + **12.4/12.5 测试** | 切换即时生效零状态丢失；镜像断言绿 | ✅ 已落地 |
+| ✅ T8.5 行为层落地 | `appStateLayer()` 统一封装 + 全组件接入（4.3 清单）+ `AppTransitions` + Navigation 转场接线 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppMediaBlock` + 骨架五型化 + insets 统一 + **浮层与表单子组件（6.6/6.6.4/6.7）：AppDialog 三变体 / AppDropdownMenu / AppMultiSelectSheet / AppToast / AppBanner / AppTextField 补全 / 选择族 / AppSearchField** + **消息链路组件（6.8）：`AppToolCard`/`AppBlockGroup`/`AppProgressSummary`/`AppApprovalCard`/流式活光标 Composer + 6.8.5 流式渲染契约** + **12.7/12.8/12.9/12.10 测试** | 全组件交互态一致；五型骨架承载 chat/settings 全页面回归；lint 八条新规则随 T8.4 就绪 | ✅ 已落地 |
+| ✅ T8.3 运行时可插拔 | theme.json v1 解析 + 7.3 合并器 + 7.4 校验器 + `ThemePackLoader`（双根）+ 设置页导入 + **12.3 表驱动** | 手写 delta 包切换成功；非法包拒载并出报告 | ✅ 已落地 |
+| ✅ T8.4 lint 扩展 | 十一 表**8** 条新规则（§17.3）| design-guard 四 job 绿 | ✅ 已落地 |
+
+原设计节奏：T8.1 →（T8.2 ∥ T8.5）→ T8.3 → T8.4；T8.2 与 T8.5 相互独立可并行；
+T8.3/T8.4 原计划排在 M1 真实模型之后。**实际落地顺序**：T8.1 →（T8.2 ∥ T8.5）→ T8.4 → T8.3
+（lint 扩展被提前，理由：设计定稿时已具备实施条件，不再等真实模型）。
 
 ## 十五、开放问题
 

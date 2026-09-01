@@ -12,8 +12,8 @@
 | **M0 架构地基** | 骨架 + 主循环 + UI 统一机制跑通完整链路 | ✅ 完成（v0.1.0） |
 | **M0.5 发布基线** | 正式签名 + 加固 + CI 发版流水线 | ✅ 完成（v0.1.3） |
 | **M0.6 数据层 SQLite 化** | SQLDelight 接管持久化（events/sessions 表 + TableModule 扩展协议） | ✅ 完成（v0.1.4，CI 全量验证通过） |
-| **M1 能真跑** | 接真实模型（OkHttp + SSE 的 `ModelProvider`）+ **工具/技能层标准化**（MCP 客户端 + Agent Skills） | 🔜 下一步（工具/Skill 设计已定稿） |
-| **M2 能用** | 工作区文件树、Diff 审阅、git 工具、会话列表页；ProotSandbox 后补 stdio MCP | ⏳ 规划中 |
+| **M1 能真跑** | 接真实模型（OkHttp + SSE 的 `ModelProvider`）+ **工具/技能层标准化**（MCP 客户端 + Agent Skills） | ⚠️ **部分完成**：工具/技能层 + T8 UI 令牌体系全落地；**仅真实模型接入未完成**（DI 仍绑定 DemoProvider） |
+| **M2 能用** | 工作区文件树、Diff 审阅、git 工具、会话列表页；ProotSandbox 后补 stdio MCP | ⚠️ **部分完成**：会话列表页已落地（v0.4.1.1）；工作区文件树 / git 工具 / Diff 审阅 / stdio MCP 待做 |
 | **M3 能扛** | 上下文压缩实战化、前台服务保活、数据层深化 | ⏳ 规划中 |
 | **M4 扩展** | 子 Agent 并行、Plan Mode、远端沙箱、MCP Server 侧反向暴露 | ⏳ 规划中 |
 
@@ -93,26 +93,25 @@
 
 ## 当前焦点
 
-**修红完成 ✅ M1 收官。** 2026-09-01：CI 四 job 全绿（run 33443248890），正式版
-**v0.2.0.2**（versionCode 20002）经确认门禁发布，Release + APK 产出并三绿验证。
-T1–T6 的工具/技能层代码至此全部经过 CI 全量验证（此前 `core-test` 一直绿，掩盖了
-`:app` / `:feature:settings` 的编译失败，共三层根因，见下方表）。
+**当前版本基线 v0.4.1.3-rc2**（2026-09-01，预发行）。M0 / M0.5 / M0.6 全部完成；
+M1 工具/技能层（MCP 客户端自实现 + Agent Skills 标准解析）与 T8 UI 令牌体系
+（令牌层扩展 / 主题包机制 / 运行时可插拔 / lint 扩展 / 行为层五型骨架）**全部落地**
+并经 CI 全量验证；**仅真实模型接入未完成**（`:app` DI 仍绑定 `DemoProvider`，`docs/ARCHITECTURE.md` 扩展点表已注明为"仅换一处绑定"）。M2 会话列表页已随 v0.4.1.1 落地，
+工作区文件树 / Diff 审阅 / git 工具 / stdio MCP 待推进。
 
-**M1 下一目标——能真跑**：接真实模型（OkHttp + SSE 的 `ModelProvider`），
-让 Demo 链路升级为真实对话。数据层 M0.6 已随 **v0.1.4** 发布（CI 全量验证通过，
-`:app` 装配 `android-build` 绿），设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单。
+**UI 令牌体系（T8.1–T8.5 已全部完成）**：多主题包可插拔的三层令牌设计
+见 `docs/DESIGN_TOKENS.md`（**v4.2，已落地**）—— brand 色板 / 全语义色面板 /
+六角色字体 / 交互态八态机 / 动效编排 / 五型骨架 / 浮层组件族 / 消息链路组件族
+（AppToolCard / AppBlockGroup / AppApprovalCard / AppProgressSummary / 流式活光标）
+均已编码并通过 design-guard CI 四 job。可视化交付见
+`docs/design-system-showcase.html`。
 
-**UI 令牌体系已定稿（T8 待启动，消息链路设计完成）**：多设计页面 / 风格包可插拔的三层令牌设计见
-`docs/DESIGN_TOKENS.md`（2026-09-01 演进至 **v4.2**，20 章 + 展示页，决策 D5–**D20**）——
-v1/v2 定稿令牌类型 + brand 色板（黑白灰主调、蓝紫点缀、红绿状态），v3 补齐
-**行为层三系统**：交互态八态机（State Overlay 弃 ripple）、动效编排（八种转场
-模式 × 档位绑定）、页面骨架（三段式五型模板）；v4 吸收 M3 Expressive spring 物理
-+ 深色海拔 + A11y 四要素，v4.1 子组件专项对齐 M3 官方规范（D18），**v4.2 新增
-6.8 消息链路 UI**（八类消息块 + 工具卡注册表 + 执行组聚组 + 进度移动化，D19/D20，
-用户四项拍板）。可视化交付见 `docs/design-system-showcase.html`。
-实施清单 T8.1→（T8.2 ∥ T8.5）→ T8.3 → T8.4（T8.5 含消息链路组件）见下方。
+**下一步**：接真实模型（OkHttp + SSE 的 `ModelProvider`，见 §M1 设计要点第 1 条）。
+DI 绑定点唯一（`app/src/main/kotlin/com/deepcode/agent/di/AppModule.kt`），
+扩展点表已注明"仅此一处"；真实模型接入后，工具/技能层/UI 令牌层已全部就绪，
+Demo 链路可直接升级为真实对话。
 
-### CI 红根因与修复（2026-09-01 接手盘点）
+### 历史：CI 红根因与修复（2026-09-01 接手盘点）
 
 | 根因 | 后果 |
 | --- | --- |
@@ -152,18 +151,22 @@ M1 首发预计为 `0.2.0.x`。
 
 ## T8 实施清单（UI 令牌体系与主题包，设计见 `docs/DESIGN_TOKENS.md`）
 
-- [ ] **T8.1 令牌层扩展**：`AppTokens` 聚合（colors/typography/motion）+ 语义色面板补全
+> **T8.1–T8.5 已于 2026-09-01 全部完成**。设计文档状态已同步为「已落地」
+> （见 `docs/DESIGN_TOKENS.md` 顶部状态行 + §十四 勾选清单）。
+
+- [x] **T8.1 令牌层扩展**：`AppTokens` 聚合（colors/typography/motion）+ 语义色面板补全
   + 字重/行高/字族 + `AppTextStyle` 角色扩展；`dynamicColor` 删除（D6）。
-- [ ] **T8.2 主题包机制（编译期）**：`AppThemeSpec` + brand 内置包 + `StyleController`
+- [x] **T8.2 主题包机制（编译期）**：`AppThemeSpec` + brand 内置包 + `StyleController`
   （StateFlow + 持久化）+ 设置页风格切换 UI；`AppTheme(spec)` 参数化。
-- [ ] **T8.5 行为层落地（v3 新增）**：`Modifier.appStateLayer()` 统一封装 +
+- [x] **T8.5 行为层落地（v3 新增）**：`Modifier.appStateLayer()` 统一封装 +
   `AppTransitions` 全局转场配置 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppDialog`
   新组件 + 页面骨架五型化（Chat/Tabbed/Nav/Detail/Form）+ insets 统一消化。
-- [ ] **T8.3 运行时可插拔**：`theme.json` v1 解析 + `ThemePackLoader`（assets/filesDir
+- [x] **T8.3 运行时可插拔**：`theme.json` v1 解析 + `ThemePackLoader`（assets/filesDir
   双根，复用 SkillLoader 模式）+ 对比度/触控校验兜底 + 设置页导入入口。
-- [ ] **T8.4 lint 扩展**：拦业务层 `Color(0x…)` 字面量与裸 `TextStyle` 构造。
-- 节奏：T8.1 →（T8.2 ∥ T8.5）→ T8.3 → T8.4；T8.2 与 T8.5 相互独立可并行；
-  T8.1 可与 M1 并行；T8.3/T8.4 排在 M1 之后（真实模型优先）。
+- [x] **T8.4 lint 扩展**：8 条新规则（拦业务层 `Color(0x…)` 字面量、裸 `TextStyle` 构造、
+  裸 Dialog/Popup/Snackbar/DropdownMenu/TextField/Card 手拼工具卡、工具原始 JSON 未走注册表摘要）。
+- 原节奏：T8.1 →（T8.2 ∥ T8.5）→ T8.3 → T8.4；**实际落地顺序**：T8.1 →（T8.2 ∥ T8.5）→ T8.4 → T8.3
+  （lint 扩展被提前，理由：设计定稿时已具备实施条件，不再等真实模型）。
 
 ## 风险与依赖
 
