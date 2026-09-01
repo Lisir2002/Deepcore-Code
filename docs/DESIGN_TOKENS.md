@@ -1,7 +1,7 @@
 # DESIGN_TOKENS.md — UI 令牌体系与主题包设计（designsystem v3）
 
 > 状态：**设计定稿 v3（2026-09-01：深化 + brand 色板 + 行为层三系统），未实施**。
-> 实施清单见 十四（T8.1–T8.5）。决策记录见 1.3（D5–D14）；本文档是 `designsystem`
+> 实施清单见 十四（T8.1–T8.5）。决策记录见 1.3（D5–D15）；本文档是 `designsystem`
 > 模块从「单主题组件库」演进为「多风格包运行时」的唯一权威设计。
 
 ## 一、定位与铁律
@@ -58,6 +58,7 @@ Component（组件层）    AppCard / AppScaffold 等组件内部，只读语义
 | D12 | **交互态统一 State Overlay 模型，弃用 M3 ripple**：响应 = 前景色透明度叠加（+可选微缩放），由 `Modifier.appStateLayer()` 统一封装 | ① ripple 墨水扩散是 Material 品牌语言，与黑白灰冷灰气质不符，且 ripple 色 M3 默认下不可控；② 交互态不进颜色面板（避免「态×色」组合爆炸），overlay 全部用 onColor α 叠加，天然适配任何主题包；③ 行为一次封装全组件一致 |
 | D13 | **动效编排 = 转场模式 × 档位绑定表（五.2），全局一处配置**；所有动效经 MotionResolver | 转场散落各处必然失谐；档位已在 3.5 定义，编排表是唯一接线处 |
 | D14 | **页面骨架 = 结构组件槽位化（六），五型模板起步**；业务页面只做槽位填充，安全区 insets 骨架层统一消化 | 「顶栏/tab/内容/底栏」的切割以组件契约固化，页面不再手拼布局；insets 各页面自理是深浅色与全面屏适配 bug 的头号来源 |
+| D15 | **子组件收编 = 浮层（弹窗/菜单/提示）与表单控件统一 App 前缀组件 + 语义变体参数化**（6.6/6.7），业务层禁裸用对应 Material/平台组件，lint 拦截 | 弹窗「确认/状态/提示」三语义变体各差一个状态色与按钮布局，裸用必然各页各发明；平台 Toast 无主题不可控；变体参数化让「加一种弹窗 = 加一个枚举值」而不是复制一个文件 |
 
 ## 二、现状盘点
 
@@ -267,7 +268,9 @@ fun Modifier.appStateLayer(
 ### 4.3 接入清单
 
 `AppPrimaryButton` / `AppTextButton` / `AppCard`（可点击变体）/ `AppTextField` /
-`AppSwitch` / `AppStatusChip` / `AppTopTabs`（六.2）/ `AppNavBar`（六.3）——
+`AppSwitch` / `AppStatusChip` / `AppTopTabs`（六.2）/ `AppNavBar`（六.3）/
+`AppDropdownMenu` 触发器与条目（6.6.2）/ `AppBanner`（6.6.3）/
+`AppCheckbox` / `AppRadio` / `AppSearchField`（6.7.2）——
 T8.5 全量接入；新增组件 PR 必须含 appStateLayer 接入，否则 design-guard 红。
 
 ## 五、动效编排（Behavior 之二，D13）
@@ -285,6 +288,8 @@ T8.5 全量接入；新增组件 PR 必须含 appStateLayer 接入，否则 desi
 | `PagePop` | `PagePush` 镜像 | `slow` / `emphasized` | 同上 |
 | `ModalSheet` | 底部上滑 + 遮罩 fade | `normal` / `emphasized` | AppModalSheet（六.5） |
 | `DialogShow` | fade + `scale 0.92→1` | `fast` / `standard` | AppDialog |
+| `MenuShow` | fade + `scaleY 0.95→1`（锚点=触发器底边） | `fast` | AppDropdownMenu（6.6.2） |
+| `ToastShow` | 底部滑入 + fade；退场 fade | `fast` | AppToast / AppBanner（6.6.3） |
 | `TabSwitch` | crossfade（内容区，顶栏指示器滑动另计） | `fast` / `standard` | AppTopTabs / 页面内容 |
 | `ListInsert/Remove` | 高度 expand/collapse + fade | `normal` / `standard` | LazyColumn animateItem |
 | `ThoughtExpand` | 思考流高度展开 | `normal` / `standard` | RenderBlockView |
@@ -302,7 +307,7 @@ T8.5 全量接入；新增组件 PR 必须含 appStateLayer 接入，否则 desi
 - 骨架折叠（DetailScaffold 大标题收合）进度与滚动联动，曲线 `standard`，
   不独立计时（跟手优先）。
 
-## 六、页面骨架系统（Behavior 之三，D14）
+## 六、页面骨架与子组件系统（Behavior 之三，D14/D15）
 
 ### 6.1 三段式切割与五型模板
 
@@ -350,8 +355,106 @@ T8.5 全量接入；新增组件 PR 必须含 appStateLayer 接入，否则 desi
 | 组件 | 性质 | 说明 |
 | --- | --- | --- |
 | `AppTopTabs` / `AppNavBar` / `AppModalSheet` | 新建 | 顶栏 tab / 底栏导航 / 模态壳（转场接 5.2） |
-| `AppDialog` / `AppMediaBlock` | 新建 | 对话框壳（禁裸 Dialog，lint）/ 媒体比例块 |
+| `AppDialog`（含三语义变体，见 6.6）/ `AppMediaBlock` | 新建 | 对话框壳（禁裸 Dialog，lint）/ 媒体比例块 |
 | `AppScaffold`（五型化）/ `AppInputBar` | 改造 | 拆分为骨架变体；insets 统一进骨架 |
+
+### 6.6 浮层子组件规范（Behavior 级，D15）
+
+页面骨架（6.1）解决「切割」，本节解决「段内浮层」——弹窗、菜单、轻提示全部
+收编为 App 前缀组件 + 语义变体参数化，业务层零裸用（lint 拦截，见 十一）。
+
+**浮层选型金字塔**（按打断程度从轻到重，选型错误 = 交互债务）：
+
+```
+inline（输入框下 helper/error）  ←  输入校验，最轻
+banner（页面内常驻横幅）        ←  持久状态/引导，可关闭
+toast（底部悬浮短提示）         ←  操作结果回执，3s 自动消失
+dialog（模态决策）              ←  需要用户确认/决策，打断
+modalSheet（底部模态面板）      ←  重决策 + 富内容表单
+```
+
+#### 6.6.1 `AppDialog`：一个壳，三个语义变体
+
+统一壳规格（三变体共享）：宽 `min(内容, 320dp)`（Expanded 上限 420dp）、
+圆角 `radiusXL`、遮罩 `black @ 40%`、转场 `DialogShow`（5.2，fast 档）、
+内容边距 24dp、标题 `titleMedium` + 正文 `bodyMedium`、海拔 `surfaceElevated`。
+
+| 变体 | 语义 | 布局契约 | 状态色 |
+| --- | --- | --- | --- |
+| **确认** `confirm()` | 破坏性/不可逆操作前置确认 | 双钮横排右对齐：文字钮「取消」+ 实心钮「确认」；两钮间距 `spaceS`；危险操作钮 ≤1 个 | `danger=true` 时实心钮转 `danger` 底白字（删除 MCP 服务器/撤销授权/清空会话） |
+| **状态** `status()` | 进度/成功/失败回执 | `state: Progress/Success/Failure` 单枚举驱动；Progress 只渲染转圈 + 文案**且不出按钮**（防等待中误触），Success/Failure 出单「知道了」钮；图标位 40dp 圆底 + 白图标 | Progress→`primary` / Success→`success` / Failure→`danger` |
+| **提示** `notice()` | 纯信息告知（版本说明/条款） | 单「知道了」钮或自定义 actions；可承载富内容槽（长文滚动区 `maxHeight = 60%` 屏高） | 中性，不着状态色 |
+
+三钮以上一律竖排右对齐文字钮（不再横排拥挤）；变体间**不允许混合发明**
+（「确认 + 进度条」混合体 = 违规，评审兜底）。
+
+#### 6.6.2 `AppDropdownMenu`：单选下拉
+
+- **触发器**两形态：`Field` 形态（内嵌 `AppTextField` 外观，见 6.7，表单内用）/
+  `Button` 形态（筛选条/顶栏操作用，实心或描边）；
+- **面板**：圆角 `radiusM`、`surfaceElevated` 海拔、宽 = 触发器宽（最小 120dp）、
+  条目高 44dp（触控冗余 48dp）、条目态走 4.1（selected = primary 12% 底 +
+  `check` 图标 primary 色）、条目分块（分隔线 `divider` + 「分组标题」
+  `labelMedium textTertiary`）；
+- 转场 `MenuShow`（5.2）：fade + `scaleY 0.95→1`，`fast` 档，锚点为触发器底边；
+- **多选不走菜单**：Compact 端多选 = `AppModalSheet` + checkbox 列表（菜单撑不下
+  且触控质量差），组件名 `AppMultiSelectSheet`（T8.5 一并建）；
+- 禁裸 `ExposedDropdownMenuBox` / `DropdownMenu`（lint `ForbiddenRawDropdown`）。
+
+#### 6.6.3 轻提示体系：`AppToast` / `AppBanner`
+
+| 组件 | 位置 | 消失规则 | 承载内容 |
+| --- | --- | --- | --- |
+| `AppToast` | 底部悬浮（NavScaffold 内置在底栏上方 inset，业务零感知） | **3s 自动**；同屏最多 1 条（新 toast 直接顶替旧条，不排队）；点击 toast 本体不消失 | 单行回执 + 可选动作钮（「撤销」）；`level: neutral/success/danger` 三色 |
+| `AppBanner` | 内容区顶部（骨架槽位，`BannerHost` 统一管理） | **常驻**直到用户关闭或状态解除；不自动消失 | 标题 + 可选正文 + 可选动作；`level: info/success/warning/danger` 四色 + 40dp 图标位 |
+
+- Toast 形态：圆角 `radiusM`、深色反相底（`inverseSurface` 系，浅深色下都够对比）、
+  高 ≥44dp、左右边距 `screenPaddingHorizontal`、多行截断 2 行省略；
+- Banner 形态：圆角 `radiusM`、level 容器色浅底（3.2 状态色 `容器` 列）+ level 色
+  图标/按钮、左图标 24dp；
+- **禁裸 Android `Toast`**（lint `ForbiddenPlatformToast`）——平台 toast 无主题、
+  无品牌圆角、无法接色板，一律走 Compose 自绘 `AppToast`；
+- 层级规则（同 6.6 金字塔）：回执 → toast；引导/持久 → banner；校验 → inline；
+  决策 → dialog。**禁止用 dialog 做操作回执**（打断成本最高，最重的错）。
+
+#### 6.6.4 浮层组件清单（T8.5 新建）
+
+| 组件 | 说明 |
+| --- | --- |
+| `AppDialog`（`confirm`/`status`/`notice` 三变体） | 模态决策壳；lint `ForbiddenWindowComponent` 已规划拦截裸 Dialog |
+| `AppDropdownMenu`（Field/Button 两形态） | 单选下拉；lint `ForbiddenRawDropdown` 拦裸用 |
+| `AppMultiSelectSheet` | 多选 = ModalSheet + checkbox 列表 |
+| `AppToast` / `AppBanner` + `ToastHost` / `BannerHost` | 轻提示双件套；lint `ForbiddenPlatformToast` 拦平台 toast |
+| `AppStatusChip`（已有）→ 补 `busy/loading` 态 | 运行中状态片，走 4.1 `loading` 态 |
+
+### 6.7 表单与选择控件规范
+
+#### 6.7.1 `AppTextField` 完整规范（当前仅有壳，T8.5 补全）
+
+| 维度 | 规格 |
+| --- | --- |
+| 形态 | `Filled`（默认，FormScaffold 内）/ `Outlined`（彩色底嵌入时）/ `Bare`（`AppInputBar` 内部，无框） |
+| 高度 | 单行 52dp；多行 `minLines=1, maxLines` 按场景（备注 4 / 对话输入 6），随内容增高不跳动（baseline 对齐） |
+| 圆角 | `radiusM`；搜索变体 `radiusXL`（全圆） |
+| 标签 | Filled = 浮动标签（focus/有值时上浮 10sp）；Outlined = 常驻左上外挂 12sp |
+| 附属 | `helperText`（12sp `textTertiary`，位于下 4dp）/ `errorText`（12sp `danger`，**出现时替换 helper** 且 100ms fade，同时边框+标签转 `danger`）/ 字符计数（trailing，超限转 `danger`，仅传入 `maxLength` 时启用） |
+| 图标 | leading 24dp（`textTertiary`）；trailing = clear 按钮（有值且 focused 时出现，44dp 触控区） |
+| 状态 | default / focused（`primary` 2dp 描边）/ error（`danger` 1dp 描边 + 文案）/ disabled（38%，走 4.1）——**无第五种状态**，改动走评审 |
+| 键盘 | `keyboardOptions` 由调用方传；安全校验（数字/URL）由调用方语义决定，组件不管业务 |
+
+#### 6.7.2 选择控件族
+
+| 组件 | 规格 |
+| --- | --- |
+| `AppSwitch`（已有） | 52×32dp 轨道；选中 `primary`，关闭 `surfaceVariant`；态走 4.1 |
+| `AppCheckbox` | 20dp；选中 `primary` 底 + 白勾；indeterminate 态（半选）预留 |
+| `AppRadio` | 20dp；选中 `primary` 外环 + 内点；禁裸 `RadioButton` |
+| `AppSearchField` | `AppTextField` 变体（`Outlined` + 全圆 + leading search 图标 + trailing clear），M2 会话列表直接复用 |
+
+- 选择族禁裸用 M3 对应组件（`Checkbox`/`RadioButton`/`Switch` 裸 import 被
+  现有 Material3 import 规则连带拦截）；接入 4.3 清单（appStateLayer + 交互态）。
+- 表单布局：FormScaffold 内 label 左对齐顶置、字段全宽；两列仅 Expanded 端
+  （6.4 断点）且限短字段（开关/选择）；错误文案不改变行高（预留 20dp helper 槽）。
 
 ## 七、主题包（ThemePack）机制
 
@@ -521,6 +624,9 @@ ratio = (L_light + 0.05) / (L_dark + 0.05)
 | `DirectColorLiteral`（新） | 业务层 `Color(0x…)` / `Color(red=…)` | 「请使用 appTokens().colors.<语义名>」 |
 | `RawTextStyleConstruction`（新） | 业务层 `TextStyle(...)` 直接构造 | 「请使用 AppTextStyle 角色」 |
 | `ForbiddenWindowComponent`（新） | 业务层裸用 `Dialog` / `Popup` / `ModalBottomSheet` | 「请使用 AppDialog / AppModalSheet」 |
+| `ForbiddenPlatformToast`（新） | 业务层裸用平台 `android.widget.Toast` / Compose `Snackbar` | 「请使用 AppToast / AppBanner（6.6.3）」 |
+| `ForbiddenRawDropdown`（新） | 业务层裸用 `DropdownMenu` / `ExposedDropdownMenuBox` | 「请使用 AppDropdownMenu（6.6.2）」 |
+| `ForbiddenRawTextField`（新） | 业务层裸用 `TextField` / `OutlinedTextField` | 「请使用 AppTextField（6.7.1）」 |
 | 现有三条 | Material3 import / 被禁 Composable / 裸 dp·sp | 不变 |
 
 白名单：`com.deepcode.designsystem` 全包、`:lint` 自身。
@@ -537,6 +643,7 @@ ratio = (L_light + 0.05) / (L_dark + 0.05)
 | 12.6 | 角色渲染快照 | 后期（可选） | 六角色 × 明暗快照（Paparazzi/Roborazzi） |
 | 12.7 | 交互态一致 | Compose UI 测试 | 接入清单（4.3）组件逐个断言 pressed/hovered/disabled 的 overlay 行为存在（弃 ripple 后防回退） |
 | 12.8 | 骨架槽位 | Compose UI 测试 | 五型骨架的槽位填充、insets 生效、AppTopTabs 指示器选中联动 |
+| 12.9 | 浮层变体 | Compose UI 测试 | AppDialog 三变体（danger 钮色/Progress 无按钮/icon 色）参数化断言；AppToast 单条顶替 + 3s 消失；AppBanner 常驻 + 关闭；DropdownMenu 选中态与分组 |
 
 ## 十三、反模式与治理
 
@@ -562,7 +669,7 @@ schemaVersion 升 1。禁止原地改语义。
 | --- | --- | --- |
 | T8.1 令牌层扩展 | `AppTokens` 聚合 + 3.1–3.6 全部令牌（brand 色板落地）+ 角色枚举 + `dynamicColor` 删除 + **12.1/12.2 单测** | design-guard 全绿；M3 槽位按 9.1 全量映射 |
 | T8.2 主题包机制（编译期） | `AppThemeSpec` + brand 包 + `StyleController` + 设置页切换 UI + `AppTheme(spec)` 参数化 + **12.4/12.5 测试** | 切换即时生效零状态丢失；镜像断言绿 |
-| T8.5 行为层落地 | `appStateLayer()` 统一封装 + 全组件接入（4.3 清单）+ `AppTransitions` + Navigation 转场接线 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppDialog`/`AppMediaBlock` + 骨架五型化 + insets 统一 + **12.7/12.8 测试** | 全组件交互态一致；五型骨架承载 chat/settings 全页面回归 |
+| T8.5 行为层落地 | `appStateLayer()` 统一封装 + 全组件接入（4.3 清单）+ `AppTransitions` + Navigation 转场接线 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppMediaBlock` + 骨架五型化 + insets 统一 + **浮层与表单子组件（6.6/6.6.4/6.7）：AppDialog 三变体 / AppDropdownMenu / AppMultiSelectSheet / AppToast / AppBanner / AppTextField 补全 / 选择族 / AppSearchField** + **12.7/12.8/12.9 测试** | 全组件交互态一致；五型骨架承载 chat/settings 全页面回归；lint 四条新规则随 T8.4 就绪 |
 | T8.3 运行时可插拔 | theme.json v1 解析 + 7.3 合并器 + 7.4 校验器 + `ThemePackLoader`（双根）+ 设置页导入 + **12.3 表驱动** | 手写 delta 包切换成功；非法包拒载并出报告 |
 | T8.4 lint 扩展 | 十一 表三条新规则 | design-guard 四 job 绿 |
 
