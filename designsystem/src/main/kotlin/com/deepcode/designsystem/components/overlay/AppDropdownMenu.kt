@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
@@ -91,7 +92,7 @@ fun AppDropdownMenuItem(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 44.dp)
-            .appStateLayer(interaction, selected = selected, overlayColor = colors.primary)
+            .appStateLayer(interaction, selected = selected, overlayColor = colors.primary, shape = RoundedCornerShape(Dimens.radiusS))
             .clickable(
                 interactionSource = interaction,
                 indication = rememberNoInkIndication(),
@@ -187,7 +188,7 @@ fun AppMultiSelectSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .appStateLayer(interaction, selected = isSelected, overlayColor = colors.primary)
+                    .appStateLayer(interaction, selected = isSelected, overlayColor = colors.primary, shape = RoundedCornerShape(Dimens.radiusS))
                     .clickable(
                         interactionSource = interaction,
                         indication = rememberNoInkIndication(),

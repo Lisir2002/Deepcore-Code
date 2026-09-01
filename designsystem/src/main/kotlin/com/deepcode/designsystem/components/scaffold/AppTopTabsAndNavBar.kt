@@ -1,5 +1,9 @@
 package com.deepcode.designsystem.components.scaffold
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -19,14 +23,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.behavior.appStateLayer
 import com.deepcode.designsystem.behavior.rememberNoInkIndication
 import com.deepcode.designsystem.theme.Dimens
+import com.deepcode.designsystem.theme.appColors
 
 /** §6.2 顶栏选项卡：与内容区 crossfade（TabSwitch）解耦，指示器滑动由页面按需接。 */
 @Composable
@@ -71,7 +77,7 @@ private fun TabChip(
     else MaterialTheme.colorScheme.onSurfaceVariant
     Surface(
         modifier = modifier
-            .appStateLayer(interactionSource, selected = selected)
+            .appStateLayer(interactionSource, selected = selected, shape = RoundedCornerShape(Dimens.radiusS))
             .height(36.dp)
             .clickable(
                 interactionSource = interactionSource,
@@ -117,7 +123,7 @@ private fun BadgeDot(count: Int) {
     }
 }
 
-/** §6.3 底栏导航：3–5 项，圆角胶囊选中态，选中项底部栏腔位缩进。 */
+/** §6.3 底栏导航：3–5 项均布全宽，图标 24dp；选中项主色 12% 圆角底 + 主色图标/标签（颜色/缩放平滑过渡）。 */
 @Composable
 fun AppNavBar(
     tabs: List<NavItem>,
@@ -125,20 +131,36 @@ fun AppNavBar(
     onSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = appColors()
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceS),
+            .padding(horizontal = Dimens.spaceS, vertical = Dimens.spaceS),
         horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         tabs.forEachIndexed { index, item ->
             val interaction = remember { MutableInteractionSource() }
+            val selected = index == selectedIndex
+            val contentColor by animateColorAsState(
+                targetValue = if (selected) colors.primary else colors.textTertiary,
+                label = "navBarItemColor",
+            )
+            val iconScale by animateFloatAsState(
+                targetValue = if (selected) 1.15f else 1f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                label = "navBarIconScale",
+            )
             Column(
                 modifier = Modifier
-                    .appStateLayer(interaction, selected = index == selectedIndex)
+                    .weight(1f)
+                    .appStateLayer(
+                        interaction,
+                        selected = selected,
+                        overlayColor = colors.primary,
+                        shape = RoundedCornerShape(Dimens.radiusL),
+                    )
                     .height(Dimens.minTouchTarget)
-                    .width(64.dp)
-                    .clip(RoundedCornerShape(Dimens.radiusL))
                     .clickable(
                         interactionSource = interaction,
                         indication = rememberNoInkIndication(),
@@ -151,18 +173,14 @@ fun AppNavBar(
                     Icon(
                         imageVector = item.icon,
                         contentDescription = item.text,
-                        modifier = Modifier.size(Dimens.iconM),
-                        tint = if (index == selectedIndex) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
+                        modifier = Modifier.size(Dimens.iconL).scale(iconScale),
+                        tint = contentColor,
                     )
                     item.badge?.let {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .offset(x = 6.dp, y = (-6).dp),
+                                .offset(x = 8.dp, y = (-6).dp),
                         ) {
                             BadgeDot(it)
                         }
@@ -172,11 +190,7 @@ fun AppNavBar(
                 Text(
                     text = item.text,
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (index == selectedIndex) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    color = contentColor,
                 )
             }
         }

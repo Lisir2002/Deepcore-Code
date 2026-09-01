@@ -12,6 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.node.DelegatableNode
 
 /**
@@ -40,6 +45,7 @@ const val SCALE_DRAG: Float = 1.02f
  * §4.2 统一入口：交互 overlay + pressed/dragged 缩放，一次封装。
  *
  * @param interactionSource 组件的 InteractionSource（需 remember 稳定）
+ * @param shape 组件形状：overlay 按此形状裁剪——圆角组件按压/长按时不会露方角黑边（§4.1）
  * @param overlayColor 默认 null = 取组件前景（onColor）α 叠加；仅特殊组可传具体色
  * @param selected 显式选中态：主色 12% 底
  * @param scalePressed 拖拽组件可关 scalePressed = 1f
@@ -47,6 +53,7 @@ const val SCALE_DRAG: Float = 1.02f
 @Composable
 fun Modifier.appStateLayer(
     interactionSource: InteractionSource,
+    shape: Shape = RectangleShape,
     overlayColor: Color? = null,
     selected: Boolean = false,
     scalePressed: Float = SCALE_PRESS,
@@ -71,7 +78,14 @@ fun Modifier.appStateLayer(
     } else 1f
 
     return this
-        .drawBehind { if (overlay != Color.Unspecified) drawRect(overlay) }
+        .drawBehind {
+            if (overlay != Color.Unspecified) {
+                // 关键：overlay 按组件形状裁剪，圆角组件按压/长按时不再露方角黑边（§4.1 四角外露修复）
+                // 注意：DrawScope 内 `density` 是 Float 标量，Density 对象要用 `this`（DrawScope 实现 Density）。
+                val outline = shape.createOutline(size, layoutDirection, this)
+                clipPath(Path().apply { addOutline(outline) }) { drawRect(overlay) }
+            }
+        }
         .scale(scale)
 }
 

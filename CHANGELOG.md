@@ -2,6 +2,33 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.1.3-rc2] — 2026-09-01 · versionCode 40103（预发行）
+
+> **交互视觉修复与底栏美化**。修复「点击 / 长按卡片出现黑色方角黑边」：
+> `appStateLayer` 的交互 overlay 原先按组件外包矩形整块绘制，圆角组件（卡片 / 底栏项 /
+> 按钮 / 输入框图标等）按压或长按时会在四角露出黑色方边。overlay 现改为按组件形状裁剪，
+> 全 App 所有接入 `appStateLayer` 的组件一次性修复。同时美化底栏 `AppNavBar`：
+> 图标均布全宽、尺寸统一 24dp，选中态改为主色 12% 圆角底 + 主色图标 / 标签，并加入
+> 颜色平滑过渡与选中图标弹性缩放，视觉交互更跟手。
+
+### Fixed
+
+- **点击 / 长按卡片出现黑边**（[AppInteraction.kt](designsystem/src/main/kotlin/com/deepcode/designsystem/behavior/AppInteraction.kt)）：
+  `Modifier.appStateLayer()` 新增 `shape` 参数，overlay 绘制前按组件形状裁剪
+  （`shape.createOutline` + `clipPath`），圆角组件按压 / 长按时不再露方角黑边。
+  同步为 `AppCard` / `AppPrimaryButton` / `AppSecondaryButton` / `AppTextButton` /
+  `AppTopTabs` / `AppNavBar` / `AppTextField` 清空钮 / `AppSwitch` / `AppDropdownMenu` /
+  `AppCheckbox` / `AppRadio` / 顶栏返回钮 / 输入坞收发钮等所有接入点传入对应形状。
+
+### Changed
+
+- **底栏美化**（[AppTopTabsAndNavBar.kt](designsystem/src/main/kotlin/com/deepcode/designsystem/components/scaffold/AppTopTabsAndNavBar.kt)）：
+  `AppNavBar` 图标均布全宽（`weight(1f)`）、统一 24dp（`iconL`），选中态改为主色
+  （`appColors().primary`）12% 圆角底 + 主色图标 / 标签，未选中用 `textTertiary`；
+  图标颜色与选中缩放（spring 弹性）平滑过渡。
+
+---
+
 ## [v0.4.1.2-rc1] — 2026-09-01 · versionCode 40102（预发行）
 
 > **重命名修复**。修复「修改对话名后保存无效果」：列表标题取「索引标题」优先，

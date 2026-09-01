@@ -64,7 +64,7 @@ fun AppCheckbox(
     Box(
         modifier = modifier
             .size(ChoiceSpec.Box.dp)
-            .appStateLayer(interaction, overlayColor = colors.primary)
+            .appStateLayer(interaction, overlayColor = colors.primary, shape = shape)
             .background(bg, shape)
             .toggleable(
                 value = checked,
@@ -139,7 +139,7 @@ fun AppRadio(
     Box(
         modifier = modifier
             .size(ChoiceSpec.Box.dp)
-            .appStateLayer(interaction, overlayColor = colors.primary)
+            .appStateLayer(interaction, overlayColor = colors.primary, shape = RoundedCornerShape(50))
             .selectable(
                 selected = selected,
                 onClick = onClick,

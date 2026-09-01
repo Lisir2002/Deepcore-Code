@@ -167,7 +167,7 @@ fun AppPrimaryButton(
     val interaction = remember { MutableInteractionSource() }
     Button(
         onClick = onClick,
-        modifier = modifier.appStateLayer(interaction),
+        modifier = modifier.appStateLayer(interaction, shape = RoundedCornerShape(Dimens.radiusM)),
         enabled = enabled,
         interactionSource = interaction,
         shape = RoundedCornerShape(Dimens.radiusM),
@@ -195,7 +195,7 @@ fun AppSecondaryButton(
     val interaction = remember { MutableInteractionSource() }
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.appStateLayer(interaction),
+        modifier = modifier.appStateLayer(interaction, shape = RoundedCornerShape(Dimens.radiusM)),
         enabled = enabled,
         interactionSource = interaction,
         shape = RoundedCornerShape(Dimens.radiusM),
@@ -215,7 +215,7 @@ fun AppTextButton(
     val interaction = remember { MutableInteractionSource() }
     TextButton(
         onClick = onClick,
-        modifier = modifier.appStateLayer(interaction),
+        modifier = modifier.appStateLayer(interaction, shape = RoundedCornerShape(Dimens.radiusM)),
         enabled = enabled,
         interactionSource = interaction,
     ) {
@@ -245,7 +245,7 @@ fun AppCard(
             val interaction = remember { MutableInteractionSource() }
             ElevatedCard(
                 modifier = modifier
-                    .appStateLayer(interaction)
+                    .appStateLayer(interaction, shape = shape)
                     .combinedClickable(
                         interactionSource = interaction,
                         indication = rememberNoInkIndication(),
@@ -261,7 +261,7 @@ fun AppCard(
             val interaction = remember { MutableInteractionSource() }
             ElevatedCard(
                 onClick = onClick,
-                modifier = modifier.appStateLayer(interaction),
+                modifier = modifier.appStateLayer(interaction, shape = shape),
                 shape = shape,
                 colors = colors,
                 interactionSource = interaction,
@@ -272,7 +272,7 @@ fun AppCard(
             val interaction = remember { MutableInteractionSource() }
             ElevatedCard(
                 modifier = modifier
-                    .appStateLayer(interaction)
+                    .appStateLayer(interaction, shape = shape)
                     .combinedClickable(
                         interactionSource = interaction,
                         indication = rememberNoInkIndication(),

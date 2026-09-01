@@ -3,6 +3,7 @@ package com.deepcode.designsystem.components
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -119,7 +120,7 @@ fun AppTextField(
                 IconButton(
                     onClick = { onValueChange("") },
                     interactionSource = clearInteraction,
-                    modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(clearInteraction),
+                    modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(clearInteraction, shape = RoundedCornerShape(50)),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Clear,
@@ -210,7 +211,7 @@ fun AppSwitch(
         checked = checked,
         onCheckedChange = onCheckedChange,
         enabled = enabled,
-        modifier = modifier.appStateLayer(interaction),
+        modifier = modifier.appStateLayer(interaction, shape = RoundedCornerShape(50)),
         interactionSource = interaction,
         colors = SwitchDefaults.colors(
             checkedTrackColor = MaterialTheme.colorScheme.primary,

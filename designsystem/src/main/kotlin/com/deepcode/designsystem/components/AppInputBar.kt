@@ -94,7 +94,7 @@ fun AppInputBar(
                 val stopInteraction = remember { MutableInteractionSource() }
                 IconButton(
                     onClick = onStop,
-                    modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(stopInteraction),
+                    modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(stopInteraction, shape = RoundedCornerShape(50)),
                     interactionSource = stopInteraction,
                 ) {
                     Icon(
@@ -108,7 +108,7 @@ fun AppInputBar(
                 IconButton(
                     onClick = onSend,
                     enabled = enabled && value.isNotBlank(),
-                    modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(sendInteraction),
+                    modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(sendInteraction, shape = RoundedCornerShape(50)),
                     interactionSource = sendInteraction,
                 ) {
                     Icon(
