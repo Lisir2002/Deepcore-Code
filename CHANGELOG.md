@@ -6,13 +6,15 @@
 
 ### Added
 
-- **UI 令牌体系与主题包设计定稿**（文档 `docs/DESIGN_TOKENS.md`，实施随 T8）：
-  - 三层令牌模型（Primitive / Semantic / Component）；语义色面板（品牌/表面/文本/边线/状态）、
-    字体字重/行高/字族、动效档位基线；
-  - 主题包（ThemePack）运行时机制：`theme.json` 声明式清单（delta 覆盖，与 Agent Skills
-    同哲学）+ assets/filesDir 双根加载 + 对比度/触控校验兜底；
-  - 决策 D5–D7：风格包可切换、可插拔、高度自定义；`dynamicColor`（Material You 取色）
-    默认关闭；先定稿后实施（T8.1–T8.4）。
+- **UI 令牌体系与主题包设计定稿（v2 深化）**（文档 `docs/DESIGN_TOKENS.md`，实施随 T8）：
+  - 三层令牌模型（Primitive / Semantic / Component）+ 各层**准入标准**；语义色面板
+    （品牌/表面/文本/边线/状态）、字体字重/行高/字族、动效档位基线；
+  - 决策 D5–D11：风格包可切换/可插拔/高度自定义；`dynamicColor` 默认关；先定稿后实施；
+    **语义令牌为唯一 source of truth、M3 全槽位映射 + 镜像断言**（D8）；theme.json v1
+    与 W3C DTCG 机械可映射（D9）；A11y 为硬约束（D10）；令牌新增走评审（D11）；
+  - 深化章节：Kotlin 类型设计（编译期完整性）、delta 合并精确语义、WCAG 2.1 对比度
+    配对矩阵、`staticCompositionLocalOf` 重组语义与切换行为、Dialog 作用域、线程模型、
+    M3 权威映射表、测试策略（六项，底线机器保证）、反模式治理（防语义膨胀/原始值泄漏）。
 
 ## [0.2.0.2] — 2026-09-01 · tag [v0.2.0.2](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.2.0.2) · versionCode 20002
 
