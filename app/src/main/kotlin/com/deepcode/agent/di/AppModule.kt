@@ -35,7 +35,12 @@ import com.deepcode.core.platform.tools.RunCommandTool
 import com.deepcode.core.platform.tools.WriteFileTool
 import com.deepcode.core.platform.workspace.LocalDirWorkspace
 import com.deepcode.agent.demo.DemoProvider
+import com.deepcode.agent.logging.AndroidLoggingActions
+import com.deepcode.agent.logging.LogExporter
+import com.deepcode.agent.logging.RollingFileSink
+import com.deepcode.agent.logging.recentEventLines
 import com.deepcode.agent.mcp.AndroidMcpServerConfigStore
+import com.deepcode.feature.settings.LoggingActions
 import com.deepcode.designsystem.theme.DefaultStyleController
 import com.deepcode.designsystem.theme.StyleController
 import com.deepcode.designsystem.theme.ThemePacks
@@ -87,6 +92,25 @@ val appModule = module {
     }
 
     single<EventStore> { SQLiteEventStore(db = get()) }
+
+    // ── 日志（决策 D1/D8–D11/D13–D15/D21）────────────────────────────
+    // 文件 sink：私有 + 根目录双写、1MB×5 滚动、danger.log 镜像。
+    // LogExporter 取数函数延迟求值：MCP 配置读当前快照，事件流读数据层最近 200 条。
+    single<RollingFileSink> { RollingFileSink(androidContext()) }
+
+    single<LogExporter> {
+        LogExporter(
+            context = androidContext(),
+            rollingSink = get(),
+            mcpConfigs = { get<McpServerConfigStore>().current() },
+            eventLines = { recentEventLines(get()) },
+        )
+    }
+
+    // 设置页日志区的契约实现（feature:settings 只认接口，实现与权限都在 :app）。
+    single<LoggingActions> {
+        AndroidLoggingActions(context = androidContext(), exporter = get())
+    }
 
     // ── 主题 / 外观（§7.1 StyleController 装配）──────────────────────
     // 内置包注册：brand 常驻 + console 演示包；持久化走 SettingsTableModule。

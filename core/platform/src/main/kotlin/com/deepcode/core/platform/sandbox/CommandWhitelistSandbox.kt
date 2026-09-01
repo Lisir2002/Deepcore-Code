@@ -4,6 +4,9 @@ import com.deepcode.core.agent.spi.CommandRequest
 import com.deepcode.core.agent.spi.CommandResult
 import com.deepcode.core.agent.spi.Sandbox
 import com.deepcode.core.agent.spi.SandboxCapabilities
+import com.deepcode.core.logging.Log
+import com.deepcode.core.logging.LogCategory
+import com.deepcode.core.logging.LogLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -36,6 +39,10 @@ class CommandWhitelistSandbox(
 
     override suspend fun execute(request: CommandRequest): CommandResult = withContext(Dispatchers.IO) {
         if (request.command !in allowed) {
+            Log.log(
+                LogLevel.WARN, LogCategory.SECURITY_PERMISSION, "Platform",
+                "命令 ${request.command} 不在白名单内，已拒绝",
+            )
             return@withContext CommandResult(
                 exitCode = 126,
                 stdout = "",
@@ -56,6 +63,10 @@ class CommandWhitelistSandbox(
                 .redirectErrorStream(true)
                 .start()
         }.getOrElse {
+            Log.log(
+                LogLevel.ERROR, LogCategory.OPERATION_SANDBOX, "Platform",
+                "无法启动命令 ${request.command}：${it.message}",
+            )
             return@withContext CommandResult(127, "", "无法启动命令：${it.message}")
         }
 
@@ -80,6 +91,11 @@ class CommandWhitelistSandbox(
         val finished = runCatching {
             process.waitFor()
         }.getOrDefault(-1)
+
+        Log.log(
+            LogLevel.INFO, LogCategory.OPERATION_SANDBOX, "Platform",
+            "命令 ${request.command} 退出码 $finished，耗时 ${System.currentTimeMillis() - startedAt}ms",
+        )
 
         CommandResult(
             exitCode = finished,

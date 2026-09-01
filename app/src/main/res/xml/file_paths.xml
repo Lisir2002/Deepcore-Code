@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 日志导出 zip 放在 cacheDir/logs/ 下，仅暴露该子目录 -->
+    <cache-path
+        name="logs"
+        path="logs/" />
+</paths>

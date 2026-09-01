@@ -3,7 +3,9 @@ package com.deepcode.agent.security
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
+import com.deepcode.core.logging.Log
+import com.deepcode.core.logging.LogCategory
+import com.deepcode.core.logging.LogLevel
 import java.io.ByteArrayInputStream
 import java.security.MessageDigest
 import java.security.cert.CertificateFactory
@@ -47,8 +49,6 @@ import java.security.cert.X509Certificate
  * 否则正式包会全部校验失败。指纹获取方式见 RELEASING.md。
  */
 object SignatureGuard {
-
-    private const val TAG = "SignatureGuard"
 
     /**
      * 官方发布密钥的证书 SHA-256（小写、无冒号）。
@@ -96,7 +96,7 @@ object SignatureGuard {
         }.getOrNull()
 
         if (installer == PLAY_STORE_INSTALLER) {
-            Log.i(TAG, "来源为 Google Play，跳过签名指纹校验")
+            Log.log(LogLevel.INFO, LogCategory.SECURITY_INTEGRITY, "App", "来源为 Google Play，跳过签名指纹校验")
             return Result.TrustedByInstaller
         }
 
@@ -108,21 +108,21 @@ object SignatureGuard {
 
             // 开发构建：debug 证书直接放行，避免本地 release 构建启动即崩
             if (certs.any { DEBUG_CERT_DN_MARKER in it.subjectX500Principal.name }) {
-                Log.i(TAG, "检测到 Android debug 证书，按开发构建处理")
+                Log.log(LogLevel.INFO, LogCategory.SECURITY_INTEGRITY, "App", "检测到 Android debug 证书，按开发构建处理")
                 return Result.TrustedDebugCertificate
             }
 
             val actual = sha256(certs.first().encoded)
 
             if (actual.equals(OFFICIAL_SIGNATURE_SHA256, ignoreCase = true)) {
-                Log.i(TAG, "签名校验通过: $actual")
+                Log.log(LogLevel.INFO, LogCategory.SECURITY_INTEGRITY, "App", "签名校验通过: $actual")
                 Result.Trusted
             } else {
-                Log.w(TAG, "签名不匹配！实际=$actual 期望=$OFFICIAL_SIGNATURE_SHA256")
+                Log.log(LogLevel.WARN, LogCategory.SECURITY_INTEGRITY, "App", "签名不匹配！实际=$actual 期望=$OFFICIAL_SIGNATURE_SHA256")
                 Result.Tampered(actual = actual, expected = OFFICIAL_SIGNATURE_SHA256)
             }
         } catch (t: Throwable) {
-            Log.w(TAG, "无法读取签名信息", t)
+            Log.log(LogLevel.WARN, LogCategory.SECURITY_INTEGRITY, "App", "无法读取签名信息", t)
             Result.Unknown(t)
         }
     }

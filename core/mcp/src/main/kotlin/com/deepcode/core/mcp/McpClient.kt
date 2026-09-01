@@ -1,5 +1,8 @@
 package com.deepcode.core.mcp
 
+import com.deepcode.core.logging.Log
+import com.deepcode.core.logging.LogCategory
+import com.deepcode.core.logging.LogLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -63,6 +66,7 @@ class HttpJsonRpcMcpClient(
     private val ownClient = http === DEFAULT_HTTP
 
     override suspend fun connect() {
+        Log.log(LogLevel.INFO, LogCategory.OPERATION_MCP, "McpClient", "server $serverName 开始 initialize 握手")
         rpc(
             "initialize",
             buildJsonObject {
@@ -75,6 +79,7 @@ class HttpJsonRpcMcpClient(
             },
         )
         rpcNotification("notifications/initialized", buildJsonObject {})
+        Log.log(LogLevel.INFO, LogCategory.OPERATION_MCP, "McpClient", "server $serverName 握手完成")
     }
 
     override suspend fun listTools(): List<McpToolDef> {
@@ -83,14 +88,28 @@ class HttpJsonRpcMcpClient(
     }
 
     override suspend fun callTool(name: String, arguments: JsonObject): McpCallToolResult {
-        val res = rpc(
-            "tools/call",
-            buildJsonObject {
-                put("name", name)
-                put("arguments", arguments)
-            },
-        )
-        return json.decodeFromJsonElement(McpCallToolResult.serializer(), res.getValue("result"))
+        val startedAt = System.currentTimeMillis()
+        return try {
+            val res = rpc(
+                "tools/call",
+                buildJsonObject {
+                    put("name", name)
+                    put("arguments", arguments)
+                },
+            )
+            val result = json.decodeFromJsonElement(McpCallToolResult.serializer(), res.getValue("result"))
+            Log.log(
+                LogLevel.DEBUG, LogCategory.OPERATION_MCP, "McpClient",
+                "server $serverName tools/call $name 成功（${System.currentTimeMillis() - startedAt}ms）",
+            )
+            result
+        } catch (t: Throwable) {
+            Log.log(
+                LogLevel.ERROR, LogCategory.OPERATION_MCP, "McpClient",
+                "server $serverName tools/call $name 失败（${System.currentTimeMillis() - startedAt}ms）：${t.message}", t,
+            )
+            throw t
+        }
     }
 
     override fun setToolsChangedHandler(handler: () -> Unit) {
@@ -161,10 +180,32 @@ class HttpJsonRpcMcpClient(
             }
         }
 
-    private fun extractSseData(raw: String): String =
-        raw.lines().filter { it.startsWith("data:") }
-            .map { it.removePrefix("data:").trim() }
-            .lastOrNull() ?: raw
+    /**
+     * 从 SSE 文本中提取**最后一个完整事件**的 data 内容。
+     *
+     * SSE 规范（EventSource）：一个事件由一行或多行 `data:` 组成，多行 data
+     * 用换行拼接成事件体；事件之间以空行分隔。旧实现只取最后一行 `data:`，
+     * 遇到分块的 MCP 响应会丢失前几块。这里按事件边界切分、把多行拼回一条，
+     * 取最后一个完整事件（MCP 响应一次只发一条 JSON-RPC 结果）。
+     */
+    private fun extractSseData(raw: String): String {
+        val events = mutableListOf<List<String>>()
+        var current = mutableListOf<String>()
+        raw.lineSequence().forEach { line ->
+            if (line.isBlank()) {
+                if (current.isNotEmpty()) {
+                    events += current
+                    current = mutableListOf()
+                }
+            } else if (line.startsWith("data:")) {
+                // 规范：`data: ` 后紧跟一个空格时该空格不属于内容，去掉它
+                current += line.removePrefix("data:").trim()
+            }
+            // 其余字段行（event:/id:/retry: 及以 : 开头的注释）不参与事件体
+        }
+        if (current.isNotEmpty()) events += current
+        return events.lastOrNull()?.joinToString("\n") ?: raw
+    }
 
     companion object {
         private val DEFAULT_HTTP = OkHttpClient()

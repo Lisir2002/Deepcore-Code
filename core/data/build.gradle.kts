@@ -18,6 +18,7 @@ sqldelight {
 
 dependencies {
     api(project(":core:model"))
+    implementation(project(":core:logging"))
 
     // SQLDelight 是数据层的公共契约（DAO 与 SPI 都暴露它的类型），故用 api
     api(libs.sqldelight.runtime)

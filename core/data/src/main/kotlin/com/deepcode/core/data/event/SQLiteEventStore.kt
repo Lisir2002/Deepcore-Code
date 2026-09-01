@@ -3,6 +3,9 @@ package com.deepcode.core.data.event
 import com.deepcode.core.data.EventStore
 import com.deepcode.core.data.SessionIndex
 import com.deepcode.core.data.db.SqliteDatabase
+import com.deepcode.core.logging.Log
+import com.deepcode.core.logging.LogCategory
+import com.deepcode.core.logging.LogLevel
 import com.deepcode.core.model.AgentEvent
 import com.deepcode.core.model.SessionId
 import com.deepcode.core.model.TurnStarted
@@ -29,6 +32,7 @@ class SQLiteEventStore(
 
     override suspend fun appendAll(events: List<AgentEvent>) {
         if (events.isEmpty()) return
+        val startedAt = System.currentTimeMillis()
         db.transaction {
             val eventsQueries = db.database.eventsQueries
             val sessionsQueries = db.database.sessionsQueries
@@ -51,6 +55,10 @@ class SQLiteEventStore(
                 sessionsQueries.touchSession(updated_at = event.ts, id = event.sessionId.value)
             }
         }
+        Log.log(
+            LogLevel.DEBUG, LogCategory.OPERATION_DATA, "DataStore",
+            "写 events 表 ${events.size} 行，耗时 ${System.currentTimeMillis() - startedAt}ms",
+        )
     }
 
     override suspend fun loadEvents(sessionId: SessionId): List<AgentEvent> = db.read {
@@ -58,7 +66,7 @@ class SQLiteEventStore(
             .eventsForSession(sessionId.value)
             .executeAsList()
             .map { row -> codec.decode(row.payload) }
-    }
+    }.also { Log.log(LogLevel.DEBUG, LogCategory.OPERATION_DATA, "DataStore", "读 events 表 ${it.size} 行（session ${sessionId.value}）") }
 
     override fun observe(sessionId: SessionId): Flow<AgentEvent> = flow {
         var cursor = NO_BASELINE

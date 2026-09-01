@@ -174,6 +174,50 @@ fun SettingsScreen(
                 }
             }
 
+            // ── 日志（P5：导出 / 同步 / 权限引导）──
+            item(key = "logging") {
+                AppCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceS)) {
+                        AppText("日志", style = AppTextStyle.Title)
+                        AppText(
+                            "崩溃捕获已常驻；日志实时写私有目录，授权后可双写到 /sdcard/deepcorefile 方便真机调试。",
+                            style = AppTextStyle.Caption,
+                            tone = AppTextTone.Muted,
+                        )
+                        AppStatusChip(
+                            text = if (viewModel.loggingActions.canAccessRoot) {
+                                "根目录授权：已开启"
+                            } else {
+                                "根目录授权：未开启（仅写私有）"
+                            },
+                        )
+                        Row {
+                            if (!viewModel.loggingActions.canAccessRoot) {
+                                AppTextButton(
+                                    text = "去授权",
+                                    onClick = viewModel.loggingActions::openPermissionSettings,
+                                )
+                                Spacer(Modifier.size(Dimens.spaceS))
+                            }
+                            AppTextButton(
+                                text = "立即同步",
+                                enabled = viewModel.loggingActions.canAccessRoot,
+                                onClick = viewModel.loggingActions::syncToRoot,
+                            )
+                            Spacer(Modifier.weight(1f))
+                            AppPrimaryButton(
+                                text = "导出日志",
+                                onClick = {
+                                    scope.launch {
+                                        runCatching { viewModel.loggingActions.exportLogs() }
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+
             // ── 添加表单 ──
             item(key = "add_form") {
                 AppCard {

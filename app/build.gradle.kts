@@ -21,8 +21,8 @@ android {
         //   严格单调。v0.1.4 实为三段式（versionCode=5），此处 0.1.4.0/10400 为
         //   新方案迁移锚点——10400 > 5，设备升级覆盖无碍；后续发版用
         //   scripts/release_helper.py 计算，不再手改。
-        versionCode = 20103
-        versionName = "0.2.1.3"
+        versionCode = 20204
+        versionName = "0.2.2.4"
     }
 
     // ---- 正式签名配置 ----------------------------------------------------
@@ -182,6 +182,8 @@ dependencies {
     implementation(project(":core:agent"))
     implementation(project(":core:data"))
     implementation(project(":core:platform"))
+    // 日志门面：app 层装配 LogcatSink / RollingFileSink / CrashVault / LogExporter（决策 D1）
+    implementation(project(":core:logging"))
     // MCP 客户端：DI 里要直接 new McpServerManager / McpCompositeToolRegistry，
     // 必须显式声明。之前只靠 :feature:settings 传递（implementation 不对外暴露），
     // 于是 :app 里所有 core.mcp 类型全部 Unresolved reference，android-build 与 lint 一起红。

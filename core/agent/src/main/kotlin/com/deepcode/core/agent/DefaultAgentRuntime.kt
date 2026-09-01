@@ -17,6 +17,9 @@ import com.deepcode.core.agent.spi.Workspace
 import com.deepcode.core.agent.spi.estimateTokens
 import com.deepcode.core.agent.spi.signature
 import com.deepcode.core.data.EventStore
+import com.deepcode.core.logging.Log
+import com.deepcode.core.logging.LogCategory
+import com.deepcode.core.logging.LogLevel
 import com.deepcode.core.model.AgentError
 import com.deepcode.core.model.AgentEvent
 import com.deepcode.core.model.ApprovalScope
@@ -139,6 +142,7 @@ class DefaultAgentRuntime(
 
         try {
             emit(turnId) { id, ts -> TurnStarted(id, sessionId, turnId, ts, userInput, attachments) }
+            Log.log(LogLevel.INFO, LogCategory.OPERATION_AGENT, "AgentRuntime", "turn ${turnId.value} 开始，输入 ${userInput.take(80)}")
 
             // 上下文从事件日志现算，不另存一份
             val pastEvents = eventStore.loadEvents(sessionId).filter { it.turnId != turnId }
@@ -154,6 +158,10 @@ class DefaultAgentRuntime(
                     val outcome = contextPolicy.compact(messages, provider, modelRef)
                     messages.clear()
                     messages.addAll(outcome.messages)
+                    Log.log(
+                        LogLevel.INFO, LogCategory.OPERATION_AGENT, "AgentRuntime",
+                        "turn ${turnId.value} 上下文压缩 ${outcome.tokensBefore} → ${outcome.tokensAfter} tokens",
+                    )
                     emit(turnId) { id, ts ->
                         com.deepcode.core.model.ContextCompacted(
                             id, sessionId, turnId, ts,
@@ -198,6 +206,10 @@ class DefaultAgentRuntime(
 
                 // 没有工具调用 = 这一轮说完了
                 if (pendingCalls.isEmpty()) {
+                    Log.log(
+                        LogLevel.INFO, LogCategory.OPERATION_AGENT, "AgentRuntime",
+                        "turn ${turnId.value} 完成（END_TURN），迭代 $iteration，用量 in=${totalUsage.inputTokens} out=${totalUsage.outputTokens}",
+                    )
                     emit(turnId) { id, ts ->
                         TurnCompleted(id, sessionId, turnId, ts, StopReason.END_TURN, totalUsage, iteration)
                     }
@@ -218,12 +230,21 @@ class DefaultAgentRuntime(
                 }
             }
 
+            Log.log(
+                LogLevel.WARN, LogCategory.OPERATION_AGENT, "AgentRuntime",
+                "turn ${turnId.value} 达到迭代上限 ${config.maxIterations}（MAX_TURNS）",
+            )
             emit(turnId) { id, ts ->
                 TurnCompleted(id, sessionId, turnId, ts, StopReason.MAX_TURNS, totalUsage, iteration)
             }
         } catch (cancelled: CancellationException) {
+            Log.log(LogLevel.INFO, LogCategory.OPERATION_AGENT, "AgentRuntime", "turn ${turnId.value} 被取消：${cancelled.message ?: "user"}")
             emit(turnId) { id, ts -> TurnCancelled(id, sessionId, turnId, ts, cancelled.message ?: "user") }
         } catch (t: Throwable) {
+            Log.log(
+                LogLevel.ERROR, LogCategory.ERROR_EXCEPTION, "AgentRuntime",
+                "turn ${turnId.value} 失败：${t.message ?: t::class.simpleName}", t,
+            )
             emit(turnId) { id, ts ->
                 TurnFailed(
                     id, sessionId, turnId, ts,
@@ -249,6 +270,7 @@ class DefaultAgentRuntime(
 
         if (tool == null) {
             val error = ToolError("tool_not_found", "未知工具：${call.name}。可用工具：${toolRegistry.specs().joinToString { it.name }}", false)
+            Log.log(LogLevel.ERROR, LogCategory.ERROR_FAILURE, "AgentRuntime", "turn ${turnId.value} 未知工具 ${call.name}")
             emit(turnId) { id, ts -> ToolCallFailed(id, sessionId, turnId, ts, call.id, error) }
             messages.add(LlmMessage(LlmRole.TOOL, "未知工具：${call.name}", call.id.value, call.name))
             return
@@ -256,6 +278,7 @@ class DefaultAgentRuntime(
 
         if (tool.spec.requiresWorkspace && workspace == null) {
             val error = ToolError("no_workspace", "尚未打开工作区，无法使用 ${call.name}", false)
+            Log.log(LogLevel.ERROR, LogCategory.ERROR_FAILURE, "AgentRuntime", "turn ${turnId.value} 工具 ${call.name} 需要工作区但未打开")
             emit(turnId) { id, ts -> ToolCallFailed(id, sessionId, turnId, ts, call.id, error) }
             messages.add(LlmMessage(LlmRole.TOOL, "尚未打开工作区", call.id.value, call.name))
             return
@@ -267,6 +290,10 @@ class DefaultAgentRuntime(
         // 2) 过权限门。这里会挂起，直到用户在弹窗上做出选择。
         when (val decision = gate.request(call, tool.spec)) {
             is ApprovalDecision.Denied -> {
+                Log.log(
+                    LogLevel.INFO, LogCategory.SECURITY_PERMISSION, "AgentRuntime",
+                    "turn ${turnId.value} 工具 ${call.name} 被用户拒绝${decision.reason?.let { "：$it" } ?: ""}",
+                )
                 emit(turnId) { id, ts -> ToolCallDenied(id, sessionId, turnId, ts, call, decision.reason) }
                 messages.add(
                     LlmMessage(
@@ -279,13 +306,25 @@ class DefaultAgentRuntime(
             }
 
             is ApprovalDecision.Approved -> {
+                Log.log(
+                    LogLevel.INFO, LogCategory.OPERATION_AGENT, "AgentRuntime",
+                    "turn ${turnId.value} 工具 ${call.name} 已批准（${decision.scope}），开始执行",
+                )
                 emit(turnId) { id, ts -> ToolCallApproved(id, sessionId, turnId, ts, call, decision.scope) }
                 emit(turnId) { id, ts -> ToolCallStarted(id, sessionId, turnId, ts, call) }
 
                 val result = runToolWithProgress(turnId, call, tool)
                 if (result.isSuccess) {
+                    Log.log(
+                        LogLevel.INFO, LogCategory.OPERATION_AGENT, "AgentRuntime",
+                        "turn ${turnId.value} 工具 ${call.name} 成功（${result.durationMs}ms）",
+                    )
                     emit(turnId) { id, ts -> ToolCallSucceeded(id, sessionId, turnId, ts, result) }
                 } else {
+                    Log.log(
+                        LogLevel.ERROR, LogCategory.ERROR_FAILURE, "AgentRuntime",
+                        "turn ${turnId.value} 工具 ${call.name} 失败：${result.error?.message ?: "unknown"}",
+                    )
                     emit(turnId) { id, ts -> ToolCallFailed(id, sessionId, turnId, ts, call.id, result.error!!) }
                 }
                 messages.add(

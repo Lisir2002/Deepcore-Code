@@ -2,6 +2,9 @@ package com.deepcode.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.deepcode.core.logging.Log
+import com.deepcode.core.logging.LogCategory
+import com.deepcode.core.logging.LogLevel
 import com.deepcode.core.mcp.McpServerConfig
 import com.deepcode.core.mcp.McpServerConfigStore
 import com.deepcode.core.mcp.McpServerManager
@@ -22,6 +25,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val store: McpServerConfigStore,
     private val manager: McpServerManager,
+    val loggingActions: LoggingActions,
 ) : ViewModel() {
 
     private val _servers = MutableStateFlow<List<McpServerUiModel>>(emptyList())
@@ -52,13 +56,22 @@ class SettingsViewModel(
 
     fun addServer(rawName: String, rawUrl: String, trusted: Boolean) {
         val url = rawUrl.trim()
-        if (url.isBlank()) return
+        // 协议校验：只放行 http/https，拒绝 file://、content://、javascript:// 等
+        // 会被 OkHttp 接受的异常协议，防止 Agent 被诱导向本地文件或任意目标发请求。
+        if (!isValidMcpUrl(url)) {
+            Log.log(LogLevel.WARN, LogCategory.OPERATION_USER, "Settings", "MCP server URL 非法被拒绝：$url")
+            return
+        }
         val id = rawName.trim().ifBlank { url.hashCode().toString(36) }
         val config = McpServerConfig(
             id = id,
             displayName = rawName.trim().ifBlank { id },
             transport = McpTransport.Http(url = url),
             trusted = trusted,
+        )
+        Log.log(
+            LogLevel.INFO, LogCategory.OPERATION_USER, "Settings",
+            "新增/编辑 MCP server ${config.displayName}（trusted=$trusted）",
         )
         viewModelScope.launch {
             manager.addServer(config)
@@ -68,6 +81,7 @@ class SettingsViewModel(
     }
 
     fun removeServer(id: String) {
+        Log.log(LogLevel.INFO, LogCategory.OPERATION_USER, "Settings", "删除 MCP server $id")
         viewModelScope.launch {
             manager.removeServer(id)
             store.save(manager.snapshotConfigs())
@@ -77,6 +91,7 @@ class SettingsViewModel(
 
     fun setTrusted(id: String, trusted: Boolean) {
         val current = store.current().firstOrNull { it.id == id } ?: return
+        Log.log(LogLevel.INFO, LogCategory.OPERATION_USER, "Settings", "切换 MCP server $id 信任状态 → $trusted")
         viewModelScope.launch {
             manager.updateServer(current.copy(trusted = trusted))
             store.save(manager.snapshotConfigs())
@@ -85,10 +100,27 @@ class SettingsViewModel(
     }
 
     fun reconnectAll() {
+        Log.log(LogLevel.INFO, LogCategory.OPERATION_USER, "Settings", "重连全部 MCP server")
         viewModelScope.launch {
             manager.reconnectAll()
             refreshFromStore()
         }
+    }
+
+    /**
+     * MCP server URL 合法性校验。
+     *
+     * 只接受带 http/https 协议且含 host 的 URL，其余（file://、content://、
+     * javascript://、无协议裸路径等）一律拒绝。用 [java.net.URI] 解析，
+     * 不依赖 Android API，便于在 JVM 上单测。
+     */
+    internal fun isValidMcpUrl(rawUrl: String): Boolean {
+        val url = rawUrl.trim()
+        if (url.isBlank()) return false
+        return runCatching {
+            val uri = java.net.URI(url)
+            (uri.scheme == "http" || uri.scheme == "https") && !uri.host.isNullOrBlank()
+        }.getOrDefault(false)
     }
 }
 

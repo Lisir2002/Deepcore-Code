@@ -2,6 +2,32 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.2.2.4] — 2026-09-01 · versionCode 20204
+
+> **日志系统全链路落地**。真机闪退拿不到日志的问题根治：崩溃现场自动捕获 + 实时双写外部存储，并修复审计发现的三个 P0 安全问题。
+
+### Fixed
+
+- **P0：MCP Server URL 无协议校验**（[McpClient.kt](core/mcp/src/main/kotlin/com/deepcode/core/mcp/McpClient.kt) / SettingsViewModel）：
+  只放行 `http`/`https`，拒绝 `file://`、`content://`、`javascript://` 等会被 OkHttp 接受的异常协议，防止 Agent 被诱导向本地文件或任意目标发请求。
+- **P0：`LocalDirWorkspace.resolve()` 路径越界**：规范化路径 + 前缀边界判断（root 本身或其子路径，杜绝 `/foo/default-evil` 误匹配），符号链接在检查后二次解析到工作区外的漏洞一并封堵，越界直接抛 `SecurityException`。
+- **P0：SSE 解析只取最后一个 data 块**：`HttpJsonRpcMcpClient` 兼容多 data 行，逐块解析最后一个有效 JSON 响应。
+
+### Added
+
+- **core:logging 纯 Kotlin 日志模块**（决策文档 `docs/LOGGING_SYSTEM_DESIGN.md`，实施规划 `docs/LOGGING_PLAN.md`）：
+  - 统一门面 `Log` + 全局脱敏（凭据/绝对路径/用户输入/设备标识/URL 凭据）+ 环形缓冲；
+  - 分类模型：`LogGroup × LogCategory` 正交（SECURITY/OPERATION/STATE/ERROR/SYSTEM + 子类），日志按危险/操作类型归档；
+  - 可插拔 Sink：`LogcatSink`（debug）+ `RollingFileSink`（私有目录与 `/sdcard/deepcodefile/logs` 实时双写，1MB × 5 滚动，SECURITY 镜像 `danger.log`）。
+- **崩溃捕获与导出**（`CrashVault` + `LogExporter`）：
+  - Application.onCreate 首行安装崩溃/ANR 捕获，记录崩溃栈、上下文、环境信息与最近事件流；
+  - 设置页新增"日志"区块（导出 ZIP 分享 / 手动同步根目录 / 根目录授权引导）；下次启动若上次崩溃自动弹窗引导导出；
+  - 四层导出包（崩溃栈 / 上下文 / 环境 / 事件流），ZIP 打包经 FileProvider 分享。
+- **六类埋点接入**（Agent 循环 / MCP 连接 / 权限沙箱 / 设置操作 / 数据层 + 生命周期启动日志），统一走 `Log` 门面，日志文件出现完整分类；`SignatureGuard` 等零散 `android.util.Log` 已全部替换。
+- **R8 策略**：`proguard-rules.pro` 保留 `core:logging` 与 `app.logging`（Release 包日志可读、崩溃栈带行号、异常 message 不被优化成 null）。
+
+---
+
 ## [v0.2.1.3] — 2026-09-01 · tag [v0.2.1.3](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.2.1.3) · versionCode 20103
 
 > **正式可分发发版**。前身 v0.2.0.2 因 release.yml 默认 `draft: true` 产出未发布 Release，

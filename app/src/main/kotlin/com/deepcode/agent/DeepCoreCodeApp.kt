@@ -2,7 +2,13 @@ package com.deepcode.agent
 
 import android.app.Application
 import com.deepcode.agent.di.appModule
+import com.deepcode.agent.logging.CrashVault
+import com.deepcode.agent.logging.LogcatSink
+import com.deepcode.agent.logging.RollingFileSink
 import com.deepcode.agent.security.SignatureGuard
+import com.deepcode.core.logging.Log
+import com.deepcode.core.logging.LogCategory
+import com.deepcode.core.logging.LogLevel
 import com.deepcode.feature.settings.settingsModule
 import com.deepcode.core.mcp.McpServerManager
 import kotlinx.coroutines.CoroutineScope
@@ -17,18 +23,42 @@ import org.koin.core.qualifier.named
 class DeepCoreCodeApp : Application(), KoinComponent {
 
     override fun onCreate() {
+        // 第一行（super 之前）：崩溃捕获必须最先就位，
+        // 保证签名校验等启动早期崩溃也能留下现场（决策 D13）。
+        CrashVault.install(this)
         super.onCreate()
         checkIntegrity()
         startKoin {
             androidContext(this@DeepCoreCodeApp)
             modules(appModule, settingsModule)
         }
+        setupLogging()
         // 启动后连接已配置的 MCP server；单点失败只记日志，不阻断 App（见 McpServerManager.connectAll）。
         val agentScope: CoroutineScope by inject(named("agent"))
         agentScope.launch {
             runCatching { get<McpServerManager>().connectAll() }
-                .onFailure { android.util.Log.w("DeepCoreCodeApp", "MCP 连接初始化失败：${it.message}") }
+                .onFailure {
+                    Log.e("App", "MCP 连接初始化失败：${it.message}", it)
+                }
         }
+    }
+
+    /**
+     * 日志装配（决策 D1/D3/D9/D20/D23）：
+     *   · 全构建 plant RollingFileSink（私有 + 根目录双写）；logcat 仅 debug
+     *   · 集中登记各模块 tag 前缀
+     * 崩溃捕获已在 onCreate 首行独立安装，不依赖本方法。
+     */
+    private fun setupLogging() {
+        Log.plant(get<RollingFileSink>())
+        if (BuildConfig.DEBUG) Log.plant(LogcatSink())
+        Log.modules.register("core-agent", "AgentRuntime")
+        Log.modules.register("core-mcp", "McpClient")
+        Log.modules.register("core-data", "DataStore")
+        Log.modules.register("core-platform", "Platform")
+        Log.modules.register("feature-settings", "Settings")
+        Log.modules.register("app", "App")
+        Log.log(LogLevel.INFO, LogCategory.STATE_LIFECYCLE, "App", "应用启动，日志系统就绪")
     }
 
     /**
@@ -56,8 +86,8 @@ class DeepCoreCodeApp : Application(), KoinComponent {
             is SignatureGuard.Result.Tampered -> {
                 if (BuildConfig.DEBUG) {
                     // debug 阶段只看不拦，但要留痕，免得真出问题时毫无头绪
-                    android.util.Log.w(
-                        "DeepCoreCodeApp",
+                    Log.log(
+                        LogLevel.WARN, LogCategory.SECURITY_INTEGRITY, "App",
                         "检测到非官方签名（debug 构建，不阻断）：" +
                             "实际=${result.actual} 期望=${result.expected}",
                     )

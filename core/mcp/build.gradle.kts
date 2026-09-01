@@ -11,6 +11,7 @@ plugins {
 dependencies {
     api(project(":core:agent"))
     api(project(":core:model"))
+    implementation(project(":core:logging"))
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)

@@ -4,6 +4,9 @@ import com.deepcode.core.agent.spi.Entry
 import com.deepcode.core.agent.spi.FileRead
 import com.deepcode.core.agent.spi.FileStat
 import com.deepcode.core.agent.spi.Workspace
+import com.deepcode.core.logging.Log
+import com.deepcode.core.logging.LogCategory
+import com.deepcode.core.logging.LogLevel
 import com.deepcode.core.model.WorkspaceRef
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -58,10 +61,16 @@ class LocalDirWorkspace(
             val file = resolve(path)
             if (createParentDirs) file.parentFile?.mkdirs()
             file.writeText(content)
+            Log.log(
+                LogLevel.INFO, LogCategory.OPERATION_DATA, "Platform",
+                "写入文件 $path（${content.length} 字符）",
+            )
         }
 
     override suspend fun delete(path: String): Boolean = withContext(Dispatchers.IO) {
-        resolve(path).deleteRecursively()
+        resolve(path).deleteRecursively().also {
+            Log.log(LogLevel.INFO, LogCategory.OPERATION_DATA, "Platform", "删除路径 $path")
+        }
     }
 
     override suspend fun list(path: String, recursive: Boolean): List<Entry> = withContext(Dispatchers.IO) {
@@ -94,12 +103,23 @@ class LocalDirWorkspace(
     /** 路径越界防护：杜绝 Agent 被诱导读写工作区之外的文件。 */
     private fun resolve(path: String): File {
         val target = if (File(path).isAbsolute) File(path) else File(root, path)
-        val canonical = runCatching { target.canonicalPath }.getOrDefault(target.absolutePath)
-        val canonicalRoot = runCatching { root.canonicalPath }.getOrDefault(root.absolutePath)
-        if (!canonical.startsWith(canonicalRoot)) {
+        // canonicalPath 失败（如 I/O 权限问题）时不得回退到绝对路径继续——
+        // 符号链接 + 异常回退的组合会让越界检查被绕过，这里直接拒绝。
+        val canonical = target.canonicalPath
+        val canonicalRoot = root.canonicalPath
+        // 边界判断用「root 本身或其子路径」，避免 /foo/default 匹配上 /foo/default-evil。
+        val inside = canonical == canonicalRoot ||
+            canonical.startsWith(canonicalRoot + File.separator)
+        if (!inside) {
+            Log.log(
+                LogLevel.WARN, LogCategory.SECURITY_INTEGRITY, "Platform",
+                "拒绝访问工作区之外的路径：$path",
+            )
             throw SecurityException("拒绝访问工作区之外的路径：$path")
         }
-        return target
+        // 返回规范化后的 File，而不是原始 target：后续所有读写都基于同一个
+        // 已通过校验的路径，防止符号链接在检查后被二次解析到工作区外。
+        return File(canonical)
     }
 
     private fun languageOf(name: String): String? = when (name.substringAfterLast('.', "")) {

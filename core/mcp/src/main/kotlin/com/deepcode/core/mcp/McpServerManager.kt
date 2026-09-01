@@ -1,6 +1,9 @@
 package com.deepcode.core.mcp
 
 import com.deepcode.core.agent.spi.Tool
+import com.deepcode.core.logging.Log
+import com.deepcode.core.logging.LogCategory
+import com.deepcode.core.logging.LogLevel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -48,7 +51,18 @@ class McpServerManager(
                 client.setToolsChangedHandler { scope.launch { refresh(cfg.id) } }
                 clients[cfg.id] = client
                 refresh(cfg.id)
-            }.onFailure { errors[cfg.id] = it.message ?: (it::class.simpleName ?: "unknown") }
+                val count = toolsByServer[cfg.id]?.size ?: 0
+                Log.log(
+                    LogLevel.INFO, LogCategory.OPERATION_MCP, "McpClient",
+                    "server ${cfg.id} 连接成功，加载 $count 个工具",
+                )
+            }.onFailure {
+                errors[cfg.id] = it.message ?: (it::class.simpleName ?: "unknown")
+                Log.log(
+                    LogLevel.ERROR, LogCategory.OPERATION_MCP, "McpClient",
+                    "server ${cfg.id} 连接失败：${it.message}", it,
+                )
+            }
         }
     }
 
@@ -59,6 +73,10 @@ class McpServerManager(
         toolsByServer[serverId] = mcpTools.map { def ->
             McpTool(McpToolBridge.toToolSpec(cfg, def), client, def.name)
         }
+        Log.log(
+            LogLevel.DEBUG, LogCategory.OPERATION_MCP, "McpClient",
+            "server $serverId tools/list 返回 ${mcpTools.size} 个工具",
+        )
     }
 
     /** 全部已桥接工具（扁平列表），直接注册进统一 ToolRegistry。 */
@@ -71,6 +89,7 @@ class McpServerManager(
 
     /** 断开并清理所有连接。 */
     suspend fun disconnectAll() {
+        clients.keys.forEach { Log.log(LogLevel.INFO, LogCategory.OPERATION_MCP, "McpClient", "server $it 断开") }
         clients.values.forEach { runCatching { it.close() } }
         clients.clear()
         toolsByServer.clear()
@@ -84,6 +103,10 @@ class McpServerManager(
     suspend fun updateServer(config: McpServerConfig) {
         val idx = configs.indexOfFirst { it.id == config.id }
         if (idx >= 0) configs[idx] = config else configs.add(config)
+        Log.log(
+            LogLevel.INFO, LogCategory.OPERATION_MCP, "McpClient",
+            "server ${config.id} 更新配置（displayName=${config.displayName}，trusted=${config.trusted}）",
+        )
         // 旧连接先断开，用新配置重建，使 trusted 变化带来的 risk 映射变更生效。
         clients[config.id]?.let { runCatching { it.close() } }
         clients.remove(config.id)
@@ -93,7 +116,13 @@ class McpServerManager(
             client.setToolsChangedHandler { scope.launch { refresh(config.id) } }
             clients[config.id] = client
             refresh(config.id)
-        }.onFailure { errors[config.id] = it.message ?: (it::class.simpleName ?: "unknown") }
+        }.onFailure {
+            errors[config.id] = it.message ?: (it::class.simpleName ?: "unknown")
+            Log.log(
+                LogLevel.ERROR, LogCategory.OPERATION_MCP, "McpClient",
+                "server ${config.id} 重建连接失败：${it.message}", it,
+            )
+        }
     }
 
     /** 移除并断开一个 server（设置页"删除"后实时生效）。 */
@@ -102,6 +131,7 @@ class McpServerManager(
         configs.removeIf { it.id == id }
         toolsByServer.remove(id)
         errors.remove(id)
+        Log.log(LogLevel.INFO, LogCategory.OPERATION_MCP, "McpClient", "server $id 已移除")
     }
 
     /** 断开全部并重新连接（设置页"重连"按钮）。 */

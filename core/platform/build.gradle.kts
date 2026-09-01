@@ -25,6 +25,7 @@ android {
 dependencies {
     api(project(":core:agent"))
     api(project(":core:model"))
+    implementation(project(":core:logging"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.core)

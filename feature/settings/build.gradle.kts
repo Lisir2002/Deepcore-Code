@@ -39,6 +39,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:agent"))
     implementation(project(":core:mcp"))
+    implementation(project(":core:logging"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
