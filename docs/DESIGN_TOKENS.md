@@ -136,6 +136,52 @@ data class AppTokens(
 
 ### 3.2 颜色语义面板
 
+**brand 包色板定稿**（2026-09-01 用户定调：**黑白灰主调 · 蓝紫点缀 · 红绿状态**，
+其余按体系约束发挥）：
+
+**Primitive 灰阶（冷灰，承担 95% 界面）与明暗落位**
+
+| Primitive | 值 | Light 落位 | Dark 落位 |
+| --- | --- | --- | --- |
+| `gray-0` | `#FFFFFF` | `surface` / `surfaceElevated` | — |
+| `gray-50` | `#F4F5F7` | `surfaceVariant` / `codeSurface` | — |
+| `gray-100` | `#E8EAEF` | `divider` / `codeBorder` | — |
+| `gray-200` | `#D9DCE3` | `border` | — |
+| `gray-400` | `#9CA1AC` | `textTertiary` | — |
+| `gray-600` | `#5C6270` | `textSecondary` | — |
+| `gray-750` | `#353943` | — | `border` |
+| `gray-800` | `#2A2D34` | — | `divider` |
+| `gray-850` | `#1C1E23` | — | `surfaceVariant` / `codeSurface` |
+| `gray-900` | `#131417` | — | `surface` / `codeBorder`(底) |
+| `ink-900` | `#17181C` | `textPrimary` | — |
+| `ink-50` | `#F2F3F5` | — | `textPrimary` |
+| `gray-500d` | `#A6ABB7` | — | `textSecondary` |
+| `gray-600d` | `#6B7180` | — | `textTertiary` |
+
+（暗侧文本/边线值与亮侧同名令牌共用槽位，上表 `*d` 为 Dark 取值的别名标注。）
+
+**品牌点缀与状态**
+
+| 组 | Light | Dark | 用途边界 |
+| --- | --- | --- | --- |
+| 蓝（操作） | `primary #2563EB`（白字 5.1:1）/ `primaryContainer #EFF3FF` | `primary #7A93FF`（深字 `#0D1230`，6.0:1）/ `primaryContainer #1B2A5E` | 只出现在「可操作」处：主按钮/链接/选中/运行中 |
+| 紫（AI 身份） | `#7C3AED` / 容器 `#F3EFFE` | `#A78BFA` / 容器 `#221B38` | 专属 AI 语义：思考流/技能徽标/agent 标识；与蓝形成功能区分 |
+| `success` | `#16A34A`（底 `#E9F9EF`） | `#4ADE80`（底 `#12291B`） | 状态 |
+| `warning` | `#D97706`（底 `#FDF3E3`） | `#FBBF24`（底 `#2E2210`） | 等待/确认 |
+| `danger` | `#DC2626`（底 `#FDECEC`） | `#F87171`（底 `#331A1A`） | 失败/删除 |
+| `info` | v1 复用 `primary` 蓝 | 同左 | 预留槽位 |
+
+**业务色映射**（聊天气质由此而来）：`toolRunning→primary`、`toolSuccess→success`、
+`toolFailed→danger`、`toolAwaiting→warning`、`thinking→紫`（AI 身份色的核心落点）、
+`diffAdd/diffRemove→success/danger 的浅底形态`、`codeSurface/codeBorder→gray-50/100（L）·
+gray-850/750（D）`。
+
+设计原则：灰阶负责结构与留白，**蓝 = 可操作，紫 = AI，红绿黄 = 状态**，三者互不越界。
+深色模式 primary 弃用「亮蓝+白字」（4.0:1 不达标），取「亮蓝 #7A93FF + 深字」
+（6.0:1）。所有配对过 7.1 矩阵校验（9.2 单测锁死）。
+
+（下表为语义面板的完整清单与配对声明——）
+
 | 组 | 令牌 | 说明与配对声明（↔ 为对比度校验对，见 7.1） |
 | --- | --- | --- |
 | 品牌 | `primary` / `onPrimary` / `primaryContainer` / `onPrimaryContainer` | 主操作色；`onPrimary ↔ primary` ≥4.5 |
