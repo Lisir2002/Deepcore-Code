@@ -41,6 +41,7 @@ class ThemeSwitchTest {
         val store = RecordingStore()
         val c = DefaultStyleController(initialSpec = ThemePacks.brand, store = store)
 
+        c.registerPack(ThemePacks.console)
         c.setSpec(ThemePacks.console.id)
         c.setDarkMode(DarkMode.DARK)
 

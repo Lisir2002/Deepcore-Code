@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.node.DelegatableNode
 
 /**
  * 交互态系统（§4）：全 App 唯一的 State Overlay 模型，弃用 M3 ripple（D12）。
@@ -82,18 +83,10 @@ fun Modifier.appStateLayer(
 fun rememberNoInkIndication(): Indication = noInkIndication
 
 /** 无墨迹 Indication：视觉交给 appStateLayerModifier 的 overlay。 */
-private val noInkIndication: Indication = object : Indication {
-    private object Factory : IndicationNodeFactory {
-        override fun create(interactionSource0: InteractionSource) = AppIndicationNode()
-    }
-    override val nodeFactory: IndicationNodeFactory get() = Factory
+private val noInkIndication: Indication = object : IndicationNodeFactory {
+    override fun create(interactionSource: InteractionSource): DelegatableNode = NoInkIndicationNode()
+    override fun equals(other: Any?): Boolean = other === this
+    override fun hashCode(): Int = 7
 }
 
-private class AppIndicationNode :
-    androidx.compose.ui.Modifier.Node(),
-    androidx.compose.ui.node.DrawModifierNode {
-    override fun draw() {
-        // 不绘制任何墨迹：overlay 由 appStateLayer 负责
-        drawContent()
-    }
-}
+private fun NoInkIndicationNode() = object : androidx.compose.ui.Modifier.Node() {}

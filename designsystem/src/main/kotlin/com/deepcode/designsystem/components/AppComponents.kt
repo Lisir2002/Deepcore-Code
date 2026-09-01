@@ -42,7 +42,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.behavior.appStateLayer
-import com.deepcode.designsystem.behavior.rememberNoInkIndication
 import com.deepcode.designsystem.theme.Dimens
 import com.deepcode.designsystem.theme.TypeScale
 import com.deepcode.designsystem.theme.appColors
@@ -168,7 +167,6 @@ fun AppPrimaryButton(
         modifier = modifier.appStateLayer(interaction),
         enabled = enabled,
         interactionSource = interaction,
-        indication = rememberNoInkIndication(),
         shape = RoundedCornerShape(Dimens.radiusM),
         contentPadding = PaddingValues(horizontal = Dimens.spaceL, vertical = Dimens.spaceS),
         colors = ButtonDefaults.buttonColors(
@@ -197,7 +195,6 @@ fun AppSecondaryButton(
         modifier = modifier.appStateLayer(interaction),
         enabled = enabled,
         interactionSource = interaction,
-        indication = rememberNoInkIndication(),
         shape = RoundedCornerShape(Dimens.radiusM),
         contentPadding = PaddingValues(horizontal = Dimens.spaceL, vertical = Dimens.spaceS),
     ) {
@@ -218,7 +215,6 @@ fun AppTextButton(
         modifier = modifier.appStateLayer(interaction),
         enabled = enabled,
         interactionSource = interaction,
-        indication = rememberNoInkIndication(),
     ) {
         Text(text = text, style = MaterialTheme.typography.labelLarge)
     }
@@ -245,7 +241,6 @@ fun AppCard(
             shape = shape,
             colors = colors,
             interactionSource = interaction,
-            indication = rememberNoInkIndication(),
         ) { body() }
     } else {
         ElevatedCard(modifier = modifier, shape = shape, colors = colors) { body() }

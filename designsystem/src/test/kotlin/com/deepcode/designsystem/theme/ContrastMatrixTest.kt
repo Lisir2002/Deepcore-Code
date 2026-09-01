@@ -1,6 +1,7 @@
 package com.deepcode.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
+import kotlin.math.pow
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -22,9 +23,9 @@ class ContrastMatrixTest {
     private fun Color.relativeLuminance(): Double {
         // 转 0-1，sRGB ⇒ linear 按 WCAG 公式
         fun linear(c: Float): Double = when {
-            c <= 0.04045f -> c / 12.92
-            else -> kotlin.math.pow((c + 0.055f) / 1.055f, 2.4)
-        }.toDouble()
+            c <= 0.04045f -> (c / 12.92f).toDouble()
+            else -> ((c + 0.055f) / 1.055f).toDouble().pow(2.4)
+        }
         val r = linear(red)
         val g = linear(green)
         val b = linear(blue)

@@ -4,9 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.animation.core.Easing
-import androidx.compose.ui.animation.core.EmphasizedDecelerateEasing
-import androidx.compose.ui.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -62,7 +62,6 @@ data class AppColors(
 ) {
     companion object {
         /** 从品牌 Primitive 板派生语义面板（§3.2 业务色映射：tool→primary/status 组）。 */
-        @Immutable
         fun fromBrand(b: AppBrandTokens): AppColors = AppColors(
             primary = b.primary,
             onPrimary = b.onPrimary,
@@ -112,7 +111,6 @@ data class AppTypographyTokens(
 ) {
     companion object {
         /** 由 Dimens.TypeScale（存量字号源）派生六角色。基线：标题行高 1.2 / 正文 1.4 / 代码 1.5。 */
-        @Immutable
         fun fromTypeScale(scale: TypeScale): AppTypographyTokens {
             val sans = FontFamily.SansSerif
             val mono = FontFamily.Monospace
@@ -183,5 +181,5 @@ private fun appMotionTokens(): AppMotion = AppMotion(
     normal = 220.milliseconds,
     slow = 320.milliseconds,
     easingStandard = FastOutSlowInEasing,
-    easingEmphasized = EmphasizedDecelerateEasing,
+    easingEmphasized = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f),
 )

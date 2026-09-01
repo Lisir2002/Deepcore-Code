@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.theme.Dimens
 import com.deepcode.designsystem.theme.appColors
@@ -81,7 +82,7 @@ class ToastHostState {
     private var nextId: Long = 0L
 
     /** 当前展示条（组件内部读取）。 */
-    val current: State<ToastShowRef?> = _current
+    internal val current: State<ToastShowRef?> = _current
 
     /** 弹出一条回执；已有条会直接顶替。 */
     fun show(data: AppToastData) {
@@ -202,13 +203,13 @@ fun ToastHost(
 }
 
 private fun toastEnter(durationMillis: Int): EnterTransition {
-    val spec = tween<Int>(durationMillis)
+    val spec = tween<IntOffset>(durationMillis)
     val fspec = tween<Float>(durationMillis)
     return fadeIn(animationSpec = fspec) + slideInVertically(animationSpec = spec) { it / 2 }
 }
 
 private fun toastExit(durationMillis: Int): ExitTransition {
-    val spec = tween<Int>(durationMillis)
+    val spec = tween<IntOffset>(durationMillis)
     val fspec = tween<Float>(durationMillis)
     return fadeOut(animationSpec = fspec) + slideOutVertically(animationSpec = spec) { it / 2 }
 }

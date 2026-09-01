@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.behavior.appStateLayer
-import com.deepcode.designsystem.behavior.rememberNoInkIndication
 import com.deepcode.designsystem.state.UiState
 import com.deepcode.designsystem.theme.Dimens
 
@@ -158,7 +158,6 @@ fun AppTopAppBar(
                 IconButton(
                     onClick = onBack,
                     interactionSource = backInteraction,
-                    indication = rememberNoInkIndication(),
                     modifier = Modifier.appStateLayer(backInteraction),
                 ) {
                     Icon(

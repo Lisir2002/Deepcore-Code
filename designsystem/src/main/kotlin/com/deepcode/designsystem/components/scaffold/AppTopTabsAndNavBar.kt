@@ -1,5 +1,7 @@
 package com.deepcode.designsystem.components.scaffold
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.behavior.appStateLayer
 import com.deepcode.designsystem.behavior.rememberNoInkIndication
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.deepcode.designsystem.theme.Dimens
 
 /** §6.2 顶栏选项卡：与内容区 crossfade（TabSwitch）解耦，指示器滑动由页面按需接。 */
@@ -69,15 +70,17 @@ private fun TabChip(
     val content = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
     else MaterialTheme.colorScheme.onSurfaceVariant
     Surface(
-        onClick = onClick,
         modifier = modifier
             .appStateLayer(interactionSource, selected = selected)
-            .height(36.dp),
+            .height(36.dp)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = rememberNoInkIndication(),
+                onClick = onClick,
+            ),
         shape = RoundedCornerShape(Dimens.radiusS),
         color = container,
         contentColor = content,
-        interactionSource = interactionSource,
-        indication = rememberNoInkIndication(),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = Dimens.spaceM, vertical = Dimens.spaceXS),
@@ -135,7 +138,12 @@ fun AppNavBar(
                     .appStateLayer(interaction, selected = index == selectedIndex)
                     .height(Dimens.minTouchTarget)
                     .width(64.dp)
-                    .clip(RoundedCornerShape(Dimens.radiusL)),
+                    .clip(RoundedCornerShape(Dimens.radiusL))
+                    .clickable(
+                        interactionSource = interaction,
+                        indication = rememberNoInkIndication(),
+                        onClick = { onSelected(index) },
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {

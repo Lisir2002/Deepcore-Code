@@ -1,7 +1,7 @@
 package com.deepcode.designsystem.behavior
 
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
-import androidx.compose.animation.core.EmphasizedDecelerateEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
 import com.deepcode.designsystem.theme.appTokens
@@ -53,7 +53,7 @@ object AppTransitions {
     /** 顶栏 tab 指示器（fast/emphasized，§5.2 末段），独立于通用表。 */
     val TabIndicator = AppTransitionSpec(
         duration = 140.milliseconds,
-        easing = EmphasizedDecelerateEasing,
+        easing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f),
     )
 }
 

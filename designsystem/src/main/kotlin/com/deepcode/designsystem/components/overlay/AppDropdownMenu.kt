@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.behavior.appStateLayer
 import com.deepcode.designsystem.behavior.rememberNoInkIndication
-import com.deepcode.designsystem.components.AppModalSheet
+import com.deepcode.designsystem.components.scaffold.AppModalSheet
 import com.deepcode.designsystem.theme.Dimens
 import com.deepcode.designsystem.theme.appColors
 import com.deepcode.designsystem.theme.appTokens
@@ -65,7 +65,7 @@ fun AppDropdownMenu(
                 onDismissRequest = onDismissRequest,
                 modifier = modifier.widthIn(min = minWidth),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(appTokens().radius.card),
-                containerColor = MaterialTheme.colorScheme.surfaceElevated,
+                containerColor = appColors().surfaceElevated,
                 tonalElevation = 6.dp,
                 shadowElevation = 6.dp,
             ) {

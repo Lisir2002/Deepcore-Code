@@ -41,7 +41,6 @@ data class AppRadius(
 }
 
 /** brand 常驻圆角档位（§3.4）。 */
-@Immutable
 val AppRadiusTokens = AppRadius(
     card = Dimens.radiusM,
     listItem = Dimens.radiusM,

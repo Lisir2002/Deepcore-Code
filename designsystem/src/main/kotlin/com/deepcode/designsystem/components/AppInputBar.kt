@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.behavior.appStateLayer
-import com.deepcode.designsystem.behavior.rememberNoInkIndication
 import com.deepcode.designsystem.theme.Dimens
 
 /**
@@ -94,7 +93,6 @@ fun AppInputBar(
                     onClick = onStop,
                     modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(stopInteraction),
                     interactionSource = stopInteraction,
-                    indication = rememberNoInkIndication(),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Stop,
@@ -109,7 +107,6 @@ fun AppInputBar(
                     enabled = enabled && value.isNotBlank(),
                     modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(sendInteraction),
                     interactionSource = sendInteraction,
-                    indication = rememberNoInkIndication(),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowForward,

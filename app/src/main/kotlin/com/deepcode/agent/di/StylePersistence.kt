@@ -41,7 +41,7 @@ class SqliteStylePreferenceStore(private val db: SqliteDatabase) : StylePreferen
                 sql = "SELECT value FROM style_settings WHERE key = ?",
                 parameters = 1,
                 binders = { bindString(1, key) },
-            ) { cursor -> if (cursor.next()) cursor.getString(0) else null }
+            ) { cursor -> if (cursor.next().value) cursor.getString(0) else null }
                 .firstOrNull()
         }
     }

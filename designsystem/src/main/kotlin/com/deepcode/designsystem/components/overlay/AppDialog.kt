@@ -158,8 +158,8 @@ fun AppStatusDialog(
             }
             Spacer(Modifier.height(Dimens.spaceL))
         }
-        AppDialogTitle(title, textAlign = Alignment.CenterHorizontally)
-        AppDialogBody(message, textAlign = Alignment.CenterHorizontally)
+        AppDialogTitle(title, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        AppDialogBody(message, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         if (state != AppDialogStatusState.Progress) {
             AppPrimaryButton(
                 text = acknowledgeText,
@@ -201,7 +201,7 @@ fun AppNoticeDialog(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 0.6f * LocalConfiguration.current.screenHeightDp.dp)
+                .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.6f)
                 .verticalScroll(rememberScrollState()),
         ) {
             Column { richContent() }
@@ -240,7 +240,7 @@ private fun AppDialogBaseline(
             modifier = modifier
                 .widthIn(max = DialogSpec.MaxWidth),
             shape = RoundedCornerShape(tokens.radius.sheet),
-            color = MaterialTheme.colorScheme.surfaceElevated,
+            color = appColors().surfaceElevated,
             tonalElevation = 2.dp,
             shadowElevation = 8.dp,
         ) {

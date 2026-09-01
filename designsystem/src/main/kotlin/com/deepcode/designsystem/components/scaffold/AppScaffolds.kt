@@ -17,6 +17,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.components.AppBottomBarDivider
 import com.deepcode.designsystem.components.AppTopAppBar
 import com.deepcode.designsystem.components.AppText
@@ -121,7 +122,7 @@ fun NavScaffold(
                 state = toastHostState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(horizontal = Dimens.spaceL, bottom = Dimens.minTouchTarget + 8.dp),
+                    .padding(start = Dimens.spaceL, end = Dimens.spaceL, bottom = Dimens.minTouchTarget + 8.dp),
             )
         }
     } else {

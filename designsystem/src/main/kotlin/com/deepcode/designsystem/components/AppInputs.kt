@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material3.FilledTextField
-import androidx.compose.material3.FilledTextFieldDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -16,13 +14,14 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import com.deepcode.designsystem.behavior.appStateLayer
-import com.deepcode.designsystem.behavior.rememberNoInkIndication
 import com.deepcode.designsystem.theme.AppTextStyle
 import com.deepcode.designsystem.theme.AppTextTone
 import com.deepcode.designsystem.theme.Dimens
@@ -125,7 +124,6 @@ fun AppTextField(
                     IconButton(
                         onClick = { onValueChange("") },
                         interactionSource = clearInteraction,
-                        indication = rememberNoInkIndication(),
                         modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(clearInteraction),
                     ) {
                         Icon(
@@ -141,7 +139,7 @@ fun AppTextField(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = if (isError) colors.danger else colors.primary,
                 errorBorderColor = colors.danger,
-                unFocusedBorderColor = colors.border,
+                unfocusedBorderColor = colors.border,
                 focusedLabelColor = if (isError) colors.danger else colors.primary,
                 errorLabelColor = colors.danger,
                 errorSupportingTextColor = colors.danger,
@@ -149,7 +147,7 @@ fun AppTextField(
             shape = shape,
         )
     } else {
-        FilledTextField(
+        TextField(
             value = value,
             onValueChange = onValueChange,
             modifier = modifier,
@@ -170,7 +168,6 @@ fun AppTextField(
                     IconButton(
                         onClick = { onValueChange("") },
                         interactionSource = clearInteraction,
-                        indication = rememberNoInkIndication(),
                         modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(clearInteraction),
                     ) {
                         Icon(
@@ -183,9 +180,9 @@ fun AppTextField(
             } else null,
             prefix = prefix?.let { { Text(it) } },
             suffix = suffix?.let { { Text(it) } },
-            colors = FilledTextFieldDefaults.colors(
+            colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                errorContainerColor = MaterialTheme.colorScheme.dangerContainer,
+                errorContainerColor = colors.dangerContainer,
                 focusedLabelColor = if (isError) colors.danger else colors.primary,
                 errorLabelColor = colors.danger,
                 errorSupportingTextColor = colors.danger,
@@ -214,7 +211,6 @@ fun AppSwitch(
         enabled = enabled,
         modifier = modifier.appStateLayer(interaction),
         interactionSource = interaction,
-        indication = rememberNoInkIndication(),
         colors = SwitchDefaults.colors(
             checkedTrackColor = MaterialTheme.colorScheme.primary,
             checkedThumbColor = MaterialTheme.colorScheme.onPrimary,

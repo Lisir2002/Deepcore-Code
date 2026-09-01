@@ -1,6 +1,7 @@
 package com.deepcode.designsystem.components.messaging
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -164,7 +165,7 @@ fun AppToolCard(
 
 /** 供 messages 包内复用的轻量点击 modifier（无墨迹，避免 M3 ripple）。 */
 private fun Modifier.appClickable(onClick: () -> Unit): Modifier =
-    androidx.compose.foundation.clickable(interactionSource = null, indication = null, onClick = onClick)
+    clickable(interactionSource = null, indication = null, onClick = onClick)
 
 private fun toolStatus(
     status: ToolVisualStatus,

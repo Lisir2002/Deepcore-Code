@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AgentIdeRoot()
+            AgentIdeRoot(styleController)
         }
     }
 }
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
  * 主题只在这里设置一次，页面不允许自己包 MaterialTheme。
  */
 @Composable
-private fun AgentIdeRoot() {
+private fun AgentIdeRoot(styleController: StyleController) {
     CompositionLocalProvider(LocalStyleController provides styleController) {
         AppTheme {
             var showSettings by remember { mutableStateOf(false) }

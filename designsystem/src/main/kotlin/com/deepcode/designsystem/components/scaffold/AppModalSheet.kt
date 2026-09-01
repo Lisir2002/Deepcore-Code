@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -25,6 +26,7 @@ import com.deepcode.designsystem.theme.Dimens
  * 模态面板壳（§6.5.1）：底部上滑，拖拽柄 32×4dp（居顶）、嵌套滚动接底、转场接 ModalSheet(5.2)。
  * 业务层用它承载重决策/富内容表单，禁裸 ModalBottomSheet（lint）。
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppModalSheet(
     onDismiss: () -> Unit,

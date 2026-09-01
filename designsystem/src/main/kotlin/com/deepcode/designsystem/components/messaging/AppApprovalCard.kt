@@ -2,6 +2,7 @@ package com.deepcode.designsystem.components.messaging
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,7 +51,7 @@ fun AppApprovalCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimens.radiusM),
-        color = if (destructive) colors.dangerContainer else MaterialTheme.colorScheme.surfaceElevated,
+        color = if (destructive) colors.dangerContainer else colors.surfaceElevated,
         border = if (destructive) {
             androidx.compose.foundation.BorderStroke(1.dp, colors.danger.copy(alpha = 0.4f))
         } else null,

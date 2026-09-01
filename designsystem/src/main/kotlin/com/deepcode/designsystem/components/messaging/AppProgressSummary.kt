@@ -51,45 +51,44 @@ fun AppProgressSummary(
             .fillMaxWidth()
             .clickable(interactionSource = null, indication = null, onClick = onOpenTimeline),
         shape = RoundedCornerShape(Dimens.radiusM),
-        color = MaterialTheme.colorScheme.surfaceElevated,
+        color = colors.surfaceElevated,
         tonalElevation = 3.dp,
         shadowElevation = 3.dp,
     ) {
-            Column(modifier = Modifier.padding(horizontal = Dimens.spaceM, vertical = Dimens.spaceS)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (completed) Icons.Filled.CheckCircle else Icons.Filled.ChevronRight,
-                        contentDescription = null,
-                        tint = if (completed) colors.success else colors.primary,
-                        modifier = Modifier.size(Dimens.iconM),
-                    )
-                    Spacer(Modifier.size(Dimens.spaceS))
-                    Text(
-                        text = if (totalSteps != null) "$doneSteps/$totalSteps 步完成" else "$doneSteps 步完成",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(Modifier.size(Dimens.spaceS))
-                    Text(
-                        text = "· $currentLabel",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                if (totalSteps != null) {
-                    Spacer(Modifier.height(Dimens.spaceS))
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp),
-                        color = colors.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                }
+        Column(modifier = Modifier.padding(horizontal = Dimens.spaceM, vertical = Dimens.spaceS)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (completed) Icons.Filled.CheckCircle else Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = if (completed) colors.success else colors.primary,
+                    modifier = Modifier.size(Dimens.iconM),
+                )
+                Spacer(Modifier.size(Dimens.spaceS))
+                Text(
+                    text = if (totalSteps != null) "$doneSteps/$totalSteps 步完成" else "$doneSteps 步完成",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.size(Dimens.spaceS))
+                Text(
+                    text = "· $currentLabel",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            if (totalSteps != null) {
+                Spacer(Modifier.height(Dimens.spaceS))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp),
+                    color = colors.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
             }
         }
     }

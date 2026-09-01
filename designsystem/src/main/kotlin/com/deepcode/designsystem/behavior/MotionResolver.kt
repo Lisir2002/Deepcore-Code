@@ -1,11 +1,11 @@
 package com.deepcode.designsystem.behavior
 
+import android.provider.Settings
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.currentAnimatorDurationScale
+import androidx.compose.ui.platform.LocalContext
 import kotlin.time.Duration
 
 /**
@@ -25,7 +25,14 @@ object MotionResolver {
 
     /** 读系统动画缩放：==0 即用户开启"移除动画"（§10.3）。 */
     @Composable
-    fun isReducedMotion(): Boolean = LocalView.current.currentAnimatorDurationScale == 0f
+    fun isReducedMotion(): Boolean {
+        val scale = Settings.Global.getFloat(
+            LocalContext.current.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f,
+        )
+        return scale == 0f
+    }
 
     @Composable
     fun resolve(mode: AppTransitions.Mode): Resolved {
