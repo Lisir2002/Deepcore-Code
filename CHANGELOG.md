@@ -2,6 +2,20 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.3.0.6] — 2026-09-01 · versionCode 30006
+
+> **对话列表首页骨架落地**。首个骨架页面：顶栏 + 列表 + 卡片左滑操作，全部走设计系统组件，为后续「骨架页面系列」定下槽位写法。
+
+### Added
+
+- **对话列表（首页）骨架页面**（[ConversationList.kt](feature/chat/src/main/kotlin/com/deepcode/feature/chat/ConversationList.kt)）：
+  - 顶栏左侧标题「对话」，右侧「新建对话」图标按钮（走 `AppScaffold` 槽位，页面不新增样式）；
+  - 列表卡片左滑半卡露出右侧操作区，重命名 / 删除 / 查看 三个图标按钮（新增设计系统组件 `AppSwipeReveal`，骨架内首个自定义交互组件）；
+  - 重命名走模态面板输入，删除走危险操作确认弹窗，查看即打开对话；「新建对话」已接线到 `chat/new` 路由。
+- **设计系统**：新增 `AppSwipeReveal`（左滑露出操作区——整卡左滑半卡、过半自动吸附展开 / 未过半回弹收起；业务层禁止自拼该交互）。
+
+---
+
 ## [v0.2.2.5] — 2026-09-01 · versionCode 20205
 
 > **修复启动闪退**。崩溃捕获（CrashVault）上报的 `IndexOutOfBoundsException` 根因定位：

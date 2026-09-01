@@ -52,6 +52,7 @@ fun AppNavRoot(styleController: StyleController) {
         composable(AppRoutes.SHELL) {
             HomeShell(
                 onOpenConversation = { id -> navController.navigate(AppRoutes.chat(id)) },
+                onNewConversation = { navController.navigate(AppRoutes.chat("new")) },
             )
         }
         composable(AppRoutes.CHAT) {
@@ -63,7 +64,10 @@ fun AppNavRoot(styleController: StyleController) {
 
 /** 底部 tab 壳：底栏三入口 + 选中内容区。 */
 @Composable
-internal fun HomeShell(onOpenConversation: (String) -> Unit) {
+internal fun HomeShell(
+    onOpenConversation: (String) -> Unit,
+    onNewConversation: () -> Unit,
+) {
     val tabs = remember {
         listOf(
             NavItem(id = "chat", text = "对话", icon = Icons.AutoMirrored.Filled.Chat),
@@ -81,6 +85,7 @@ internal fun HomeShell(onOpenConversation: (String) -> Unit) {
         when (index) {
             0 -> ConversationList(
                 onOpenConversation = onOpenConversation,
+                onNewConversation = onNewConversation,
                 contentPadding = padding,
             )
             1 -> WorkPlaceholder(contentPadding = padding)
