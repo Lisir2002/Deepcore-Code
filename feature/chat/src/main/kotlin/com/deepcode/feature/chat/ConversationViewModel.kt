@@ -44,7 +44,9 @@ class ConversationViewModel(
                         val summary = SessionSummaryReducer.reduce(events)
                         ConversationItem(
                             id = idx.id,
-                            title = summary.title.ifBlank { idx.title }.ifBlank { "新对话" },
+                            // 索引标题优先（用户改名的值，INSERT OR IGNORE 不会覆盖），
+                            // 为空才回落到事件流归约的自动标题。
+                            title = idx.title.ifBlank { summary.title }.ifBlank { "新对话" },
                             preview = summary.preview,
                             updatedAt = idx.updatedAt,
                             status = summary.status,

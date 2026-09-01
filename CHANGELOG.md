@@ -2,6 +2,22 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.1.2-rc1] — 2026-09-01 · versionCode 40102（预发行）
+
+> **重命名修复**。修复「修改对话名后保存无效果」：列表标题取「索引标题」优先，
+> 归约器自动标题回落兜底，用户改名不再被事件流自动标题覆盖。
+
+### Fixed
+
+- **重命名对话保存后不生效**（[ConversationViewModel.kt](feature/chat/src/main/kotlin/com/deepcode/feature/chat/ConversationViewModel.kt)）：
+  列表项标题原先 `summary.title.ifBlank { idx.title }` —— 只要会话有消息，
+  归约器从首条用户输入生成的自动标题永远非空，把 `renameSession` 写进会话索引的
+  新名字压了下去（改名其实已持久化，只是 UI 不显示）。已改为索引标题优先：
+  `idx.title.ifBlank { summary.title }`，用户改名即刻生效；未改名的会话仍回落自动标题。
+  会话索引的 `insertSession` 为 `INSERT OR IGNORE`，不会在后续消息追加时覆盖改名结果。
+
+---
+
 ## [v0.4.1.1] — 2026-09-01 · versionCode 40101
 
 > **会话隔离 + 列表交互重构**。修复「新建对话进入历史会话、多会话串扰」的隔离问题；
