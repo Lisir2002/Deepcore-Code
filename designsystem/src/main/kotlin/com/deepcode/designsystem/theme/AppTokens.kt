@@ -137,24 +137,27 @@ data class AppMotion(
     val easingEmphasized: Easing,
 )
 
-/** 单套 AppTokens 聚合（此阶段仅编译期；运行时 StyleController/ThemeSpec 归属 T8.2）。 */
+/** 单套 AppTokens 聚合（含圆角；运行时由 ThemeSpec/spec 承载，见 AppThemeSpec.kt）。 */
 @Immutable
 data class AppTokens(
     val colors: AppColors,
     val type: AppTypographyTokens,
     val motion: AppMotion,
+    val radius: AppRadius,
 )
 
 internal val LightAppTokens = AppTokens(
     colors = AppColors.fromBrand(LightBrand),
     type = AppTypographyTokens.fromTypeScale(TypeScale),
     motion = appMotionTokens(),
+    radius = AppRadiusTokens,
 )
 
 internal val DarkAppTokens = AppTokens(
     colors = AppColors.fromBrand(DarkBrand),
     type = AppTypographyTokens.fromTypeScale(TypeScale),
     motion = appMotionTokens(),
+    radius = AppRadiusTokens,
 )
 
 // 兼容旧入口：business 色读取走 appColors()；新入口走 appTokens() 读全量语义。

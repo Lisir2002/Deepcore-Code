@@ -1,5 +1,6 @@
 package com.deepcode.feature.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +29,10 @@ import com.deepcode.designsystem.components.AppTextButton
 import com.deepcode.designsystem.components.AppTextField
 import com.deepcode.designsystem.theme.AppTextStyle
 import com.deepcode.designsystem.theme.AppTextTone
+import com.deepcode.designsystem.theme.DarkMode
 import com.deepcode.designsystem.theme.Dimens
+import com.deepcode.designsystem.theme.LocalStyleController
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -47,6 +52,12 @@ fun SettingsScreen(
 
     val servers by viewModel.servers.collectAsStateWithLifecycle()
 
+    val style = LocalStyleController.current
+    val activeSpec by style.spec.collectAsStateWithLifecycle()
+    val darkMode by style.darkMode.collectAsStateWithLifecycle()
+    val packs by style.packs.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+
     AppScaffold(
         title = "MCP 服务器",
         onBack = onBack,
@@ -61,8 +72,37 @@ fun SettingsScreen(
                 .padding(horizontal = Dimens.spaceL),
             verticalArrangement = Arrangement.spacedBy(Dimens.spaceM),
         ) {
+            // ── 外观（§8.2 主题切换入口）──
+            item(key = "appearance") {
+                AppCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceS)) {
+                        AppText("外观", style = AppTextStyle.Title)
+                        AppText("深色模式", style = AppTextStyle.Body)
+                        DarkMode.entries.forEach { mode ->
+                            SelectableRow(
+                                label = when (mode) {
+                                    DarkMode.FOLLOW_SYSTEM -> "跟随系统"
+                                    DarkMode.LIGHT -> "浅色"
+                                    DarkMode.DARK -> "深色"
+                                },
+                                selected = darkMode == mode,
+                                onClick = { scope.launch { style.setDarkMode(mode) } },
+                            )
+                        }
+                        AppText("风格", style = AppTextStyle.Body)
+                        packs.forEach { pack ->
+                            SelectableRow(
+                                label = pack.name,
+                                selected = activeSpec.id == pack.id,
+                                onClick = { scope.launch { style.setSpec(pack.id) } },
+                            )
+                        }
+                    }
+                }
+            }
+
             // ── 添加表单 ──
-            item {
+            item(key = "add_form") {
                 AppCard {
                     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceS)) {
                         AppText("添加服务器", style = AppTextStyle.Title)
@@ -138,6 +178,35 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/** 可点击单行选项：darkMode 三态 / 风格包列表共用，选中态右侧打勾。 */
+@Composable
+private fun SelectableRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = Dimens.spaceXS),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AppText(
+            label,
+            style = AppTextStyle.Body,
+            tone = if (selected) AppTextTone.Primary else AppTextTone.Default,
+        )
+        Spacer(Modifier.weight(1f))
+        if (selected) {
+            AppStatusChip(
+                text = "使用中",
+                containerColor = com.deepcode.designsystem.theme.appColors().primaryContainer,
+            )
         }
     }
 }

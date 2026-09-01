@@ -36,10 +36,15 @@ import com.deepcode.core.platform.tools.WriteFileTool
 import com.deepcode.core.platform.workspace.LocalDirWorkspace
 import com.deepcode.agent.demo.DemoProvider
 import com.deepcode.agent.mcp.AndroidMcpServerConfigStore
+import com.deepcode.designsystem.theme.DefaultStyleController
+import com.deepcode.designsystem.theme.StyleController
+import com.deepcode.designsystem.theme.ThemePacks
+import com.deepcode.designsystem.theme.DarkMode
 import com.deepcode.feature.chat.ChatViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.core.qualifier.named
@@ -61,7 +66,7 @@ import java.io.File
  * 核心框架一个字都不用改。协议与示例见 DATA_LAYER.md 第五节。
  */
 val dataTableModules: List<TableModule> = listOf(
-    // 例：BookmarksTableModule（M2 文件树/收藏）、SettingsTableModule（M3 设置项）
+    SettingsTableModule,
 )
 
 val appModule = module {
@@ -82,6 +87,29 @@ val appModule = module {
     }
 
     single<EventStore> { SQLiteEventStore(db = get()) }
+
+    // ── 主题 / 外观（§7.1 StyleController 装配）──────────────────────
+    // 内置包注册：brand 常驻 + console 演示包；持久化走 SettingsTableModule。
+    // Koin single 块非 suspend，构造期初值用 runBlocking 一次性同步读取。
+    single<StyleController> {
+        val store = SqliteStylePreferenceStore(get())
+        val (savedSpecId, savedDarkMode) = runBlocking {
+            val spec = store.read(DefaultStyleController.KEY_SPEC)
+            val mode = runCatching {
+                DarkMode.valueOf(store.read(DefaultStyleController.KEY_DARK_MODE) ?: "")
+            }.getOrDefault(DarkMode.FOLLOW_SYSTEM)
+            spec to mode
+        }
+
+        val packs = ThemePacks.builtIn
+        val initialSpec = packs.firstOrNull { it.id == savedSpecId } ?: packs.first()
+
+        DefaultStyleController(
+            initialSpec = initialSpec,
+            darkMode = savedDarkMode,
+            store = store,
+        ).apply { packs.forEach(::registerPack) }
+    }
 
     single<Sandbox> { CommandWhitelistSandbox() }
 

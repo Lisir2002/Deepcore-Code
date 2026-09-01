@@ -5,15 +5,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.deepcode.designsystem.theme.AppTheme
+import com.deepcode.designsystem.theme.LocalStyleController
+import com.deepcode.designsystem.theme.StyleController
 import com.deepcode.feature.chat.ChatScreen
 import com.deepcode.feature.settings.SettingsScreen
+import org.koin.android.ext.android.getKoin
 
 class MainActivity : ComponentActivity() {
+
+    private val styleController: StyleController by lazy { getKoin().get() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,12 +37,14 @@ class MainActivity : ComponentActivity() {
  */
 @Composable
 private fun AgentIdeRoot() {
-    AppTheme {
-        var showSettings by remember { mutableStateOf(false) }
-        if (showSettings) {
-            SettingsScreen(onBack = { showSettings = false })
-        } else {
-            ChatScreen(onOpenSettings = { showSettings = true })
+    CompositionLocalProvider(LocalStyleController provides styleController) {
+        AppTheme {
+            var showSettings by remember { mutableStateOf(false) }
+            if (showSettings) {
+                SettingsScreen(onBack = { showSettings = false })
+            } else {
+                ChatScreen(onOpenSettings = { showSettings = true })
+            }
         }
     }
 }
