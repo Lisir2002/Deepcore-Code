@@ -5,7 +5,6 @@ import androidx.compose.ui.unit.TextUnitType
 import com.deepcode.designsystem.theme.AppThemeSpec
 import com.deepcode.designsystem.theme.AppTokens
 import com.deepcode.designsystem.theme.ThemePacks
-import kotlin.math.pow
 
 /**
  * 主题校验器（§7.4「A11y 硬约束 / 可用性软约束」两行），跑在**合并后**的
@@ -87,7 +86,7 @@ object ThemeValidator {
         floor: Double,
         fallbacks: MutableMap<String, String>,
     ) {
-        val ratio = contrast(fg, bg)
+        val ratio = Contrast.contrast(fg, bg)
         if (ratio < floor) {
             // 「该令牌回退 brand 值」：两成员都记（§10.1 配对是双方耦合），合并器按 brand 对应模式取值
             val reason = "对比度配对 $fgName/$bgName 仅 ${"%.2f".format(ratio)} < $floor（§10.1），回退 brand 值"
@@ -104,30 +103,9 @@ object ThemeValidator {
         floor: Double,
         warnings: MutableList<String>,
     ) {
-        val ratio = contrast(a, b)
+        val ratio = Contrast.contrast(a, b)
         if (ratio < floor) {
             warnings += "$mode：$label 差异不足（对比度 ${"%.2f".format(ratio)} < $floor），视觉分层弱（§7.4 软约束，告警保留）"
         }
-    }
-
-    // —— WCAG 2.1 相对亮度 / 对比度（§10.1）——
-    private fun linearChannel(v: Float): Double = when {
-        v <= 0.04045f -> (v / 12.92f).toDouble()
-        else -> ((v + 0.055f) / 1.055f).toDouble().pow(2.4)
-    }
-
-    private fun Color.relativeLuminance(): Double {
-        val r = linearChannel(red)
-        val g = linearChannel(green)
-        val b = linearChannel(blue)
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b
-    }
-
-    private fun contrast(a: Color, b: Color): Double {
-        val la = a.relativeLuminance()
-        val lb = b.relativeLuminance()
-        val hi = maxOf(la, lb)
-        val lo = minOf(la, lb)
-        return (hi + 0.05) / (lo + 0.05)
     }
 }
