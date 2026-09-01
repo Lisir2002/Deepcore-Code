@@ -4,12 +4,8 @@
 
 ## [v0.2.1.3] — 2026-09-01 · tag [v0.2.1.3](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.2.1.3) · versionCode 20103
 
-> **UI 层 P0→P5 全里程碑正式发版**。v0.2.0.2 曾打 tag 但 CI 产出的 APK 是 draft（release.yml 默认行为），
-> 本次重打 tag 并修复 workflow 配置，UI 落地闭环首次可分发给端上测试。
-
-## Added
-
-
+> **正式可分发发版**。前身 v0.2.0.2 因 release.yml 默认 `draft: true` 产出未发布 Release，
+> 修复 workflow + 清理沙箱代理后重打 tag 首次产出可安装 APK。
 
 ### Added
 
@@ -36,10 +32,6 @@
   - **进度移动化变体**（6.8.6，D20）：置顶摘要条 + 时间线抽屉，不做独立第二面板。
   - 决策新增 **D19/D20**；lint 新增 `ForbiddenRawToolCard` / `ForbiddenRawJsonRender`；T8.5 并入消息链路组件。
 
-## [0.2.0.2] — 2026-09-01 · tag [v0.2.0.2](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.2.0.2) · versionCode 20002
-
-### Added
-
 - **工具与技能层设计定稿**（文档 `docs/TOOLS_SKILLS.md`，随 M1 实施）：
   - 双标准铁律：工具互操作对齐 **MCP**（规范基线 2025-11-25，官方 Kotlin SDK），
     技能包对齐 **Agent Skills 开放标准**（agentskills.io，`SKILL.md` + 渐进披露三层加载），
@@ -47,7 +39,7 @@
   - 模块规划：`core:mcp` 新模块（MCP Client，Streamable HTTP 先行）；
     `core:agent` 新增 `skill/` 子包（保持纯 Kotlin 零第三方依赖）。
 
-- **工具与技能层 T1–T4 实施完成**（代码随 M1，未发版）：
+- **工具与技能层 T1–T4 实施完成**：
   - T1 `core:model`：`ToolSpec` 扩展（title/origin/sourceId/annotations）+ `ToolOutput`
     新增 `Image` / `ResourceLink` / `Structured` 三种形态（向后兼容）。
   - T2 `core:agent/skill/`：`SkillParser`（frontmatter 校验）/ `SkillLoader`（多 root
@@ -68,7 +60,7 @@
     触发加载、L3 资源按需）；MCP 工具经桥接进统一 `ToolRegistry`，annotations 视为
     不可信、风险裁决只认本地 `PermissionGate`；turn 内工具清单快照以保证 prompt cache 命中。
 
-- **T5 `:app` 装配与设置页（代码随 M1，未发版）**：
+- **T5 `:app` 装配与设置页**：
   - `core:mcp` 新增 `McpServerConfigStore` 接口（纯 Kotlin、零 Android 依赖），`:app` 提供
     `AndroidMcpServerConfigStore`（`filesDir/mcp/servers.json`，kotlinx-serialization 本地 DTO
     映射，构造期同步读供非阻塞装配）；`McpServerManager` 增加 `addServer`/`updateServer`/
@@ -80,19 +72,20 @@
   - 新建 `:feature:settings` 模块：MCP server 管理 CRUD 表单（增删、信任切换、重连、状态展示），
     `designsystem` 同步扩展 `AppText`/`AppTextField`/`AppSwitch`（封装 Material3 输入组件，
     业务层不直接触碰 Material3，符合 `:lint` 守卫）；`MainActivity` 经状态切换接入导航。
-- **T6 架构文档同步（未发版）**：
+
+- **T6 架构文档同步**：
   - `ARCHITECTURE.md` 模块图补 `:feature:settings`，`:core:mcp` 由「官方SDK」改为「自实现」
     并加注弃用官方 SDK 的原因（SDK 0.6+ 要求 Kotlin 2.2+，与本项目 2.0.21 元数据不兼容）；
   - 「能力即接口」补 `SkillLoader`/`SkillInjector`/`McpClient`/`McpServerConfigStore`，
     并写明「接口在 `:core:mcp`、Android 实现在 `:app`」——避免 `feature:settings` 反向依赖 `:app`；
-  - 「扩展点」表新增「接一个 MCP 服务器」「加一种 MCP 传输（stdio/WebSocket）」两行，
-    MCP 工具行更新为 `McpCompositeToolRegistry` 聚合语义（BUILTIN 优先 + name 稳定排序）；
-  - 「组件库是唯一出口」表补 `AppText`/`AppTextField`/`AppSwitch`，并写明「缺件先补组件库，
-    不要在 feature 层开洞」；
-  - 「当前状态」表补 `:core:mcp`（15 例）、`:feature:settings`，`:core:agent` 用例数更新为
-    17（主循环 6 + Skill 11），并标注 `:app`/`:feature:settings` 仅 CI 验证；
-  - 技术栈补 OkHttp / Koin 4.0.0 / SQLDelight 2.x 与两项开放标准（MCP 2025-11-25、Agent Skills）；
-    MCP 规范版本统一为 `2025-11-25`（与 `TOOLS_SKILLS.md` 设计定稿一致）。
+  - 「扩展点」表新增「接一个 MCP 服务器」「加一种 MCP 传输（stdio/WebSocket）」两行；
+  - 「组件库是唯一出口」表补 `AppText`/`AppTextField`/`AppSwitch`；
+  - 「当前状态」表补 `:core:mcp`（15 例）、`:feature:settings`；
+  - 技术栈补 OkHttp / Koin 4.0.0 / SQLDelight 2.x 与两项开放标准。
+
+- **沙箱本地 Android 编译环境**：Android SDK（platform-35 / build-tools 34.0.0 + 35.0.1 /
+  platform-tools）+ Gradle 8.9（镜像下载）+ JDK 17（与 CI 对齐），依赖经阿里云 google 镜像解析。
+  `PLAN.md` 里「沙箱无 Android SDK，本地无法自验」的限制就此解除。
 
 ### Changed
 
@@ -106,53 +99,31 @@
 - 新增 `scripts/release_helper.py`：统一计算下一版本（current/plan/code/rc-number），
   取代手改 `versionCode`/`versionName`，杜绝注释误匹配与编码笔误。
 - `release.yml` 新增 **tag ↔ versionName 一致性校验**步骤，不一致即中止发版。
+- `release.yml` `softprops/action-gh-release@v2` 显式 `draft: false`，避免默认留草稿。
 
 ### Fixed
 
-- **修复 T1–T6 遗留的 CI 红（M1 工具/技能层代码此前从未在 CI 上编译通过）**：
-  - `app/build.gradle.kts` 补 `implementation(project(":core:mcp"))`。DI 里直接构造
-    `McpServerManager` / `McpCompositeToolRegistry`，却只靠 `:feature:settings` 传递依赖
-    （`implementation` 不向外暴露），`:app` 全片 `Unresolved reference`——
-    这是 android-build / design-guard / release-build 三个 job 同红的根因。
-  - `AppModule.kt` 补 `org.koin.core.qualifier.named` 导入；
-    `DeepCoreCodeApp.kt` 补 `org.koin.core.component.get` / `inject` 导入。
-  - `designsystem` 的 `AppTextStyle.toTextStyle()` / `AppTextTone.toColor()` 补
-    `@Composable`：二者读 `MaterialTheme.typography` / `colorScheme` / `appColors()`，
-    在普通函数里读组合状态会直接编译失败。
+- **修复 T1–T6 遗留的 CI 红**（M1 工具/技能层代码此前从未在 CI 上编译通过）：
+  - `app/build.gradle.kts` 补 `implementation(project(":core:mcp"))`；
+  - `AppModule.kt` 补 `named`、`DeepCoreCodeApp.kt` 补 `get`/`inject` 导入；
+  - `designsystem` 的 `AppTextStyle.toTextStyle()` / `AppTextTone.toColor()` 补 `@Composable`；
   - `RenderBlockView.ToolOutputView` 补 `Image` / `ResourceLink` / `Structured` 三个产物分支。
-    T1 给 `ToolOutput` 加了这三种形态却没补渲染落点，`when` 不穷尽 → 编译失败，
-    这是 CI 自 b3164b5 起连红的**直接**根因。
 - **补齐 CI 覆盖缺口**：
-  - `ci.yml` 的 core-test 纳入 `:core:mcp:test`（此前 15 例单测从未在 CI 执行，
-    「测试绿」实际只覆盖旧模块）；
-  - `ci.yml` 的 design-guard 纳入 `:feature:settings:lintDebug`（新模块此前不受设计系统守卫约束）；
-  - `release.yml` 的发布前测试同步纳入 `:core:mcp:test`；
-  - 两处均补注释写明「新增模块必须同步进本清单」。
-- **修复 CI 第 5 轮暴露的第二层编译错误（前一层修好后才浮出）**：
-  - `McpServerConfigStore` 接口补声明 `fun current(): List<McpServerConfig>`（非阻塞内存
-    快照）。`AndroidMcpServerConfigStore` 早已按此契约实现（构造期同步读 + `override fun
-    current()`），`AppModule` 装配与 `SettingsViewModel` 也按契约调用，唯独接口本身漏了
-    声明——`:feature:settings` / `:app` 共 4 处 `Unresolved reference 'current'` 连锁。
-  - `SettingsScreen.kt` 删除 `import androidx.compose.foundation.layout.weight`：
-    `weight` 是 `RowScope`/`ColumnScope` 的成员扩展，无需（也不能）顶层 import，
-    该 import 恰好解析到 Compose internal 属性，报 "Cannot access ... internal in file"。
-- **修复 `release_helper.py` 无法解析自身写出的 rc 版本名**：`parse_name` 先剥离 `-rcN`
-  后缀再按四段解析——上一版写入 `0.2.0.1-rc1` 后，`plan` 子命令必然崩溃（rc → 下一版
-  路径此前从未被走过）。
-- **修复 CI 第 6 轮暴露的 `:app` 编译错误（错误修到第三层，`:app` 首次真正进入编译）**：
-  - `app/build.gradle.kts` plugins 补 `kotlin.serialization`：`AndroidMcpServerConfigStore`
-    的 `@Serializable` 依赖该插件在编译期生成 `serializer()`，缺失导致 22 处连锁类型
-    推断错误（`Unresolved reference 'serializer'` 等）；
-  - dependencies 补 `libs.okhttp` / `libs.kotlinx.serialization.json`：core:mcp 对这两个
-    库均为 `implementation`（不向外传递），而 `:app` 直接构造 `HttpJsonRpcMcpClient`
-    （默认参数引用 `OkHttpClient` 类型）——谁直接用谁声明。
+  - `ci.yml` 的 core-test 纳入 `:core:mcp:test`；
+  - `ci.yml` 的 design-guard 纳入 `:feature:settings:lintDebug`；
+  - `release.yml` 的发布前测试同步纳入 `:core:mcp:test`。
+- **修复 CI 第二层编译错误**：
+  - `McpServerConfigStore` 接口补声明 `fun current()`；
+  - `SettingsScreen.kt` 删除无效 `import weight`。
+- **修复 `release_helper.py` 无法解析自身写出的 rc 版本名**：`parse_name` 先剥离 `-rcN` 后缀。
+- **修复 `:app` 第三层编译错误**：plugins 补 `kotlin.serialization`、dependencies 补 `okhttp` / `kotlinx.serialization.json`。
+- **修复 `gradle.properties` 混入沙箱代理**：`127.0.0.1:18080` 是沙箱环境特有代理，CI 环境无此代理导致所有 Maven 依赖拉取失败。已删除。
 
-### Added
+## [v0.2.0.2] — 2026-09-01 · tag [v0.2.0.2](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.2.0.2) · versionCode 20002
 
-- **沙箱本地 Android 编译环境**：Android SDK（platform-35 / build-tools 34.0.0 + 35.0.1 /
-  platform-tools）+ Gradle 8.9（镜像下载）+ JDK 17（与 CI 对齐），依赖经阿里云 google 镜像解析。
-  `PLAN.md` 里「沙箱无 Android SDK，本地无法自验」的限制就此解除：推送前可本地跑
-  `:app:compileDebugKotlin`，不必靠推 commit 等 CI 盲试。
+> ⚠️ **被 v0.2.1.3 取代**：此 tag 触发 release.yml 时 `softprops/action-gh-release@v2`
+> 未显式设 `draft: false`，CI 产出了 draft Release（APK 已构建但未发布），不可分发。
+> 完整变更见 **[v0.2.1.3](#v0213--2026-09-01--tag-v0213--versioncode-20103)**。
 
 ## [0.1.4] — 2026-08-31 · tag [v0.1.4](https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.1.4) · versionCode 5
 
@@ -232,23 +203,13 @@
 
 ### Fixed
 
-- **Lint 八规则收尾修复**：Kotlin 普通 class 构造函数 UAST methodName==`<init>`，
-  从 `asSourceString()` 提取类名匹配；Material3 1.3 顶层 `Dialog` 实际是 `AlertDialog`；
-  `Popup` 在 foundation 而非 material3；inline class `Color` 构造函数 methodName 直接是类名。
-  修复后八条新规则（`DirectColorLiteral` / `RawTextStyleConstruction` /
-  `ForbiddenWindowComponent` / `ForbiddenPlatformToast` / `ForbiddenRawDropdown` /
-  `ForbiddenRawTextField` / `ForbiddenRawToolCard` / `ForbiddenRawJsonRender`）
-  在 app 模块植入违规样例时 **17 errors 全命中**，验证完毕清理 probe，design-guard 四 job 零误伤。
-- **release.yml 默认 draft 修复**：`softprops/action-gh-release@v2` 未显式设 `draft` 时默认 `true`，
-  v0.2.0.2 首次推 tag 产出 draft Release（APK 已构建但未发布）。
-  在 workflow 中加 `draft: false`，后续版本推送自动正式发布。
 - Android 编译两处根因（包名对齐、lambda `it` 遮蔽）后首个可编译 tag。
 
 [Unreleased]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.2.1.3...HEAD
 [v0.2.1.3]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.2.0.2...v0.2.1.3
-[0.2.0.2]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.2.0.1-rc1...v0.2.0.2
-[0.1.4]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.3...v0.1.4
-[0.1.3]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.2...v0.1.3
-[0.1.2]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.1...v0.1.2
-[0.1.1]: https://github.com/Lisir2002/Deepcore-Code/compare/v0.1.0...v0.1.1
+[v0.2.0.2]: https://github.com/Lisir2002/Deepcore-Code/compare/0.1.4...v0.2.0.2
+[0.1.4]: https://github.com/Lisir2002/Deepcore-Code/compare/0.1.3...0.1.4
+[0.1.3]: https://github.com/Lisir2002/Deepcore-Code/compare/0.1.2...0.1.3
+[0.1.2]: https://github.com/Lisir2002/Deepcore-Code/compare/0.1.1...0.1.2
+[0.1.1]: https://github.com/Lisir2002/Deepcore-Code/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/Lisir2002/Deepcore-Code/releases/tag/v0.1.0
