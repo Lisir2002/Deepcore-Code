@@ -83,12 +83,12 @@ P0 基线冻结 → P1 T8.1 令牌层 → P2 T8.2 主题包(编译期) ┐
   - [x] 增 `components/overlay/`：`AppDialog`(三变体)/`AppDropdownMenu`/`AppMultiSelectSheet`/`AppToast`+`ToastHost`/`AppBanner`+`BannerHost`；
   - [x] `NavScaffoldHost` 内置 `AppToast` 位（底栏上方 inset）；
 - P3e 表单子组件
-  - [ ] 增 `components/form/`：`AppTextField` 补全（浮动标签/error 图标/形态分工）+ `AppSearchField` + `AppCheckbox`/`AppRadio`；
+  - [x] 增 `components/form/`：`AppTextField` 补全（浮动标签/error 图标/形态分工）+ `AppSearchField` + `AppCheckbox`/`AppRadio`；
   - [x] 增 `components/messaging/`：`AppToolCard`+`ToolCardRegistry`/`AppBlockGroup`/`AppBlockGroupReducer`(core:uistate)`/
     `AppApprovalCard`/`AppProgressSummary`/`StreamEmittedCursor` + `render/MarkdownRenderer.kt`；
   - [x] 改 `core:uistate`：增 `RenderBlock.Group`（纯 Kotlin）+ reducer 分支；
   - [x] 改 `render/RenderBlockView.kt`：按 §6.8 路由（AI 全宽流、思考「✦ 摘要」、思考/tool 聚组、进度移动化）；
-  - [ ] 改 `AppInputBar`：发/stop 同槽位替换 + Ime 避让。
+  - [x] 改 `AppInputBar`：发/stop 同槽位替换 + Ime 避让。
 
 交付：五型骨架承载 chat/settings 全页面；消息链路八类消息块落地。门禁：12.7–12.10 全绿；
 chat/settings 相对 P0 基线 **零视觉回归**（唯一放行：交互态与转场按设计就该变动的部分）。

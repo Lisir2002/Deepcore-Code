@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -101,6 +102,36 @@ fun AppTextField(
         else -> supportingText
     }
 
+    // ---- trailing 槽：error 图标优先（M3 惯例），其后才是清空按钮 ----
+    val trailing: (@Composable () -> Unit)? = when {
+        isError -> {
+            {
+                Icon(
+                    imageVector = Icons.Filled.Error,
+                    contentDescription = "输入有误",
+                    tint = colors.danger,
+                )
+            }
+        }
+        showClearWhenFocused && value.isNotEmpty() -> {
+            {
+                val clearInteraction = remember { MutableInteractionSource() }
+                IconButton(
+                    onClick = { onValueChange("") },
+                    interactionSource = clearInteraction,
+                    modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(clearInteraction),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Clear,
+                        contentDescription = "清空",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        else -> null
+    }
+
     // ---- 统一的参数集中到公共 lambda，供两种形态复用 ----
     if (variant == AppTextFieldVariant.Outlined) {
         OutlinedTextField(
@@ -118,22 +149,7 @@ fun AppTextField(
             leadingIcon = leadingIcon?.let { icon ->
                 { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
             },
-            trailingIcon = if (showClearWhenFocused && value.isNotEmpty()) {
-                {
-                    val clearInteraction = remember { MutableInteractionSource() }
-                    IconButton(
-                        onClick = { onValueChange("") },
-                        interactionSource = clearInteraction,
-                        modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(clearInteraction),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Clear,
-                            contentDescription = "清空",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            } else null,
+            trailingIcon = trailing,
             prefix = prefix?.let { { Text(it) } },
             suffix = suffix?.let { { Text(it) } },
             colors = OutlinedTextFieldDefaults.colors(
@@ -162,22 +178,7 @@ fun AppTextField(
             leadingIcon = leadingIcon?.let { icon ->
                 { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
             },
-            trailingIcon = if (showClearWhenFocused && value.isNotEmpty()) {
-                {
-                    val clearInteraction = remember { MutableInteractionSource() }
-                    IconButton(
-                        onClick = { onValueChange("") },
-                        interactionSource = clearInteraction,
-                        modifier = Modifier.size(Dimens.minTouchTarget).appStateLayer(clearInteraction),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Clear,
-                            contentDescription = "清空",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            } else null,
+            trailingIcon = trailing,
             prefix = prefix?.let { { Text(it) } },
             suffix = suffix?.let { { Text(it) } },
             colors = TextFieldDefaults.colors(
