@@ -6,15 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import com.deepcode.agent.nav.AppNavRoot
 import com.deepcode.designsystem.theme.AppTheme
 import com.deepcode.designsystem.theme.LocalStyleController
 import com.deepcode.designsystem.theme.StyleController
-import com.deepcode.feature.chat.ChatScreen
-import com.deepcode.feature.settings.SettingsScreen
 import org.koin.android.ext.android.getKoin
 
 class MainActivity : ComponentActivity() {
@@ -34,17 +29,14 @@ class MainActivity : ComponentActivity() {
  * 整个 App 唯一的 Composable 根节点。
  *
  * 主题只在这里设置一次，页面不允许自己包 MaterialTheme。
+ * 页面结构由 `AppNavRoot`（Navigation Compose 图）承载：底部 tab 壳
+ * （对话 / 工作 / 设置）+ 对话流全屏路由。
  */
 @Composable
 private fun AgentIdeRoot(styleController: StyleController) {
     CompositionLocalProvider(LocalStyleController provides styleController) {
         AppTheme {
-            var showSettings by remember { mutableStateOf(false) }
-            if (showSettings) {
-                SettingsScreen(onBack = { showSettings = false })
-            } else {
-                ChatScreen(onOpenSettings = { showSettings = true })
-            }
+            AppNavRoot(styleController)
         }
     }
 }

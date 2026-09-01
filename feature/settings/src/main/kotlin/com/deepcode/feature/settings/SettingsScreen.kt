@@ -45,6 +45,7 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel(),
     onBack: (() -> Unit)? = null,
+    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
 ) {
     var name by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
@@ -61,6 +62,7 @@ fun SettingsScreen(
     AppScaffold(
         title = "MCP 服务器",
         onBack = onBack,
+        modifier = modifier,
         actions = {
             AppTextButton(text = "重连", onClick = viewModel::reconnectAll)
         },
