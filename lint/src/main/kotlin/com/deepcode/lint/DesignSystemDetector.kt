@@ -122,8 +122,17 @@ class DesignSystemDetector : Detector(), SourceCodeScanner {
                     return
                 }
 
-                when (methodName) {
-                    // DirectColorLiteral：业务层直接构造 Color 字面量
+                // Kotlin 普通 class 的构造函数调用 methodName == "<init>"，
+                // 需要从源码里提取类名来匹配（inline class 例外会直接显示类名）。
+                val matchName = if (methodName == "<init>") {
+                    // 构造函数调用源码格式：ClassName(...)，取括号前的 identifier
+                    node.asSourceString().substringBefore('(').trim().substringAfterLast('.')
+                } else {
+                    methodName
+                }
+
+                when (matchName) {
+                    // DirectColorLiteral：业务层直接构造 Color 字面量（inline class 显示类名，普通 class 构造函数已在上面 resolve）
                     "Color" -> report(context, node,
                         "禁止硬编码颜色，请使用 appTokens().colors.<语义名>", ISSUE_DIRECT_COLOR_LITERAL)
 
@@ -131,9 +140,9 @@ class DesignSystemDetector : Detector(), SourceCodeScanner {
                     "TextStyle" -> report(context, node,
                         "禁止直接构造 TextStyle，请使用 AppTextStyle 角色", ISSUE_RAW_TEXT_STYLE)
 
-                    // ForbiddenWindowComponent
-                    "Dialog", "Popup", "ModalBottomSheet" -> report(context, node,
-                        "禁止裸用 $methodName，请使用 AppDialog / AppModalSheet", ISSUE_FORBIDDEN_WINDOW_COMPONENT)
+                    // ForbiddenWindowComponent（AlertDialog 对应 AppDialog，ModalBottomSheet 对应 AppModalSheet）
+                    "AlertDialog", "Popup", "ModalBottomSheet" -> report(context, node,
+                        "禁止裸用 $matchName，请使用 AppDialog / AppModalSheet", ISSUE_FORBIDDEN_WINDOW_COMPONENT)
 
                     // ForbiddenPlatformToast：Compose Snackbar
                     "Snackbar" -> report(context, node,
@@ -141,15 +150,15 @@ class DesignSystemDetector : Detector(), SourceCodeScanner {
 
                     // ForbiddenRawDropdown
                     "DropdownMenu", "ExposedDropdownMenuBox" -> report(context, node,
-                        "禁止裸用 $methodName，请使用 AppDropdownMenu（6.6.2）", ISSUE_FORBIDDEN_RAW_DROPDOWN)
+                        "禁止裸用 $matchName，请使用 AppDropdownMenu（6.6.2）", ISSUE_FORBIDDEN_RAW_DROPDOWN)
 
                     // ForbiddenRawTextField
                     "TextField", "OutlinedTextField" -> report(context, node,
-                        "禁止裸用 $methodName，请使用 AppTextField（6.7.1）", ISSUE_FORBIDDEN_RAW_TEXT_FIELD)
+                        "禁止裸用 $matchName，请使用 AppTextField（6.7.1）", ISSUE_FORBIDDEN_RAW_TEXT_FIELD)
 
                     // ForbiddenRawToolCard：Card 家族裸用手拼工具卡/审批卡
                     "Card", "ElevatedCard", "OutlinedCard", "FilledCard" -> report(context, node,
-                        "禁止裸用 $methodName 手拼工具卡/审批卡，请使用 AppToolCard / AppBlockGroup / AppApprovalCard（6.8）",
+                        "禁止裸用 $matchName 手拼工具卡/审批卡，请使用 AppToolCard / AppBlockGroup / AppApprovalCard（6.8）",
                         ISSUE_FORBIDDEN_RAW_TOOL_CARD)
 
                     // ForbiddenRawJsonRender：原始 JSON/参数直接进 UI（仅 Android org.json 裸构造；kotlinx 序列化不算）
@@ -181,7 +190,7 @@ class DesignSystemDetector : Detector(), SourceCodeScanner {
             "Scaffold", "TopAppBar", "CenterAlignedTopAppBar", "Button", "OutlinedButton",
             "TextButton", "Card", "ElevatedCard", "OutlinedCard", "FilledCard",
             "FloatingActionButton", "NavigationBar", "SnackbarHost", "OutlinedTextField",
-            "DropdownMenu", "TextField",
+            "DropdownMenu", "TextField", "AlertDialog", "ModalBottomSheet",
         )
 
         private val DIMENSION_UNITS = setOf("dp", "sp")

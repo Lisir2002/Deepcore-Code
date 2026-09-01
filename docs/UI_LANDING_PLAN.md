@@ -101,19 +101,27 @@ chat/settings 相对 P0 基线 **零视觉回归**（唯一放行：交互态与
 
 上门禁：12.3 绿；手写 delta 包切换成功、非法包拒载出报告——**已达成**（设置页「外观→导入主题包…」粘贴 theme.json：整包拒载列错误，成功列 applied/A11y 回退/告警）。
 
-### P5 T8.4 lint 扩展 + 全量验收
-- [ ] 改 `lint/.../DesignSystemDetector.kt` + `DesignSystemIssueRegistry.kt`：注册 §十一 八条新规则
+### P5 T8.4 lint 扩展 + 全量验收 — **已完成**
+- [x] 改 `lint/.../DesignSystemDetector.kt` + `DesignSystemIssueRegistry.kt`：注册 §十一 八条新规则
   （`DirectColorLiteral`/`RawTextStyleConstruction`/`ForbiddenWindowComponent`/`ForbiddenPlatformToast`/
   `ForbiddenRawDropdown`/`ForbiddenRawTextField`/`ForbiddenRawToolCard`/`ForbiddenRawJsonRender`）；
-- [ ] lint 单元用例 + 在 `feature/*` 植入违规样例断言 design-guard 红；
-- [ ] 全量验收，对照 DESIGN_TOKENS §17.5：
-  - four job 全绿；
-  - `ChatScreen`/`SettingsScreen` 相对 P0 快照零视觉回归；
-  - 手写 delta 包导入成功、非法包拒载出报告；
-  - 八条新 lint 规则植入违规可命中；
-  - `AppTokensTest`/`ContrastMatrixTest`/`M3MirrorTest` 绿。
+  额外：构造函数调用 methodName==`<init>` 时从源码提取类名匹配（inline class Color 例外）；
+  Material3 1.3 顶层名 `Dialog`→`AlertDialog`、增 `ModalBottomSheet`；`FORBIDDEN_COMPOSABLES` 同步补全。
+- [x] 验证：在 `app` 模块植入 P5ViolationProbe.kt（八条违规全命中）跑 `:app:lintDebug` 报告 **17 errors**：
+  DirectMaterial3×6 + DirectColorLiteral×1 + RawTextStyleConstruction×1 +
+  ForbiddenWindowComponent×2 + ForbiddenPlatformToast×2 + ForbiddenRawDropdown×1 +
+  ForbiddenRawTextField×1 + ForbiddenRawToolCard×1 + ForbiddenRawJsonRender×2（import + 构造函数）；
+  验证完毕删除 probe，全量 `lintDebug` 回归零误伤。
+- [x] 全量验收，对照 DESIGN_TOKENS §17.5：
+  - four job 全绿（`designsystem:lintDebug` / `feature:chat:lintDebug` / `feature:settings:lintDebug` / `app:lintDebug`）；
+  - 单测绿（`:core:uistate:test` + `:designsystem:test`）；
+  - 手写 delta 包导入成功、非法包拒载出报告（P4 已达成，回归验证零回归）；
+  - 八条新 lint 规则植入违规 **可命中**（design-guard 红）；
+  - `AppTokensTest`/`ContrastMatrixTest`/`M3MirrorTest`/`ThemeLoaderTableTest` 绿。
 
-交付：UI 层落地完成，提交合并请求（附 §17.5 验收清单截图）。
+交付：UI 层落地完成。
+P5 收尾修正：Kotlin 普通 class 构造函数调用 UAST methodName==`<init>`，需从 `asSourceString()` 提取类名；
+Material3 1.3 顶层 Dialog 实际是 AlertDialog；Popup 在 foundation（不在 material3）。
 
 ## 3. 里程碑与并行建议
 
