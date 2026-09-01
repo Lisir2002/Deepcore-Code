@@ -25,8 +25,8 @@ import com.deepcode.designsystem.components.AppSwitch
 import com.deepcode.designsystem.components.AppText
 import com.deepcode.designsystem.components.AppTextButton
 import com.deepcode.designsystem.components.AppTextField
-import com.deepcode.designsystem.components.AppTextStyle
-import com.deepcode.designsystem.components.AppTextTone
+import com.deepcode.designsystem.theme.AppTextStyle
+import com.deepcode.designsystem.theme.AppTextTone
 import com.deepcode.designsystem.theme.Dimens
 import org.koin.androidx.compose.koinViewModel
 

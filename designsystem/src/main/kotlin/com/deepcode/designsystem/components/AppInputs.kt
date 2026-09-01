@@ -9,49 +9,20 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import com.deepcode.designsystem.theme.AppTextStyle
+import com.deepcode.designsystem.theme.AppTextTone
 import com.deepcode.designsystem.theme.Dimens
-import com.deepcode.designsystem.theme.appColors
+import com.deepcode.designsystem.theme.toColor
+import com.deepcode.designsystem.theme.toTextStyle
 
 // ─────────────────────────── 文本 ───────────────────────────
 //
 // 业务层禁止 import androidx.compose.material3.Text（被 :lint 的 DirectMaterial3Usage 拦截），
 // 所以这里把"任意文本"封成一个 App* 组件。样式通过语义枚举表达，业务层不碰 MaterialTheme。
-
-/** 文本语义层级，映射到 MaterialTheme.typography。业务层只选语义，不指定字号。 */
-enum class AppTextStyle {
-    Display, TitleLarge, Title, BodyLarge, Body, Label, Caption
-}
-
-/** 文本语义色调，映射到 colorScheme。业务层只用枚举，不持有 material3 Color。 */
-enum class AppTextTone {
-    Default, Muted, Primary, Error, Success
-}
-
-// 这两个映射函数必须带 @Composable：MaterialTheme.typography / colorScheme 与 appColors()
-// 都是组合内可读的状态，在普通函数里读会直接编译失败（"Functions which invoke
-// @Composable functions must be marked with the @Composable annotation"）。
-@Composable
-private fun AppTextStyle.toTextStyle(): TextStyle = when (this) {
-    AppTextStyle.Display -> MaterialTheme.typography.titleLarge
-    AppTextStyle.TitleLarge -> MaterialTheme.typography.titleLarge
-    AppTextStyle.Title -> MaterialTheme.typography.titleMedium
-    AppTextStyle.BodyLarge -> MaterialTheme.typography.bodyLarge
-    AppTextStyle.Body -> MaterialTheme.typography.bodyMedium
-    AppTextStyle.Label -> MaterialTheme.typography.labelLarge
-    AppTextStyle.Caption -> MaterialTheme.typography.labelSmall
-}
-
-@Composable
-private fun AppTextTone.toColor(): Color = when (this) {
-    AppTextTone.Default -> MaterialTheme.colorScheme.onSurface
-    AppTextTone.Muted -> MaterialTheme.colorScheme.onSurfaceVariant
-    AppTextTone.Primary -> MaterialTheme.colorScheme.primary
-    AppTextTone.Error -> MaterialTheme.colorScheme.error
-    AppTextTone.Success -> appColors().toolSuccess
-}
+//
+// AppTextStyle / AppTextTone 及其 @Composable 映射（toTextStyle / toColor）现统一收口在
+// theme/TypeRoles.kt（§3.3），此处仅使用，不再各自定义。
 
 /**
  * 全 App 唯一可直接摆放的"裸文本"。页面不得自己写 Text——间距/字号/色调的统一

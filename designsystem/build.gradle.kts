@@ -57,5 +57,6 @@ dependencies {
 
     // TranscriptReducer 是纯 Kotlin，可以在 JVM 上直接单测，不必跑模拟器
     testImplementation(kotlin("test"))
+    testImplementation(kotlin("reflect"))   // 12.1 面板完整性用反射枚举全属性
     testImplementation(libs.kotlinx.coroutines.test)
 }
