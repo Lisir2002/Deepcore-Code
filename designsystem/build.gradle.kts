@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)   // ThemeJsonCodec（theme.json v1）编解码
 }
 
 android {
