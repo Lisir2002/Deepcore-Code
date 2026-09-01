@@ -96,6 +96,7 @@ jobs:
           name: ${{ github.ref_name }}
           # 含 -rc 后缀的 tag 自动标记为预发行（见 Version.md 二、确认门禁）
           prerelease: ${{ contains(github.ref_name, '-rc') }}
+          draft: false  # 默认正式发布；不设会被 action-gh-release 当成 draft
           generate_release_notes: true
           files: dist/*.apk
         env:
