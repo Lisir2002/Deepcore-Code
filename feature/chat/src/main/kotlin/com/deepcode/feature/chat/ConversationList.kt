@@ -21,8 +21,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -279,7 +277,7 @@ private fun SheetActionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = Dimens.minTouchTarget)
             .appStateLayer(interaction)
             .clickable(
                 interactionSource = interaction,
@@ -291,14 +289,14 @@ private fun SheetActionRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = if (danger) colors.danger else MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = if (danger) colors.danger else colors.textSecondary,
             modifier = Modifier.size(Dimens.iconM),
         )
         Spacer(Modifier.width(Dimens.spaceM))
-        Text(
+        AppText(
             text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (danger) colors.danger else MaterialTheme.colorScheme.onSurface,
+            style = AppTextStyle.Body,
+            tone = if (danger) AppTextTone.Error else AppTextTone.Default,
         )
     }
 }
