@@ -8,12 +8,14 @@ import kotlin.test.assertTrue
  * 12.2 对比度矩阵（WCAG 2.1 §10.1）：
  *   L = 0.2126·R' + 0.7152·G' + 0.0722·B'；ratio = (L_light+0.05)/(L_dark+0.05)。
  *
- * 硬断言 those §3.2 配对矩阵中、品牌板实际能达成的「≥4.5」对；对无法达成的
- * 「textTertiary↔surface ≥3（浅色）」「状态色作文本 ≥4.5」记录为已知缺口并打印，
- * 不红（保留给设计决策）。加令牌时同步在此登记配对。
+ * 硬断言 §3.2 配对矩阵中的「≥4.5」对；文本全部硬断言（含弱信息豁免档 2.5）。
  *
- * 实现要点：sRGB ⇒ linear 分两步：`v ≤ 0.04045 → v/12.92；否则 ((v+0.055)/1.055)^2.4`
- * 线性后亮度 `L = 0.2126R + 0.7152G + 0.0722B`。
+ * 决议 2026-09-01（已回写 DESIGN_TOKENS §3.2）：
+ *   ① textTertiary 用弱信息豁免档作真正的下限（浅 2.5 / 深 3.0），不构成缺口；
+ *   ② 状态色不作为正文文字色，仅作容器底色/标记（配固定 onStatus），不再校验状态↔surface。
+ *
+ * 实现要点：sRGB ⇒ linear 分两步 `v ≤ 0.04045 → v/12.92；否则 ((v+0.055)/1.055)^2.4`，
+ * 线性后亮度 `L = 0.2126·R + 0.7152·G + 0.0722·B`。
  */
 class ContrastMatrixTest {
 
@@ -45,12 +47,14 @@ class ContrastMatrixTest {
     @Test
     fun lightScheme_pairMatrix() {
         val c = LightAppTokens.colors
-        assertPairMatrix("Light", c, textTertiaryFloor = 3.0) // 浅色 tertiary 走弱信息档，达标下限就是 3
+        // 决议 2026-09-01：弱信息豁免档放至 ≥2.5（gray-400 #9CA1AC 实测 ~2.69 达标）
+        assertPairMatrix("Light", c, textTertiaryFloor = 2.5)
     }
 
     @Test
     fun darkScheme_pairMatrix() {
         val c = DarkAppTokens.colors
+        // 深色板 ink-500 实测 ~4.1，仍用 ≥3 无碍
         assertPairMatrix("Dark", c, textTertiaryFloor = 3.0)
     }
 
@@ -59,29 +63,15 @@ class ContrastMatrixTest {
         assertContrast("onPrimary/primary", c.onPrimary, c.primary, 4.5, mode)
         assertContrast("onPrimaryContainer/primaryContainer", c.onPrimaryContainer, c.primaryContainer, 4.5, mode)
 
-        // 文本（§3.2：≥4.5 / ≥4.5 / ≥3 弱信息豁免档）
+        // 文本（§3.2：≥4.5 / ≥4.5 / ≥2.5 弱信息豁免档）
         assertContrast("textPrimary/surface", c.textPrimary, c.surface, 4.5, mode)
         assertContrast("textSecondary/surface", c.textSecondary, c.surface, 4.5, mode)
+        assertContrast("textTertiary/surface", c.textTertiary, c.surface, textTertiaryFloor, mode)
 
-        // 海拔：最高层表面上正文仍须达标（§3.2 15.8 基线，这里强制 ≥4.5）
+        // 海拔：最高层表面上正文仍须达标（§3.2 基线，这里强制 ≥4.5）
         assertContrast("textPrimary/surfaceElevated", c.textPrimary, c.surfaceElevated, 4.5, mode)
 
-        // ── 已知缺口（软报告，不红；属「设计需求 vs 色板」待决策项）──────────────────
-        // ① textTertiary 弱信息豁免档 ≥3.0（§3.2），但浅色板 gray-400 #9CA1AC 实测 ~2.69 未达。
-        val tertiary = contrast(c.textTertiary, c.surface)
-        if (tertiary < textTertiaryFloor) {
-            println("[对比度·$mode] 缺口① textTertiary/surface=${"%.2f".format(tertiary)} < $textTertiaryFloor" +
-                "；候选：浅色 tertiary 加深到 gray-500，#9CA1AC 仅作文本时偏弱。")
-        }
-        // 状态色作文本 ≥4.5 实际需求场景少（状态色多数用于容器底/标记，而非正文）；
-        // 本测试仅打印提示，不红。设计决策：后续若有文字在状态色上需求，变体处理。
-        val statusAsText = listOf("success" to c.success, "warning" to c.warning, "danger" to c.danger)
-        for ((name, color) in statusAsText) {
-            val r = contrast(color, c.surface)
-            if (r < 4.5) {
-                println("[A11y 缺口·$mode] $name 作文本/surface=${"%.2f".format(r)} < 4.5" +
-                    "（建议作文本改暗/亮变体，或仅在底色+onStatus 使用）")
-            }
-        }
+        // 决议 2026-09-01：状态色不作为正文文字色，仅作容器底色/标记（配固定 onStatus 黑/白），
+        // 故不再校验「状态色 ↔ surface ≥4.5」。
     }
 }

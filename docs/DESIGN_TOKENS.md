@@ -228,9 +228,9 @@ success/danger 浅底形态`、`codeSurface/codeBorder→gray-50/100（L）· gr
 | --- | --- | --- |
 | 品牌 | `primary` / `onPrimary` / `primaryContainer` / `onPrimaryContainer` | `onPrimary ↔ primary` ≥4.5 |
 | 表面 | `surface` / `surfaceVariant` / `surfaceElevated` | 三者相互差异 ≥1.2:1（软约束告警） |
-| 文本 | `textPrimary` / `textSecondary` / `textTertiary` / `textInverse` | `textPrimary ↔ surface` ≥4.5；`textSecondary ↔ surface` ≥4.5；`textTertiary ↔ surface` ≥3（弱信息豁免档） |
+| 文本 | `textPrimary` / `textSecondary` / `textTertiary` / `textInverse` | `textPrimary ↔ surface` ≥4.5；`textSecondary ↔ surface` ≥4.5；`textTertiary ↔ surface` ≥2.5（弱信息豁免档【决议 2026-09-01】） |
 | 边线 | `divider` / `border` | 与 surface 差异 ≥1.2 告警 |
-| 状态 | `success` / `warning` / `danger` / `info` | 作文本 ↔ surface ≥4.5；作底色配固定 onStatus 黑/白（v1 不开放覆盖） |
+| 状态 | `success` / `warning` / `danger` / `info` | **不作正文文字色**；仅作容器底色/标记，配固定 onStatus 黑/白【决议 2026-09-01】 |
 | 业务保留 | diff/tool 四态/thinking/code 两组 | 名不变；tool 态默认映射状态组，风格包可单独覆盖 |
 
 ### 3.3 字体与角色设计
