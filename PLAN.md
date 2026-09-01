@@ -103,8 +103,11 @@ T1–T6 的工具/技能层代码至此全部经过 CI 全量验证（此前 `co
 `:app` 装配 `android-build` 绿），设计见 `DATA_LAYER.md`、进度见上方 M0.6 清单。
 
 **UI 令牌体系已定稿（T8 待启动）**：多设计页面 / 风格包可插拔的三层令牌设计见
-`docs/DESIGN_TOKENS.md`（2026-09-01 定稿，决策 D5–D7：风格包可切换可插拔、
-dynamicColor 默认关、先定稿后实施），实施清单 T8.1–T8.4 见下方。
+`docs/DESIGN_TOKENS.md`（2026-09-01 定稿 v3，16 章，决策 D5–D14）——
+v1/v2 定稿令牌类型 + brand 色板（黑白灰主调、蓝紫点缀、红绿状态），v3 补齐
+**行为层三系统**：交互态八态机（State Overlay 弃 ripple）、动效编排（八种转场
+模式 × 档位绑定）、页面骨架（三段式五型模板）。实施清单 T8.1→（T8.2 ∥ T8.5）
+→ T8.3 → T8.4 见下方。
 
 ### CI 红根因与修复（2026-09-01 接手盘点）
 
@@ -150,10 +153,14 @@ M1 首发预计为 `0.2.0.x`。
   + 字重/行高/字族 + `AppTextStyle` 角色扩展；`dynamicColor` 删除（D6）。
 - [ ] **T8.2 主题包机制（编译期）**：`AppThemeSpec` + brand 内置包 + `StyleController`
   （StateFlow + 持久化）+ 设置页风格切换 UI；`AppTheme(spec)` 参数化。
+- [ ] **T8.5 行为层落地（v3 新增）**：`Modifier.appStateLayer()` 统一封装 +
+  `AppTransitions` 全局转场配置 + `AppTopTabs`/`AppNavBar`/`AppModalSheet`/`AppDialog`
+  新组件 + 页面骨架五型化（Chat/Tabbed/Nav/Detail/Form）+ insets 统一消化。
 - [ ] **T8.3 运行时可插拔**：`theme.json` v1 解析 + `ThemePackLoader`（assets/filesDir
   双根，复用 SkillLoader 模式）+ 对比度/触控校验兜底 + 设置页导入入口。
 - [ ] **T8.4 lint 扩展**：拦业务层 `Color(0x…)` 字面量与裸 `TextStyle` 构造。
-- 节奏：T8.1→T8.4 串行；T8.1/T8.2 可与 M1 并行，T8.3/T8.4 排在 M1 之后（真实模型优先）。
+- 节奏：T8.1 →（T8.2 ∥ T8.5）→ T8.3 → T8.4；T8.2 与 T8.5 相互独立可并行；
+  T8.1 可与 M1 并行；T8.3/T8.4 排在 M1 之后（真实模型优先）。
 
 ## 风险与依赖
 
