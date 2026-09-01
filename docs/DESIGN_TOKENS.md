@@ -1,8 +1,8 @@
-# DESIGN_TOKENS.md — UI 令牌体系与主题包设计（designsystem v4）
+# DESIGN_TOKENS.md — UI 令牌体系与主题包设计（designsystem v4.1）
 
-> 状态：**设计定稿 v4（2026-09-01：全网调研吸收——M3 Expressive spring 运动物理 /
-> 深色海拔体系 / A11y 排版四要素 / 趋势白名单黑名单），未实施**。
-> 实施清单见 十四（T8.1–T8.5）。决策记录见 1.3（D5–D17）；本文档是 `designsystem`
+> 状态：**设计定稿 v4.1（2026-09-01：体系级调研 v4 + 子组件专项调研——M3 dialog/snackbar/
+> text field 官方规范硬对齐，修正三处偏差，见 D18），未实施**。
+> 实施清单见 十四（T8.1–T8.5）。决策记录见 1.3（D5–D18）；本文档是 `designsystem`
 > 模块从「单主题组件库」演进为「多风格包运行时」的唯一权威设计。
 
 ## 一、定位与铁律
@@ -62,6 +62,7 @@ Component（组件层）    AppCard / AppScaffold 等组件内部，只读语义
 | D15 | **子组件收编 = 浮层（弹窗/菜单/提示）与表单控件统一 App 前缀组件 + 语义变体参数化**（6.6/6.7），业务层禁裸用对应 Material/平台组件，lint 拦截 | 弹窗「确认/状态/提示」三语义变体各差一个状态色与按钮布局，裸用必然各页各发明；平台 Toast 无主题不可控；变体参数化让「加一种弹窗 = 加一个枚举值」而不是复制一个文件 |
 | D16 | **动效升级为 spring 物理双轨（3.5）**：spatial（允许过冲）/ effects（禁过冲）二分 × 三档速度；tween 时长档仅兜底；参数吸收 M3 Expressive 官方 token | spring 可中断、速度感知——流式 AI 输出场景高频重定目标，tween 会重启动画；时长曲线难以全局一致，spring 参数收敛在 6 个 token 内 |
 | D17 | **视觉趋势立场 = 克制专业路线（13.4 白名单/黑名单）**：采纳 Bento 网格排布/强调字体/功能微交互/深色自适应；拒绝重度玻璃拟态/新拟态/高饱和撞色/装饰性粒子动效 | 目标产品是 AI 工具类（专业工具赛道），2026 趋势调研确认低饱和冷灰系+克制动效正是该赛道主流；趋势只进「排布与微交互」，不进「色板与骨架」——骨架与色板已定稿，不为趋势翻新 |
+| D18 | **弹窗与提示按钮行为 = M3 官方契约硬对齐（6.6.1/6.6.3）**：dialog 最多两钮（第三操作走内联展开）、取消永远在确认左、确认钮可选前置禁用/取消永不禁用、标题三禁、scrim 32%；toast 4s + 横滑关闭 + 单条顶替；输入框 Outlined 为默认形态、error 态自动 ⚠ 图标 + live region 播报 | v4.1 子组件专项全网调研（M3 dialog/snackbar/text field 官方 guidelines）修正 v3.1 三处偏差：三钮竖排违反 M3 上限、scrim 40% 非官方值、输入框形态分工与官方相反——组件级细节以平台规范为准绳，不自行发明 |
 
 ## 二、现状盘点
 
@@ -433,20 +434,33 @@ dialog（模态决策）              ←  需要用户确认/决策，打断
 modalSheet（底部模态面板）      ←  重决策 + 富内容表单
 ```
 
-#### 6.6.1 `AppDialog`：一个壳，三个语义变体
+#### 6.6.1 `AppDialog`：一个壳，三个语义变体（v4.1 对照 M3 官方规范修订）
 
 统一壳规格（三变体共享）：宽 `min(内容, 320dp)`（Expanded 上限 420dp）、
-圆角 `radiusXL`、遮罩 `black @ 40%`、转场 `DialogShow`（5.2，fast 档）、
-内容边距 24dp、标题 `titleMedium` + 正文 `bodyMedium`、海拔 `surfaceElevated`。
+圆角 `radiusXL`、遮罩 `black @ 32%`（**M3 官方 scrim 值，v4.1 修正**）、
+转场 `DialogShow`（5.2，fast 档）、内容边距 24dp、标题 `titleMedium` +
+正文 `bodyMedium`、海拔 `surfaceElevated`（对应 M3 `surfaceContainerHigh`）。
 
 | 变体 | 语义 | 布局契约 | 状态色 |
 | --- | --- | --- | --- |
-| **确认** `confirm()` | 破坏性/不可逆操作前置确认 | 双钮横排右对齐：文字钮「取消」+ 实心钮「确认」；两钮间距 `spaceS`；危险操作钮 ≤1 个 | `danger=true` 时实心钮转 `danger` 底白字（删除 MCP 服务器/撤销授权/清空会话） |
-| **状态** `status()` | 进度/成功/失败回执 | `state: Progress/Success/Failure` 单枚举驱动；Progress 只渲染转圈 + 文案**且不出按钮**（防等待中误触），Success/Failure 出单「知道了」钮；图标位 40dp 圆底 + 白图标 | Progress→`primary` / Success→`success` / Failure→`danger` |
+| **确认** `confirm()` | 破坏性/不可逆操作前置确认 | **双钮横排右对齐（M3 上限即两钮）**：文字钮「取消」在左 + 确认钮最靠边；两钮间距 `spaceS` | `danger=true` 时实心钮转 `danger` 底白字（删除 MCP 服务器/撤销授权/清空会话） |
+| **状态** `status()` | 进度/成功/失败回执 | `state: Progress/Success/Failure` 单枚举驱动；Progress 只渲染转圈 + 文案**且不出按钮**（防等待中误触），Success/Failure 出单「知道了」钮（单钮 = acknowledgement，M3 允许的唯一单钮形态）；图标位 40dp 圆底 + 白图标 | Progress→`primary` / Success→`success` / Failure→`danger` |
 | **提示** `notice()` | 纯信息告知（版本说明/条款） | 单「知道了」钮或自定义 actions；可承载富内容槽（长文滚动区 `maxHeight = 60%` 屏高） | 中性，不着状态色 |
 
-三钮以上一律竖排右对齐文字钮（不再横排拥挤）；变体间**不允许混合发明**
-（「确认 + 进度条」混合体 = 违规，评审兜底）。
+**按钮排列铁律（v4.1 吸收 M3 dialog guidelines，D18）**：
+
+- **最多两个按钮**：一钮必须是 acknowledgement；两钮 = 确认 + 取消。
+  「了解更多」类第三操作**不允许成钮**——用正文内联展开承载（M3 明确不推荐
+  第三钮导航离场，会留下未完成的对话框任务）；
+- **取消（dismissive）永远在确认（confirm）左侧**、确认钮最靠 trailing 边；
+  RTL 语言自动镜像；需要竖排（按钮文案过长）时**确认在上、取消在下**；
+- **确认钮在选择做出前禁用**（如多选未勾选时「删除」灰置）；**取消钮永不禁用**；
+- **标题三禁**：禁道歉语（「抱歉打断」）、禁警报词（「警告！」）、禁模糊问句
+  （「确定吗？」）——标题必须是具体、简短的陈述或问句（正例：「删除 MCP 服务器？」）；
+- **重要性策略**（M3 官方 messaging 策略表）：低/中优先级信息**禁止用 dialog**，
+  一律降级 toast/snackbar——dialog 是打断成本最高的组件，只留给「必须决策」。
+
+变体间**不允许混合发明**（「确认 + 进度条」混合体 = 违规，评审兜底）。
 
 #### 6.6.2 `AppDropdownMenu`：单选下拉
 
@@ -459,17 +473,22 @@ modalSheet（底部模态面板）      ←  重决策 + 富内容表单
 - 转场 `MenuShow`（5.2）：fade + `scaleY 0.95→1`，`fast` 档，锚点为触发器底边；
 - **多选不走菜单**：Compact 端多选 = `AppModalSheet` + checkbox 列表（菜单撑不下
   且触控质量差），组件名 `AppMultiSelectSheet`（T8.5 一并建）；
+- **`AppModalSheet` 统一规格（v4.1 补）**：顶部拖拽柄 **32×4dp 全圆角、水平居中、
+  距顶 22dp**（M3 modal bottom sheet 官方值）；嵌套滚动接底（内容先滚到底再拖关）；
 - 禁裸 `ExposedDropdownMenuBox` / `DropdownMenu`（lint `ForbiddenRawDropdown`）。
+  注：M3 官方中 ExposedDropdown 本就是 text field 的一种模式——我们的 `Field`
+  形态与其对齐，`Field` 形态可带输入过滤（autocomplete 语义，可选能力）。
 
 #### 6.6.3 轻提示体系：`AppToast` / `AppBanner`
 
 | 组件 | 位置 | 消失规则 | 承载内容 |
 | --- | --- | --- | --- |
-| `AppToast` | 底部悬浮（NavScaffold 内置在底栏上方 inset，业务零感知） | **3s 自动**；同屏最多 1 条（新 toast 直接顶替旧条，不排队）；点击 toast 本体不消失 | 单行回执 + 可选动作钮（「撤销」）；`level: neutral/success/danger` 三色 |
+| `AppToast` | 底部悬浮（NavScaffold 内置在底栏上方 inset，业务零感知） | **4s 自动（M3 `LENGTH_SHORT` 官方值，v4.1 对齐）**；带「撤销」类动作钮延长至 6s；同屏最多 1 条（新 toast 直接顶替旧条——M3 官方行为）；**支持横滑关闭（swipe-to-dismiss）** | 单行回执 + 可选动作钮（「撤销」，动作色 = primary 反相版）；`level: neutral/success/danger` 三色 |
 | `AppBanner` | 内容区顶部（骨架槽位，`BannerHost` 统一管理） | **常驻**直到用户关闭或状态解除；不自动消失 | 标题 + 可选正文 + 可选动作；`level: info/success/warning/danger` 四色 + 40dp 图标位 |
 
-- Toast 形态：圆角 `radiusM`、深色反相底（`inverseSurface` 系，浅深色下都够对比）、
-  高 ≥44dp、左右边距 `screenPaddingHorizontal`、多行截断 2 行省略；
+- Toast 形态：圆角 `radiusM`、深色反相底（`inverseSurface` 系——M3 官方
+  `colorSurfaceInverse`，浅深色下都够对比）、高 ≥44dp、外边距 8dp（M3 官方）、
+  海拔 6dp、左右边距对齐 `screenPaddingHorizontal`、多行截断 2 行省略；
 - Banner 形态：圆角 `radiusM`、level 容器色浅底（3.2 状态色 `容器` 列）+ level 色
   图标/按钮、左图标 24dp；
 - **禁裸 Android `Toast`**（lint `ForbiddenPlatformToast`）——平台 toast 无主题、
@@ -489,17 +508,18 @@ modalSheet（底部模态面板）      ←  重决策 + 富内容表单
 
 ### 6.7 表单与选择控件规范
 
-#### 6.7.1 `AppTextField` 完整规范（当前仅有壳，T8.5 补全）
+#### 6.7.1 `AppTextField` 完整规范（v4.1 对照 M3 text field 规范修订）
 
 | 维度 | 规格 |
 | --- | --- |
-| 形态 | `Filled`（默认，FormScaffold 内）/ `Outlined`（彩色底嵌入时）/ `Bare`（`AppInputBar` 内部，无框） |
+| 形态 | `Outlined`（**默认——M3 官方默认形态，密集表单低强调**）/ `Filled`（高强调、稀疏布局的关键项，如设置页顶部 API Key）/ `Bare`（`AppInputBar` 内部特例，无框，不进表单） |
 | 高度 | 单行 52dp；多行 `minLines=1, maxLines` 按场景（备注 4 / 对话输入 6），随内容增高不跳动（baseline 对齐） |
 | 圆角 | `radiusM`；搜索变体 `radiusXL`（全圆） |
-| 标签 | Filled = 浮动标签（focus/有值时上浮 10sp）；Outlined = 常驻左上外挂 12sp |
-| 附属 | `helperText`（12sp `textTertiary`，位于下 4dp）/ `errorText`（12sp `danger`，**出现时替换 helper** 且 100ms fade，同时边框+标签转 `danger`）/ 字符计数（trailing，超限转 `danger`，仅传入 `maxLength` 时启用） |
-| 图标 | leading 24dp（`textTertiary`）；trailing = clear 按钮（有值且 focused 时出现，44dp 触控区） |
-| 状态 | default / focused（`primary` 2dp 描边）/ error（`danger` 1dp 描边 + 文案）/ disabled（38%，走 4.1）——**无第五种状态**，改动走评审 |
+| 描边 | 常态 1dp（`border` 色）→ **focused 2dp（`primary`）→ error 同 2dp（`danger`）**——描边宽度只在 focused/error 升到 2dp（M3 `boxStrokeWidthFocused` 模型） |
+| 标签 | 浮动标签（focus/有值时上浮缩至 12sp）；focused 标签色 = `primary`（M3 `hintTextColor` 模型）；error 时标签同步转 `danger` |
+| 附属 | `helperText`（12sp `textTertiary`，位于下 4dp）/ `errorText`（12sp `danger`，**出现时替换 helper** 且 100ms fade；**注册为 accessibility live region——读屏自动播报**）/ 字符计数（超限转 `danger` 独立 overflow 样式，仅传入 `maxLength` 时启用）/ `prefix`/`suffix` 槽（API Key 场景 `sk-` 前缀常显） |
+| 图标 | leading 24dp（`textTertiary`，须填 contentDescription）；trailing 三种内建：clear（有值且 focused 时出现，44dp 触控区）/ **error ⚠（error 态自动出现，M3 `errorIconDrawable` 模型）** / password 可见性切换（密码字段内建） |
+| 状态 | default / focused（`primary` 2dp 描边）/ error（`danger` 2dp 描边 + error 图标 + 文案）/ disabled（38%，走 4.1）——**无第五种状态**，改动走评审 |
 | 键盘 | `keyboardOptions` 由调用方传；安全校验（数字/URL）由调用方语义决定，组件不管业务 |
 
 #### 6.7.2 选择控件族
