@@ -91,37 +91,37 @@ jobs:
           ls -la dist
 
       - name: 从 CHANGELOG 提取当前版本正文
-          run: |
-            # CHANGELOG 里版本条目有两种格式：## [v0.2.1.3] — ... 或 ## [0.2.0.2] — ...
-            # 匹配 tag 名（去 v 前缀）对应的条目，取下一个 ## [ 之前的正文，去掉标题行。
-            TAG="${GITHUB_REF_NAME}"
-            VER="${TAG#v}"
-            OUT=release_body.md
-            awk -v tag="$TAG" -v ver="$VER" '
-              BEGIN { capture=0; found=0 }
-              /^## \[/ {
-                if (capture && found) exit
-                if ($0 ~ "^## \\[" tag "\\] —" || $0 ~ "^## \\[" ver "\\] —") { capture=1; found=1; next }
-              }
-              capture { print }
-            ' CHANGELOG.md > "$OUT"
-            if [ ! -s "$OUT" ]; then
-              echo "⚠️  CHANGELOG 未找到 $TAG 条目，Release body 留空（GitHub 会自动生成 Full Changelog）"
-              echo "" > "$OUT"
-            else
-              echo "✅ CHANGELOG 提取成功，$(wc -c < "$OUT") 字符"
-              head -5 "$OUT"
-            fi
+        run: |
+          # CHANGELOG 里版本条目有两种格式：## [v0.2.1.3] — ... 或 ## [0.2.0.2] — ...
+          # 匹配 tag 名（去 v 前缀）对应的条目，取下一个 ## [ 之前的正文，去掉标题行。
+          TAG="${GITHUB_REF_NAME}"
+          VER="${TAG#v}"
+          OUT=release_body.md
+          awk -v tag="$TAG" -v ver="$VER" '
+            BEGIN { capture=0; found=0 }
+            /^## \[/ {
+              if (capture && found) exit
+              if ($0 ~ "^## \\[" tag "\\] —" || $0 ~ "^## \\[" ver "\\] —") { capture=1; found=1; next }
+            }
+            capture { print }
+          ' CHANGELOG.md > "$OUT"
+          if [ ! -s "$OUT" ]; then
+            echo "⚠️  CHANGELOG 未找到 $TAG 条目，Release body 留空（GitHub 会自动生成 Full Changelog）"
+            echo "" > "$OUT"
+          else
+            echo "✅ CHANGELOG 提取成功，$(wc -c < "$OUT") 字符"
+            head -5 "$OUT"
+          fi
 
-        - name: 创建 GitHub Release 并上传 APK
-          uses: softprops/action-gh-release@v2
-          with:
-            name: ${{ github.ref_name }}
-            body_path: release_body.md
-            # 含 -rc 后缀的 tag 自动标记为预发行（见 Version.md 二、确认门禁）
-            prerelease: ${{ contains(github.ref_name, '-rc') }}
-            draft: false  # 默认正式发布；不设会被 action-gh-release 当成 draft
-            generate_release_notes: true  # CHANGELOG 为空时 fallback 到 GitHub 自动生成
-            files: dist/*.apk
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 创建 GitHub Release 并上传 APK
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release_body.md
+          # 含 -rc 后缀的 tag 自动标记为预发行（见 Version.md 二、确认门禁）
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
+          draft: false  # 默认正式发布；不设会被 action-gh-release 当成 draft
+          generate_release_notes: true  # CHANGELOG 为空时 fallback 到 GitHub 自动生成
+          files: dist/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
