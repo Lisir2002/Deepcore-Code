@@ -33,6 +33,8 @@ import com.deepcode.core.platform.tools.RunCommandTool
 import com.deepcode.core.platform.tools.WriteFileTool
 import com.deepcode.core.platform.workspace.LocalDirWorkspace
 import com.deepcode.agent.demo.DemoProvider
+import com.deepcode.agent.model.ModelEndpointConfigStore
+import com.deepcode.agent.model.OkHttpProvider
 import com.deepcode.agent.logging.AndroidLoggingActions
 import com.deepcode.agent.logging.LogExporter
 import com.deepcode.agent.logging.RollingFileSink
@@ -177,6 +179,10 @@ val appModule = module {
 
     single<ContextPolicy> { DefaultContextPolicy() }
 
+    // 真实模型端点配置：配置齐全则 AgentRuntime 用 OkHttpProvider 接真实模型，
+    // 否则回退 DemoProvider（脚手架，保证没配 key 也能跑通 UI 全链路）。
+    single { ModelEndpointConfigStore(get()) }
+
     // 会话工厂：每个会话一个 AgentRuntime，UI 只传 sessionId。
     // 依赖在模块装配时解析一次，工厂只负责换 sessionId。
     // 演示模型（DemoProvider）在工厂内按会话新建独立实例：内部 round 等状态随会话隔离，
@@ -190,23 +196,44 @@ val appModule = module {
         val eventStore = get<EventStore>()
         val contextPolicy = get<ContextPolicy>()
         val scope = get<CoroutineScope>(qualifier = org.koin.core.qualifier.named("agent"))
+        val modelConfig = get<ModelEndpointConfigStore>().config()
         AgentRuntimeFactory { sessionId ->
-            DefaultAgentRuntime(
-                sessionId = sessionId,
-                provider = DemoProvider(),
-                modelRef = ModelRef("demo", "demo-1"),
-                toolRegistry = toolRegistry,
-                workspace = workspace,
-                sandbox = sandbox,
-                eventStore = eventStore,
-                contextPolicy = contextPolicy,
-                scope = scope,
-                config = AgentConfig(maxIterations = 12),
-                skillSectionProvider = {
-                    val result = skillLoader.load()
-                    skillInjector.buildSkillSection(result.skills).takeIf { it.isNotEmpty() }
-                },
-            )
+            // 配置了真实模型就用 OkHttpProvider，否则退回 DemoProvider（脚手架）。
+            if (modelConfig != null) {
+                DefaultAgentRuntime(
+                    sessionId = sessionId,
+                    provider = OkHttpProvider(modelConfig),
+                    modelRef = ModelRef(OkHttpProvider.OPENAI_PROVIDER_ID, modelConfig.model),
+                    toolRegistry = toolRegistry,
+                    workspace = workspace,
+                    sandbox = sandbox,
+                    eventStore = eventStore,
+                    contextPolicy = contextPolicy,
+                    scope = scope,
+                    config = AgentConfig(maxIterations = 12),
+                    skillSectionProvider = {
+                        val result = skillLoader.load()
+                        skillInjector.buildSkillSection(result.skills).takeIf { it.isNotEmpty() }
+                    },
+                )
+            } else {
+                DefaultAgentRuntime(
+                    sessionId = sessionId,
+                    provider = DemoProvider(),
+                    modelRef = ModelRef("demo", "demo-1"),
+                    toolRegistry = toolRegistry,
+                    workspace = workspace,
+                    sandbox = sandbox,
+                    eventStore = eventStore,
+                    contextPolicy = contextPolicy,
+                    scope = scope,
+                    config = AgentConfig(maxIterations = 12),
+                    skillSectionProvider = {
+                        val result = skillLoader.load()
+                        skillInjector.buildSkillSection(result.skills).takeIf { it.isNotEmpty() }
+                    },
+                )
+            }
         }
     }
 

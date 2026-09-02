@@ -10,6 +10,7 @@ import com.deepcode.core.logging.LogLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 /**
  * 命令白名单沙箱（M0 实现）。
@@ -70,38 +71,68 @@ class CommandWhitelistSandbox(
             return@withContext CommandResult(127, "", "无法启动命令：${it.message}")
         }
 
+        val maxTimeoutMs = capabilities.maxTimeoutMs
         val output = StringBuilder()
-        process.inputStream.bufferedReader().use { reader ->
-            while (true) {
-                val line = reader.readLine() ?: break
-                output.appendLine(line)
-                request.onOutput?.invoke(line + "\n")
-                if (output.length > MAX_OUTPUT_CHARS) {
-                    output.appendLine("（输出过长，已中止读取）")
-                    process.destroy()
-                    break
-                }
-                if (request.isCancelled?.invoke() == true) {
-                    process.destroy()
-                    break
+        var timedOut = false
+
+        // 输出由一个后台线程持续读取；主线程用 process.waitFor(timeout) 施加**真正的超时**。
+        // 这是刻意这样做的：若在"读一行检查一次耗时"里判断超时，readLine() 本身一旦阻塞
+        // 就永远回不来，超时形同虚设（这正是旧实现的缺陷）。
+        val reader = Thread {
+            process.inputStream.bufferedReader().use { reader ->
+                while (true) {
+                    val line = if (Thread.currentThread().isInterrupted) null else reader.readLine()
+                        ?: break
+                    synchronized(output) { output.appendLine(line) }
+                    request.onOutput?.invoke(line + "\n")
+                    val tooLong = synchronized(output) { output.length > MAX_OUTPUT_CHARS }
+                    if (tooLong) {
+                        synchronized(output) { output.appendLine("（输出过长，已中止读取）") }
+                        process.destroy()
+                        break
+                    }
+                    if (request.isCancelled?.invoke() == true) {
+                        process.destroy()
+                        break
+                    }
                 }
             }
+        }.apply {
+            isDaemon = true
+            start()
         }
 
-        val finished = runCatching {
-            process.waitFor()
-        }.getOrDefault(-1)
+        // 阻塞等待进程结束；超过 maxTimeoutMs 仍未退出则判定超时并杀掉。
+        val exited = process.waitFor(maxTimeoutMs, TimeUnit.MILLISECONDS)
+        if (!exited) {
+            timedOut = true
+            process.destroy()
+            // 不给面子就先温和终止，5s 后仍不退就强杀，确保线程不泄漏。
+            if (!process.waitFor(5, TimeUnit.SECONDS)) process.destroyForcibly()
+        }
+        // 要么进程已自然退出（流读到 EOF），要么已被销毁（流关闭），join 都能返回。
+        reader.join()
+
+        val exitCode = if (timedOut) {
+            Log.log(
+                LogLevel.WARN, LogCategory.OPERATION_SANDBOX, "Platform",
+                "命令 ${request.command} 超过 ${maxTimeoutMs}ms 超时，已终止",
+            )
+            124 // 超时标准退出码
+        } else {
+            runCatching { process.exitValue() }.getOrDefault(-1)
+        }
 
         Log.log(
             LogLevel.INFO, LogCategory.OPERATION_SANDBOX, "Platform",
-            "命令 ${request.command} 退出码 $finished，耗时 ${System.currentTimeMillis() - startedAt}ms",
+            "命令 ${request.command} 退出码 $exitCode，耗时 ${System.currentTimeMillis() - startedAt}ms",
         )
 
         CommandResult(
-            exitCode = finished,
+            exitCode = exitCode,
             stdout = output.toString(),
             stderr = "",
-            timedOut = false,
+            timedOut = timedOut,
             durationMs = System.currentTimeMillis() - startedAt,
         )
     }

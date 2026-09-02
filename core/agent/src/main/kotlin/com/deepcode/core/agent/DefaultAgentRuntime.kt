@@ -119,13 +119,15 @@ class DefaultAgentRuntime(
         scope: ApprovalScope,
         reason: String?,
     ) {
-        val decision = if (approved) {
-            if (scope != ApprovalScope.ONCE) policyStore?.remember(call.signature(), scope)
-            ApprovalDecision.Approved(scope)
-        } else {
-            ApprovalDecision.Denied(reason)
+        val decision = if (approved) ApprovalDecision.Approved(scope) else ApprovalDecision.Denied(reason)
+        // 只有当真·唤醒了一个等待中的审批（respond 返回 true）才持久化策略。
+        // 否则——用户点的是早已失效/被取消的弹窗，或 turn 已终止——不能拿一个
+        // 从未真正执行的调用把 ALWAYS/SESSION 写进策略库（一旦错写，会长期自动放行）。
+        if (gate is InteractivePermissionGate && gate.respond(decision)) {
+            if (approved && scope != ApprovalScope.ONCE) {
+                policyStore?.remember(call.signature(), scope)
+            }
         }
-        if (gate is InteractivePermissionGate) gate.respond(decision)
     }
 
     override suspend fun cancel(reason: String?) {

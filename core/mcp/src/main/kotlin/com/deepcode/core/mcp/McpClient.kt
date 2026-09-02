@@ -46,7 +46,7 @@ interface McpClient {
 }
 
 /**
- * 基于 OkHttp 的 Streamable HTTP MCP 客户端（协议级兼容，对齐 MCP 规范 2025-11-05）。
+ * 基于 OkHttp 的 Streamable HTTP MCP 客户端（协议级兼容，对齐 MCP 规范 2025-11-25）。
  *
  * 实现 JSON-RPC 2.0 的请求/响应：initialize → initialized 通知 → tools/list → tools/call。
  * 响应优先按 `application/json` 解析；若 server 走 SSE（`text/event-stream`）则抽取 data 行。
@@ -65,12 +65,16 @@ class HttpJsonRpcMcpClient(
     private var nextId = 0
     private val ownClient = http === DEFAULT_HTTP
 
+    init {
+        requireMcpHttpUrl(url)
+    }
+
     override suspend fun connect() {
         Log.log(LogLevel.INFO, LogCategory.OPERATION_MCP, "McpClient", "server $serverName 开始 initialize 握手")
         rpc(
             "initialize",
             buildJsonObject {
-                put("protocolVersion", "2025-11-05")
+                put("protocolVersion", "2025-11-25")
                 putJsonObject("capabilities") {}
                 putJsonObject("clientInfo") {
                     put("name", "deepcore-code")
@@ -209,6 +213,28 @@ class HttpJsonRpcMcpClient(
 
     companion object {
         private val DEFAULT_HTTP = OkHttpClient()
+
+        /**
+         * MCP transport URL 协议白名单（防御纵深第二道闸）。
+         *
+         * UI 层（feature:settings 的 `isValidMcpUrl`）已过滤一次，但配置最终会落盘成
+         * `servers.json`，从持久化加载/直接注入的 URL 不再经过 UI。这里在**每个客户端
+         * 构造时**硬校验一遍：只放行带 host 的 http/https，拒绝 file://、content://、
+         * javascript:// 等 OkHttp 也能接受的异常协议，防止 Agent 被诱导向本地文件或
+         * 任意目标发起请求。校验失败抛 [IllegalArgumentException]，由 McpServerManager
+         * 的 runCatching 捕获记入该 server 的连接错误，不影响其它 server。
+         */
+        internal fun requireMcpHttpUrl(rawUrl: String) {
+            val trimmed = rawUrl.trim()
+            val uri = runCatching { java.net.URI(trimmed) }.getOrNull()
+            val scheme = uri?.scheme
+            if (scheme != "http" && scheme != "https") {
+                throw IllegalArgumentException("MCP server URL 仅允许 http/https 协议，收到：${scheme ?: "（无协议）"}")
+            }
+            if (uri.host.isNullOrBlank()) {
+                throw IllegalArgumentException("MCP server URL 缺少主机名：$trimmed")
+            }
+        }
     }
 }
 

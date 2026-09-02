@@ -9,6 +9,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
@@ -91,6 +92,27 @@ class HttpJsonRpcMcpClientTest {
         assertEquals(1, tools.size)
         assertEquals("a", tools[0].name)
         client.close()
+    }
+
+    @Test
+    fun `非法协议或缺 host 的 URL 在构造期被拒绝`() {
+        val bad = listOf(
+            "file:///etc/passwd",
+            "content://com.deepcode.secret",
+            "javascript://x",
+            "ftp://example.com/mcp",
+            "https://", // 缺 host
+            "     ",    // 空白
+        )
+        bad.forEach { url ->
+            assertFailsWith<IllegalArgumentException> { HttpJsonRpcMcpClient("srv", url) }
+        }
+    }
+
+    @Test
+    fun `合法的 http https URL 可构造`() {
+        listOf("http://127.0.0.1:8080/mcp", "https://mcp.example.com/sse")
+            .forEach { url -> HttpJsonRpcMcpClient("srv", url) }
     }
 
     private fun jsonResponse(body: String): MockResponse =

@@ -76,7 +76,10 @@ class InteractivePermissionGate(
 
     /** UI 调用。返回是否真的唤醒了一个等待中的请求。 */
     fun respond(decision: ApprovalDecision): Boolean {
+        // 在清空 pendingCallValue 之前先取出工具名，否则下面的审计日志永远读到 null
+        var callName: String? = null
         val cont = synchronized(lock) {
+            callName = pendingCallValue?.name
             pending.also {
                 pending = null
                 pendingCallValue = null
@@ -86,7 +89,7 @@ class InteractivePermissionGate(
             Log.log(
                 if (decision is ApprovalDecision.Approved) LogLevel.INFO else LogLevel.WARN,
                 LogCategory.SECURITY_PERMISSION, "AgentRuntime",
-                "用户${if (decision is ApprovalDecision.Approved) "批准" else "拒绝"} ${pendingCallValue?.name ?: "工具调用"}",
+                "用户${if (decision is ApprovalDecision.Approved) "批准" else "拒绝"} ${callName ?: "工具调用"}",
             )
             cont.resume(decision)
             true

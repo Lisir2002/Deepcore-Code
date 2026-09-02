@@ -2,6 +2,48 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.1.3-rc3] — 2026-09-02 · versionCode 40103（预发行）
+
+> **审计修复批次 + 接入真实模型 Provider**。本轮按深度审计清单落地 1/3/4/5/6 项：
+> 接入基于 OkHttp 的 OpenAI 兼容模型 Provider 打通 Agent 主循环；MCP 服务器 URL 协议
+> 白名单校验下沉到客户端构造入口（防御纵深）；沙箱命令执行增加 60s 真实超时；权限审批
+> 审计日志显式记录被批准/拒绝的工具名，且仅当弹窗确实唤醒一次在途审批时才把
+> ALWAYS/SESSION 策略写入策略库；统一 MCP 协议版本 2025-11-25，并为核心事件/工具契约
+> 补齐序列化往返单测，守住「旧库新读」兼容红线。
+
+### Added
+
+- **接入真实模型 Provider（OkHttp）**（[OkHttpProvider.kt](app/src/main/kotlin/com/deepcode/agent/model/OkHttpProvider.kt)）：
+  实现 OpenAI 兼容 `chat/completions` SSE 协议（覆盖 GPT / DeepSeek / 通义），流式解析
+  思考增量（`reasoning_content`）、正文、函数调用（按 index 拼接）、用量与停止原因，
+  统一映射为 `CompletionChunk`，Agent 主循环对供应商差异无感。新增
+  [ModelEndpointConfigStore.kt](app/src/main/kotlin/com/deepcode/agent/model/ModelEndpointConfigStore.kt)
+  （SharedPreferences 存 baseUrl / apiKey / model），DI 层配置齐全时主循环走真实模型，
+  未配置则回退 DemoProvider 保 UI 全链路可跑（密钥加密存储列为独立待办，不在本批内）。
+
+### Fixed
+
+- **（安全）MCP 服务器 URL 协议白名单下沉**（[McpClient.kt](core/mcp/src/main/kotlin/com/deepcode/core/mcp/McpClient.kt)）：
+  `HttpJsonRpcMcpClient` 构造入口校验协议必须为 http/https 且主机名非空，杜绝
+  `file://` / `content://` / `javascript://` 等协议跳转，与 UI 层校验构成双重防线。
+- **沙箱命令真实超时**（[CommandWhitelistSandbox.kt](core/platform/src/main/kotlin/com/deepcode/core/platform/sandbox/CommandWhitelistSandbox.kt)）：
+  进程执行改用 `process.waitFor(timeout)` 施加 60s 超时，超时后先后 `destroy()` 与
+  `destroyForcibly()` 强杀，避免恶意或挂起命令无限期阻塞线程。
+- **权限审批审计日志补回工具名**（[InteractivePermissionGate.kt](core/agent/src/main/kotlin/com/deepcode/core/agent/InteractivePermissionGate.kt)）：
+  修复在清空 `pendingCallValue` 前未暂存工具名、导致「批准/拒绝 XXX 工具调用」日志恒为
+  null 的问题，安全审计可追溯。
+- **策略持久化时机修正**（[DefaultAgentRuntime.kt](core/agent/src/main/kotlin/com/deepcode/core/agent/DefaultAgentRuntime.kt)）：
+  仅在 `gate.respond()` 确实唤醒一个在途审批（返回 true）时才写入 ALWAYS/SESSION 策略，
+  杜绝把从未真正执行的调用长期自动放行。
+- **核心事件/工具契约序列化往返**（[EventRoundTripTest.kt](core/model/src/test/kotlin/com/deepcode/core/model/EventRoundTripTest.kt)）：
+  为事件与 Tool/Attachments 落盘契约补齐「编码→解码→等值」单测，守住数据持久化兼容。
+
+### Changed
+
+- **MCP 协议版本统一 2025-11-25**：客户端握手与文档声明一致，避免版本协商失败。
+
+---
+
 ## [v0.4.1.3-rc2] — 2026-09-01 · versionCode 40103（预发行）
 
 > **交互视觉修复与底栏美化**。修复「点击 / 长按卡片出现黑色方角黑边」：
