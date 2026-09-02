@@ -233,15 +233,38 @@ class GeminiProvider(
         when (msg.role) {
             LlmRole.USER -> {
                 b.put("role", "user")
-                b.putJsonArray("parts") { add(buildJsonObject { put("text", msg.content) }) }
+                b.putJsonArray("parts") {
+                    if (msg.content.isNotBlank()) {
+                        add(buildJsonObject { put("text", msg.content) })
+                    }
+                    // 多模态：图片走 inline_data（base64 直传）。
+                    msg.images.forEach { img ->
+                        add(buildJsonObject {
+                            putJsonObject("inlineData") {
+                                put("mimeType", img.mimeType)
+                                put("data", img.base64Data)
+                            }
+                        })
+                    }
+                }
             }
 
             LlmRole.ASSISTANT -> {
                 b.put("role", "model")
                 if (msg.toolCalls.isEmpty()) {
-                    b.putJsonArray("parts") { add(buildJsonObject { put("text", msg.content) }) }
+                    b.putJsonArray("parts") {
+                        if (!msg.reasoning.isNullOrBlank()) {
+                            add(buildJsonObject { put("text", msg.reasoning); put("thought", true) })
+                        }
+                        if (msg.content.isNotBlank()) {
+                            add(buildJsonObject { put("text", msg.content) })
+                        }
+                    }
                 } else {
                     b.putJsonArray("parts") {
+                        if (!msg.reasoning.isNullOrBlank()) {
+                            add(buildJsonObject { put("text", msg.reasoning); put("thought", true) })
+                        }
                         if (msg.content.isNotBlank()) {
                             add(buildJsonObject { put("text", msg.content) })
                         }

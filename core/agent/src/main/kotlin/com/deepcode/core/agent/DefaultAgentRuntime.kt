@@ -173,6 +173,8 @@ class DefaultAgentRuntime(
                 }
 
                 val assistantText = StringBuilder()
+                val assistantThinking = StringBuilder()
+                var assistantSignature: String? = null
                 val pendingCalls = ArrayList<ToolCall>()
 
                 provider.stream(
@@ -188,8 +190,10 @@ class DefaultAgentRuntime(
                     )
                 ).collect { chunk ->
                     when (chunk) {
-                        is CompletionChunk.Thinking ->
+                        is CompletionChunk.Thinking -> {
+                            assistantThinking.append(chunk.text)
                             emit(turnId) { id, ts -> ThinkingDelta(id, sessionId, turnId, ts, seq++, chunk.text) }
+                        }
 
                         is CompletionChunk.Text -> {
                             assistantText.append(chunk.text)
@@ -197,6 +201,8 @@ class DefaultAgentRuntime(
                         }
 
                         is CompletionChunk.ToolCalls -> pendingCalls.addAll(chunk.calls)
+
+                        is CompletionChunk.Signature -> assistantSignature = chunk.text
 
                         is CompletionChunk.UsageUpdate -> totalUsage = accumulate(totalUsage, chunk.usage)
 
@@ -223,6 +229,8 @@ class DefaultAgentRuntime(
                         role = LlmRole.ASSISTANT,
                         content = assistantText.toString(),
                         toolCalls = pendingCalls.toList(),
+                        reasoning = assistantThinking.toString().ifEmpty { null },
+                        signature = assistantSignature,
                     )
                 )
 

@@ -2,6 +2,32 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.5.1.1] — 2026-09-02 · versionCode 50101
+
+> **多模态与思考模式移植（借鉴 deepcode-R 的供应商/模型设计）**：三家 Provider 全面支持
+> 图片多模态输入，并打通「思考模式」多轮/工具循环——assistant 的推理过程与 Anthropic
+> extended thinking 签名在运行时累计并原样回传，避免 DeepSeek / Claude 思考模式 400。
+
+### Added
+
+- **SPI 多模态数据结构** [ModelProvider.kt](core/agent/src/main/kotlin/com/deepcode/core/agent/spi/ModelProvider.kt)：
+  新增 `LlmImage`（base64 + MIME）；`LlmMessage` 新增 `images` / `reasoning` / `signature` 字段；
+  `CompletionChunk` 新增 `Signature` 增量（Anthropic extended thinking 的加密签名，随流下发）。
+- **运行时思考回传** [DefaultAgentRuntime.kt](core/agent/src/main/kotlin/com/deepcode/core/agent/DefaultAgentRuntime.kt)：
+  累计 `Thinking` 增量为 `assistantThinking`、捕获 `Signature`；assistant 消息回传时携带
+  `reasoning` 与 `signature`，使 DeepSeek 思考模式多轮/工具循环不再报 400。
+
+### Changed
+
+- **[OkHttpProvider.kt](app/src/main/kotlin/com/deepcode/agent/model/OkHttpProvider.kt)（OpenAI 兼容）**：
+  带图片时 `content` 走 text/image_url 数组块（纯文本仍走字符串以兼容更多网关）；assistant 消息回传
+  `reasoning_content`（DeepSeek 思考模式）。
+- **[AnthropicProvider.kt](app/src/main/kotlin/com/deepcode/agent/model/AnthropicProvider.kt)**：
+  user 消息图片走 base64 `image` 块；assistant 消息按需回传 `thinking` + `signature` 块；
+  流式解析新增 `thinking_delta` 的 signature 捕获与下发。
+- **[GeminiProvider.kt](app/src/main/kotlin/com/deepcode/agent/model/GeminiProvider.kt)**：
+  user 图片走 `inlineData`；assistant 推理过程以 `thought: true` 的 text 块回传。
+
 ## [v0.4.4.0] — 2026-09-02 · versionCode 40400
 
 > **借鉴 deepcode-R 的供应商/模型添加体系**：模型存储粒度迁移为供应商粒度（一条供应商＝协议+端点+密钥+多个模型），

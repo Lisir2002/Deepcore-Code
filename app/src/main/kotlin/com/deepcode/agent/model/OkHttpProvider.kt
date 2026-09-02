@@ -295,7 +295,28 @@ class OkHttpProvider(
             LlmRole.TOOL -> "tool"
             LlmRole.SYSTEM -> "system"
         })
-        b.put("content", msg.content)
+        // 多模态：带图片时 content 走数组（text/image_url 块），纯文本走字符串（兼容更多网关）。
+        if (msg.images.isNotEmpty()) {
+            b.putJsonArray("content") {
+                if (msg.content.isNotBlank()) {
+                    add(buildJsonObject { put("type", "text"); put("text", msg.content) })
+                }
+                msg.images.forEach { img ->
+                    add(buildJsonObject {
+                        put("type", "image_url")
+                        putJsonObject("image_url") {
+                            put("url", "data:${img.mimeType};base64,${img.base64Data}")
+                        }
+                    })
+                }
+            }
+        } else {
+            b.put("content", msg.content)
+        }
+        // 思考模式（如 DeepSeek）：assistant 推理过程必须原样回传，否则多轮/工具循环报 400。
+        if (msg.role == LlmRole.ASSISTANT && !msg.reasoning.isNullOrBlank()) {
+            b.put("reasoning_content", msg.reasoning)
+        }
         if (msg.role == LlmRole.TOOL && msg.toolCallId != null) {
             b.put("tool_call_id", msg.toolCallId)
         }

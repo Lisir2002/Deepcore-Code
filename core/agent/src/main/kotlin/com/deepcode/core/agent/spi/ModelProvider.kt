@@ -63,6 +63,12 @@ data class ModelInfo(
 
 enum class LlmRole { SYSTEM, USER, ASSISTANT, TOOL }
 
+/** 多模态图片：base64 内联数据 + MIME 类型，由 Provider 翻译成各家协议的图片块。 */
+data class LlmImage(
+    val base64Data: String,
+    val mimeType: String,
+)
+
 /**
  * 与具体供应商无关的一条消息。
  * 工具结果统一以 role=TOOL + toolCallId 表达，由 Provider 实现翻译成各家协议。
@@ -74,6 +80,15 @@ data class LlmMessage(
     val toolName: String? = null,
     /** assistant 消息里携带的工具调用请求。 */
     val toolCalls: List<ToolCall> = emptyList(),
+    /** 附带的图片（多模态输入）。非空时 Provider 以图片块形式发送，text 与图片并存。 */
+    val images: List<LlmImage> = emptyList(),
+    /**
+     * 思考模式：assistant 的推理过程（对应 OpenAI/DeepSeek 的 reasoning_content）。
+     * 非空时需原样回传给 API，否则 DeepSeek 思考模式多轮/工具循环会报 400。
+     */
+    val reasoning: String? = null,
+    /** Anthropic extended thinking 的加密签名（thinking block 的 signature）。随 thinking 原样回传，否则 400。其他供应商为 null。 */
+    val signature: String? = null,
 )
 
 data class CompletionRequest(
@@ -99,6 +114,12 @@ sealed interface CompletionChunk {
 
     /** 一批工具调用（模型可能一次返回多个）。 */
     data class ToolCalls(val calls: List<ToolCall>) : CompletionChunk
+
+    /**
+     * Anthropic extended thinking 的加密签名（thinking block 的 signature）。
+     * 一轮回复产出后由 Provider 下发，供多轮/工具循环判定后原样回传。其他供应商不产出。
+     */
+    data class Signature(val text: String) : CompletionChunk
 
     data class UsageUpdate(val usage: Usage) : CompletionChunk
 

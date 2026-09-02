@@ -173,8 +173,14 @@ class AnthropicProvider(
                                     if (it.isNotEmpty()) trySend(CompletionChunk.Text(it))
                                 }
 
-                                "thinking_delta" -> delta["thinking"]?.jsonPrimitive?.contentOrNull?.let {
-                                    if (it.isNotEmpty()) trySend(CompletionChunk.Thinking(it))
+                                "thinking_delta" -> {
+                                    delta["thinking"]?.jsonPrimitive?.contentOrNull?.let {
+                                        if (it.isNotEmpty()) trySend(CompletionChunk.Thinking(it))
+                                    }
+                                    // extended thinking 的签名：随 thinking 增量下发，供多轮/工具循环回传。
+                                    delta["signature"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
+                                        trySend(CompletionChunk.Signature(it))
+                                    }
                                 }
 
                                 "input_json_delta" -> {
@@ -257,7 +263,25 @@ class AnthropicProvider(
         when (msg.role) {
             LlmRole.USER -> {
                 b.put("role", "user")
-                b.put("content", msg.content)
+                if (msg.images.isNotEmpty()) {
+                    b.putJsonArray("content") {
+                        if (msg.content.isNotBlank()) {
+                            add(buildJsonObject { put("type", "text"); put("text", msg.content) })
+                        }
+                        msg.images.forEach { img ->
+                            add(buildJsonObject {
+                                put("type", "image")
+                                put("source", buildJsonObject {
+                                    put("type", "base64")
+                                    put("media_type", img.mimeType)
+                                    put("data", img.base64Data)
+                                })
+                            })
+                        }
+                    }
+                } else {
+                    b.put("content", msg.content)
+                }
             }
 
             LlmRole.TOOL -> {
@@ -275,9 +299,35 @@ class AnthropicProvider(
             LlmRole.ASSISTANT -> {
                 b.put("role", "assistant")
                 if (msg.toolCalls.isEmpty()) {
-                    b.put("content", msg.content)
+                    // extended thinking 多轮/工具循环：thinking + signature 必须原样回传，否则 400。
+                    if (!msg.signature.isNullOrBlank()) {
+                        b.putJsonArray("content") {
+                            add(buildJsonObject {
+                                put("type", "thinking")
+                                put("thinking", msg.reasoning ?: "")
+                                put("signature", msg.signature)
+                            })
+                            if (msg.content.isNotBlank()) {
+                                add(buildJsonObject { put("type", "text"); put("text", msg.content) })
+                            }
+                        }
+                    } else {
+                        b.put("content", msg.content)
+                    }
                 } else {
                     b.putJsonArray("content") {
+                        if (!msg.signature.isNullOrBlank()) {
+                            add(buildJsonObject {
+                                put("type", "thinking")
+                                put("thinking", msg.reasoning ?: "")
+                                put("signature", msg.signature)
+                            })
+                        } else if (!msg.reasoning.isNullOrBlank()) {
+                            add(buildJsonObject {
+                                put("type", "thinking")
+                                put("thinking", msg.reasoning)
+                            })
+                        }
                         if (msg.content.isNotBlank()) {
                             add(buildJsonObject { put("type", "text"); put("text", msg.content) })
                         }
