@@ -2,6 +2,34 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.2.0] — 2026-09-02 · versionCode 40200
+
+> **设置页骨架重构（入口列表 + 二级 Detail）+ 真实模型配置分页**。本轮按设置骨架设计拍板点落地：
+> 设置入口从「模型与连接」单体拆为「模型」「技能」两页，底部「工作」tab 改名「终端」占位；
+> 在 `:designsystem` 预构泛型行内控件条目 `AppSettingRow`（右侧 Switch / 分段 / chevron 槽位），
+> 业务层不再自造行样式；设置二级页收口为单一带参路由 `settings/{page}?reason=`，支持首次引导 /
+> 连接异常直达。
+
+### Added
+
+- **设置页骨架重构**：设置入口为纯分组列表，逐项压栈进独立的二级 Detail（外观 / 模型 / 技能 /
+  日志 / 关于），与既有 Chat / 导航骨架族一致（[SettingsScreen.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/SettingsScreen.kt)）。
+- **泛型行内控件条目 [AppSettingRow.kt](designsystem/src/main/kotlin/com/deepcode/designsystem/components/form/AppSettingRow.kt)**
+  （`:designsystem`）：`label + supporting + trailing 槽`，`onClick` 非空自动补 chevron 复用入口语义；
+  技能页用它承载受信任 Switch、模型页用它承载跳转，收敛高频设置项的统一行样式。
+- **模型配置独立页 [SettingsModelScreen.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/SettingsModelScreen.kt)**：
+  真实模型端点 / API Key / 流式开关骨架，持久化与 Provider 接线排期。
+- **技能独立页 [SettingsSkillsScreen.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/SettingsSkillsScreen.kt)**：
+  承载 MCP 服务器（增删改 + trusted 开关）与技能目录占位。
+- **底部 tab 改名「终端」**：原「工作」改为「终端」占位（[TerminalPlaceholder.kt](app/src/main/kotlin/com/deepcode/agent/nav/TerminalPlaceholder.kt)），
+  终端完整设计在设置骨架收尾后单独议题。
+
+### Changed
+
+- **带参路由直达二级页**（[AppNavRoot.kt](app/src/main/kotlin/com/deepcode/agent/nav/AppNavRoot.kt)）：设置二级页收口为
+  `settings/{page}?reason=`，`SettingsPage` 枚举 + `settings()` 构造器；`reason` 落日志，预留页面高亮接线段。
+- **删除旧连接页** `SettingsConnectionScreen`，内容拆分迁入「模型」「技能」两页。
+
 ## [v0.4.1.3-rc3] — 2026-09-02 · versionCode 40103（预发行）
 
 > **审计修复批次 + 接入真实模型 Provider**。本轮按深度审计清单落地 1/3/4/5/6 项：
