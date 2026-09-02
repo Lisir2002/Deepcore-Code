@@ -101,11 +101,72 @@ fun modelOf(config: ModelProviderConfig): String = when (config) {
     else -> "demo-1"
 }
 
-/** Provider 配置的持久化访问抽象（单配置）。实现方在 :app（Encrypted 计划见 M2）。 */
+/**
+ * 一条已保存的模型配置（多模型支持）。
+ *
+ * 用户可保存任意多条「Provider + 端点 + 密钥 + 模型」的组合，其中一条标记为激活
+ * （[ModelConfigStore.activeModelId]）。聊天页与设置页均从此列表出可选模型。
+ *
+ * @param id 稳定 id（保存时若为空则由存储方生成）。
+ * @param label 用户可读名，如 "DeepSeek V3"。
+ */
+data class SavedModel(
+    val id: String = "",
+    val label: String = "",
+    val providerId: String = "",
+    val baseUrl: String = "",
+    val apiKey: String = "",
+    val model: String = "",
+    val maxTokens: Int = 8192,
+) {
+    /** 转回类型化配置；协议未知/不可用时回退 [DemoConfig]。 */
+    fun toConfig(): ModelProviderConfig = when (providerId) {
+        ModelProviderIds.OPENAI_COMPATIBLE -> OpenAIConfig(baseUrl, apiKey, model, maxTokens)
+        ModelProviderIds.ANTHROPIC -> AnthropicConfig(baseUrl, apiKey, model, maxTokens)
+        ModelProviderIds.GEMINI -> GeminiConfig(baseUrl, apiKey, model, maxTokens)
+        else -> DemoConfig()
+    }
+
+    /** 是否已构成"可用"（缺字段则不能作为真实模型激活）。 */
+    fun isComplete(): Boolean = baseUrl.isNotBlank() && apiKey.isNotBlank() && model.isNotBlank()
+}
+
+/** 从类型化配置构一条 [SavedModel]（多模型落盘转换；id 为空时由存储方生成）。 */
+fun savedModelOf(config: ModelProviderConfig): SavedModel = when (config) {
+    is OpenAIConfig -> SavedModel(providerId = config.providerId, baseUrl = config.baseUrl, apiKey = config.apiKey, model = config.model, maxTokens = config.maxTokens)
+    is AnthropicConfig -> SavedModel(providerId = config.providerId, baseUrl = config.baseUrl, apiKey = config.apiKey, model = config.model, maxTokens = config.maxTokens)
+    is GeminiConfig -> SavedModel(providerId = config.providerId, baseUrl = config.baseUrl, apiKey = config.apiKey, model = config.model, maxTokens = config.maxTokens)
+    else -> SavedModel(providerId = DemoConfig().providerId, label = DemoConfig().displayName)
+}
+
+/**
+ * Provider 配置的持久化访问抽象（多模型）。实现方在 :app（Encrypted 计划见 M2）。
+ *
+ * 多模型：可保存多条 [SavedModel]，[activeModelId] 决定当前会话生效哪条；
+ * [current] 读激活模型转类型化配置，未激活/不可用回退 [DemoConfig]。
+ */
 interface ModelConfigStore {
+    /** 当前生效的类型化配置（激活模型或 Demo 兜底）。 */
     fun current(): ModelProviderConfig
-    fun saveOpenAi(config: OpenAIConfig)
-    fun saveAnthropic(config: AnthropicConfig)
-    fun saveGemini(config: GeminiConfig)
+
+    /** 所有已保存模型（不含过期的激活 id）。 */
+    fun listModels(): List<SavedModel>
+
+    /** 当前激活的模型 id；为空表示未激活（走演示模型）。 */
+    fun activeModelId(): String
+
+    /** 当前激活的 [SavedModel]；未激活返回 null。 */
+    fun activeModel(): SavedModel?
+
+    /** 保存（按 id 覆盖）或新增一条模型，返回稳定 id。 */
+    fun saveModel(model: SavedModel): String
+
+    /** 标记某条模型为激活；id 不存在则忽略。 */
+    fun activateModel(id: String)
+
+    /** 删除某条模型；若它为激活则改为未激活。 */
+    fun removeModel(id: String)
+
+    /** 退回首演示模型（不再激活任何已保存模型，但保留列表）。 */
     fun resetToDemo()
 }

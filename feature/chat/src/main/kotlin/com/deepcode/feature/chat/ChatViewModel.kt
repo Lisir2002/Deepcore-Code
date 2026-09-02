@@ -4,34 +4,39 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepcode.core.agent.AgentRuntime
 import com.deepcode.core.agent.AgentRuntimeFactory
+import com.deepcode.core.agent.spi.ModelConfigStore
+import com.deepcode.core.agent.spi.ModelProviderIds
+import com.deepcode.core.agent.spi.SavedModel
 import com.deepcode.core.model.ApprovalScope
 import com.deepcode.core.model.SessionId
 import com.deepcode.core.model.ToolCall
 import com.deepcode.core.uistate.RenderBlock
 import com.deepcode.core.uistate.TranscriptReducer
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
  * 会话页的 ViewModel。
  *
- * 注意这里**没有**任何"消息列表"状态——界面内容完全由事件日志归约而来。
- * 好处：进程被杀重建后，ViewModel 重新走一遍 history() 就能 100% 还原界面，
- * 不需要 savedInstanceState、不需要自己维护 List<Message>。
+ * 界面内容完全由事件日志归约而来，进程被杀重建后重新走一遍 history() 即可还原。
+ * 多会话：DI 注入 [AgentRuntimeFactory] + 当前会话 id（导航参数），一个会话一个 runtime。
  *
- * 多会话：构造时由 DI 注入 [AgentRuntimeFactory] + 当前会话 id（导航参数），
- * 一个会话一个 runtime，互不干扰。
+ * 多模型：可从已保存模型列表 [availableModels] 切换到其它模型——[switchModel] 先写
+ * [ModelConfigStore.activateModel]，再按当前会话重建 runtime 并重挂事件流，保证新消息
+ * 走新模型、历史仍由事件日志还原。
  */
 class ChatViewModel(
-    runtimeFactory: AgentRuntimeFactory,
+    private val runtimeFactory: AgentRuntimeFactory,
+    private val store: ModelConfigStore,
     conversationId: String,
 ) : ViewModel() {
 
-    private val runtime: AgentRuntime = runtimeFactory.create(SessionId(conversationId))
+    private val sessionId = SessionId(conversationId)
+    private var runtime: AgentRuntime = runtimeFactory.create(sessionId)
+    private var eventJob: Job? = null
     private val reducer = TranscriptReducer()
 
     private val _blocks = MutableStateFlow<List<RenderBlock>>(emptyList())
@@ -46,13 +51,47 @@ class ChatViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    /** 当前激活的模型 id；空表示未激活（走演示模型）。 */
+    private val _activeModelId = MutableStateFlow(store.activeModelId())
+    val activeModelId: StateFlow<String> = _activeModelId
+
     init {
-        viewModelScope.launch {
-            // 冷启动：先从事件日志恢复现场
+        rewire()
+    }
+
+    // ─────────────── 多模型选择 ───────────────
+
+    /** 全部已保存模型（供顶栏下拉选择）。 */
+    fun availableModels(): List<SavedModel> = store.listModels()
+
+    /** 模型 id → 显示名（顶栏/下拉展示；未激活或不存在 → 演示模型）。 */
+    fun modelLabel(id: String): String {
+        if (id.isBlank()) return "演示模型"
+        val sm = store.listModels().firstOrNull { it.id == id }
+        return sm?.label?.ifBlank { sm.model }?.takeIf { it.isNotBlank() } ?: "演示模型"
+    }
+
+    /** 切换当前会话使用的模型；传 [ModelProviderIds.DEMO] 退回首演示模型。 */
+    fun switchModel(id: String) {
+        if (id == ModelProviderIds.DEMO) {
+            store.resetToDemo()
+            _activeModelId.update { "" }
+        } else {
+            store.activateModel(id)
+            _activeModelId.update { id }
+        }
+        // 重建运行时，让后续消息/事件走新模型；历史由事件日志还原，不丢现场。
+        runtime = runtimeFactory.create(sessionId)
+        rewire()
+    }
+
+    // ─────────────── 事件流挂载（可重建） ───────────────
+
+    private fun rewire() {
+        eventJob?.cancel()
+        eventJob = viewModelScope.launch {
             runCatching { reducer.reset(runtime.history()) }
             _blocks.update { reducer.snapshot() }
-
-            // 再接上实时事件
             runtime.events().collect { event ->
                 reducer.apply(event)
                 _blocks.update { reducer.snapshot() }
@@ -60,6 +99,8 @@ class ChatViewModel(
             }
         }
     }
+
+    // ─────────────── 输入与操作 ───────────────
 
     fun onDraftChange(text: String) {
         _draft.update { text }
