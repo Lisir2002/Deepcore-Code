@@ -6,7 +6,11 @@ import com.deepcode.core.agent.DefaultAgentRuntime
 import com.deepcode.core.agent.spi.ContextPolicy
 import com.deepcode.core.agent.spi.DefaultToolRegistry
 import com.deepcode.core.agent.spi.DefaultContextPolicy
+import com.deepcode.core.agent.spi.ModelConfigStore
+import com.deepcode.core.agent.spi.ModelProviderIds
+import com.deepcode.core.agent.spi.ModelProviderRegistry
 import com.deepcode.core.agent.spi.Sandbox
+import com.deepcode.core.agent.spi.modelOf
 import com.deepcode.core.agent.spi.ToolRegistry
 import com.deepcode.core.agent.spi.Workspace
 import com.deepcode.core.agent.skill.DefaultSkillInjector
@@ -32,9 +36,8 @@ import com.deepcode.core.platform.tools.ReadFileTool
 import com.deepcode.core.platform.tools.RunCommandTool
 import com.deepcode.core.platform.tools.WriteFileTool
 import com.deepcode.core.platform.workspace.LocalDirWorkspace
-import com.deepcode.agent.demo.DemoProvider
+import com.deepcode.agent.model.DefaultProviderRegistry
 import com.deepcode.agent.model.ModelEndpointConfigStore
-import com.deepcode.agent.model.OkHttpProvider
 import com.deepcode.agent.logging.AndroidLoggingActions
 import com.deepcode.agent.logging.LogExporter
 import com.deepcode.agent.logging.RollingFileSink
@@ -179,14 +182,17 @@ val appModule = module {
 
     single<ContextPolicy> { DefaultContextPolicy() }
 
-    // 真实模型端点配置：配置齐全则 AgentRuntime 用 OkHttpProvider 接真实模型，
-    // 否则回退 DemoProvider（脚手架，保证没配 key 也能跑通 UI 全链路）。
-    single { ModelEndpointConfigStore(get()) }
+    // 真实模型接入编排（决策 D1/D2/D5）：
+    // ModelEndpointConfigStore 持单份类型化配置；ProviderRegistry 登记可用 Provider 描述，
+    // AgentRuntimeFactory 按 providerId 查表构造，查不到（或未配置）统一回退 DemoProvider。
+    single<ModelConfigStore> { ModelEndpointConfigStore(get()) }
+    single<ModelProviderRegistry> { DefaultProviderRegistry() }
 
     // 会话工厂：每个会话一个 AgentRuntime，UI 只传 sessionId。
     // 依赖在模块装配时解析一次，工厂只负责换 sessionId。
     // 演示模型（DemoProvider）在工厂内按会话新建独立实例：内部 round 等状态随会话隔离，
-    // 不会跨会话串扰（否则所有对话行为互相影响、输出雷同）。接入真实模型时换成对应 Provider 工厂即可。
+    // 不会跨会话串扰（否则所有对话行为互相影响、输出雷同）。
+    // 真实模型与 Demo 的切换经 ProviderRegistry 统一收敛，新增厂商只需追加 Descriptor。
     single<AgentRuntimeFactory> {
         val skillLoader = get<SkillLoader>()
         val skillInjector = get<SkillInjector>()
@@ -196,44 +202,28 @@ val appModule = module {
         val eventStore = get<EventStore>()
         val contextPolicy = get<ContextPolicy>()
         val scope = get<CoroutineScope>(qualifier = org.koin.core.qualifier.named("agent"))
-        val modelConfig = get<ModelEndpointConfigStore>().config()
+        val configStore = get<ModelConfigStore>()
+        val registry = get<ModelProviderRegistry>()
         AgentRuntimeFactory { sessionId ->
-            // 配置了真实模型就用 OkHttpProvider，否则退回 DemoProvider（脚手架）。
-            if (modelConfig != null) {
-                DefaultAgentRuntime(
-                    sessionId = sessionId,
-                    provider = OkHttpProvider(modelConfig),
-                    modelRef = ModelRef(OkHttpProvider.OPENAI_PROVIDER_ID, modelConfig.model),
-                    toolRegistry = toolRegistry,
-                    workspace = workspace,
-                    sandbox = sandbox,
-                    eventStore = eventStore,
-                    contextPolicy = contextPolicy,
-                    scope = scope,
-                    config = AgentConfig(maxIterations = 12),
-                    skillSectionProvider = {
-                        val result = skillLoader.load()
-                        skillInjector.buildSkillSection(result.skills).takeIf { it.isNotEmpty() }
-                    },
-                )
-            } else {
-                DefaultAgentRuntime(
-                    sessionId = sessionId,
-                    provider = DemoProvider(),
-                    modelRef = ModelRef("demo", "demo-1"),
-                    toolRegistry = toolRegistry,
-                    workspace = workspace,
-                    sandbox = sandbox,
-                    eventStore = eventStore,
-                    contextPolicy = contextPolicy,
-                    scope = scope,
-                    config = AgentConfig(maxIterations = 12),
-                    skillSectionProvider = {
-                        val result = skillLoader.load()
-                        skillInjector.buildSkillSection(result.skills).takeIf { it.isNotEmpty() }
-                    },
-                )
-            }
+            val config = configStore.current()
+            val descriptor = registry.resolve(config.providerId) ?: registry.resolve(ModelProviderIds.DEMO)!!
+            val provider = descriptor.instantiate(config)
+            DefaultAgentRuntime(
+                sessionId = sessionId,
+                provider = provider,
+                modelRef = ModelRef(config.providerId, modelOf(config)),
+                toolRegistry = toolRegistry,
+                workspace = workspace,
+                sandbox = sandbox,
+                eventStore = eventStore,
+                contextPolicy = contextPolicy,
+                scope = scope,
+                config = AgentConfig(maxIterations = 12),
+                skillSectionProvider = {
+                    val result = skillLoader.load()
+                    skillInjector.buildSkillSection(result.skills).takeIf { it.isNotEmpty() }
+                },
+            )
         }
     }
 

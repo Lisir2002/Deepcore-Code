@@ -6,6 +6,7 @@ import com.deepcode.core.agent.spi.LlmMessage
 import com.deepcode.core.agent.spi.LlmRole
 import com.deepcode.core.agent.spi.ModelInfo
 import com.deepcode.core.agent.spi.ModelProvider
+import com.deepcode.core.agent.spi.OpenAIConfig
 import com.deepcode.core.agent.spi.StopReasonRaw
 import com.deepcode.core.model.ToolCall
 import com.deepcode.core.model.ToolCallId
@@ -51,7 +52,7 @@ import java.util.concurrent.TimeUnit
  * 换供应商（Anthropic 等）只需再做一个实现类，Runtime 一行不动。
  */
 class OkHttpProvider(
-    private val config: LlmEndpointConfig,
+    private val config: OpenAIConfig,
     client: OkHttpClient = defaultClient(),
 ) : ModelProvider {
 
@@ -272,19 +273,4 @@ class OkHttpProvider(
                 .readTimeout(0, TimeUnit.SECONDS) // 长流式，读超时由字节流驱动
                 .build()
     }
-}
-
-/**
- * 一个 OpenAI 兼容 LLM 端点的连接配置。
- *
- * [baseUrl] 通常是带 /v1 前缀的地址（如 `https://api.deepseek.com/v1`）；
- * 最终请求 URL = `baseUrl + /chat/completions`（末尾斜杠容错）。
- */
-data class LlmEndpointConfig(
-    val baseUrl: String,
-    val apiKey: String,
-    val model: String,
-    val maxTokens: Int = 8192,
-) {
-    fun completionsUrl(): String = baseUrl.trimEnd('/') + "/chat/completions"
 }

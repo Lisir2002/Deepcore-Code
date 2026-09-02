@@ -12,7 +12,7 @@
 | **M0 架构地基** | 骨架 + 主循环 + UI 统一机制跑通完整链路 | ✅ 完成（v0.1.0） |
 | **M0.5 发布基线** | 正式签名 + 加固 + CI 发版流水线 | ✅ 完成（v0.1.3） |
 | **M0.6 数据层 SQLite 化** | SQLDelight 接管持久化（events/sessions 表 + TableModule 扩展协议） | ✅ 完成（v0.1.4，CI 全量验证通过） |
-| **M1 能真跑** | 接真实模型（OkHttp + SSE 的 `ModelProvider`）+ **工具/技能层标准化**（MCP 客户端 + Agent Skills） | ⚠️ **部分完成**：工具/技能层 + T8 UI 令牌体系全落地；**仅真实模型接入未完成**（DI 仍绑定 DemoProvider） |
+| **M1 能真跑** | 接真实模型（OkHttp + SSE 的 `ModelProvider`）+ **工具/技能层标准化**（MCP 客户端 + Agent Skills） | ⚠️ **接近完成**：工具/技能层 + T8 UI 令牌体系全落地；真实模型接入经模型统一规划落地（注册表 + 设置页可配，v0.4.3.0） |
 | **M2 能用** | 工作区文件树、Diff 审阅、git 工具、会话列表页；ProotSandbox 后补 stdio MCP | ⚠️ **部分完成**：会话列表页已落地（v0.4.1.1）；工作区文件树 / git 工具 / Diff 审阅 / stdio MCP 待做 |
 | **M3 能扛** | 上下文压缩实战化、前台服务保活、数据层深化 | ⏳ 规划中 |
 | **M4 扩展** | 子 Agent 并行、Plan Mode、远端沙箱、MCP Server 侧反向暴露 | ⏳ 规划中 |
@@ -88,6 +88,16 @@
   根因，见下方「CI 红根因与修复」），CI 四 job 全绿（run 33443248890）；经确认门禁发
   **正式版 v0.2.0.2**（versionCode 20002），Release 构建成功、APK 经
   `check_apk_signing.py` 三绿验证 + 指纹比对一致。
+
+### 模型接入统一规划（2026-09-02，随 v0.4.3.0 落地）
+
+- [x] 设计定稿 `docs/MODEL_PROVIDER_PLAN.md`：七项决策与用户逐项确认（注册表统一 / 类型化配置 /
+  provider 多模型 / 单配置 / 二级编辑页 / 下拉+手输兜底 / 全做现有字段）。
+- [x] 接入编排：`ProviderRegistry` + `ProviderDescriptor`，`AgentRuntimeFactory` 改按 `providerId` 查表 + Demo 兜底；
+  类型化配置（`ModelProviderConfig` 接口 → `OpenAIConfig`/`DemoConfig`）；持久化 Store 增 `maxTokens`/`activeProviderId`。
+- [x] 设置页交互：`SettingsModelScreen`(状态/入口) + `ProviderEditScreen`(二级编辑：Provider 单选 + 动态表单 +
+  模型下拉/手输 + 保存)，接 `settings/model/edit` 子路由。
+- [x] CI 全量验证 + release `v0.4.3.0`（正式版）。
 
 ---
 

@@ -23,6 +23,7 @@ import com.deepcode.feature.settings.SettingsAboutScreen
 import com.deepcode.feature.settings.SettingsAppearanceScreen
 import com.deepcode.feature.settings.SettingsLoggingScreen
 import com.deepcode.feature.settings.SettingsModelScreen
+import com.deepcode.feature.settings.ProviderEditScreen
 import com.deepcode.feature.settings.SettingsScreen
 import com.deepcode.feature.settings.SettingsSkillsScreen
 import androidx.compose.material.icons.Icons
@@ -45,6 +46,9 @@ import androidx.compose.material.icons.filled.Work
 object AppRoutes {
     const val SHELL = "shell"
     const val CHAT = "chat/{conversationId}"
+
+    // —— 设置三级页（Provider 编辑，由模型页压栈进入）——
+    const val PROVIDER_EDIT = "settings/provider"
 
     // —— 设置二级页（入口列表压栈进入，DetailScaffold 自带返回，隐藏底栏）——
     // 带参路由：`settings/{page}?reason=` 支持直达（首次引导 / 连接异常跳转），
@@ -112,6 +116,7 @@ fun AppNavRoot(styleController: StyleController) {
                 )
                 AppRoutes.SettingsPage.MODEL.segment -> SettingsModelScreen(
                     onBack = { navController.popBackStack() },
+                    onOpenProvider = { navController.navigate(AppRoutes.PROVIDER_EDIT) },
                 )
                 AppRoutes.SettingsPage.SKILLS.segment -> SettingsSkillsScreen(
                     onBack = { navController.popBackStack() },
@@ -124,6 +129,13 @@ fun AppNavRoot(styleController: StyleController) {
                     onBack = { navController.popBackStack() },
                 )
             }
+        }
+        // —— 设置三级页：Provider 编辑（模型页压栈进入，保存后回退到模型页刷新）——
+        composable(AppRoutes.PROVIDER_EDIT) {
+            ProviderEditScreen(
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() },
+            )
         }
         composable(
             route = AppRoutes.CHAT,

@@ -2,6 +2,34 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.3.0] — 2026-09-02 · versionCode 40300
+
+> **模型接入统一规划落地**。按 [MODEL_PROVIDER_PLAN.md](docs/MODEL_PROVIDER_PLAN.md) 七项决策
+> （注册表统一 / 类型化配置 / provider 多模型 / 单配置 / 二级编辑页 / 下拉+手输兜底 / 全做现有字段）落地：
+> 核心层新增模型配置 SPI 与供应商注册表契约，应用层以注册表动态解析 Provider，设置页提供
+> 模型状态入口与「配置 Provider」二级编辑页，替换原先硬编码分支。
+
+### Added
+
+- **core-spi 模型配置契约**（[ModelProviderConfig.kt](core/agent/src/main/kotlin/com/deepcode/core/agent/spi/ModelProviderConfig.kt)）：
+  `ModelProviderConfig` 接口 + `OpenAIConfig` / `DemoConfig` 实现 + `modelOf()` 工具，使 `:feature:settings` 与 `:app` 解耦。
+- **供应商注册表契约**（[ModelProviderRegistry.kt](core/agent/src/main/kotlin/com/deepcode/core/agent/spi/ModelProviderRegistry.kt)）：
+  `ModelProviderRegistry` 接口 + `ModelProviderDescriptor` 登记描述。
+- **应用层注册表实现 [ProviderRegistry.kt](app/src/main/kotlin/com/deepcode/agent/model/ProviderRegistry.kt)**
+  `DefaultProviderRegistry`：注册 OpenAI 兼容 / Demo 两个 Provider。
+- **二级编辑页 [ProviderEditScreen.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/ProviderEditScreen.kt)**：
+  Provider 单选（含无配置 Demo）+ 动态字段表单（Base URL / API Key / 模型 / Max Tokens），支持保存与切换演示模型。
+
+### Changed
+
+- **`ModelEndpointConfigStore` 实现 core-spi `ModelConfigStore`**（决策 D2）：按 `activeProviderId` 返回类型化配置，
+  不完整回落 `DemoConfig`；提供 `saveOpenAi()` / `resetToDemo()`。
+- **DI 编排改造**（[AppModule.kt](app/src/main/kotlin/com/deepcode/agent/di/AppModule.kt)）：`AgentRuntimeFactory` 经注册表
+  按 `providerId` 解析并实例化 Provider，查不到 / 未配置统一回退 Demo。
+- **模型设置页**（[SettingsModelScreen.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/SettingsModelScreen.kt)）：
+  展示当前 Provider / 会话模型 / 端点状态，提供「配置 Provider」跳转入口。
+- **导航**（[AppNavRoot.kt](app/src/main/kotlin/com/deepcode/agent/nav/AppNavRoot.kt)）：新增 `settings/provider` 子路由。
+
 ## [v0.4.2.1] — 2026-09-02 · versionCode 40201
 
 > **设置二级页重复标题移除**。`DetailScaffold` 去掉内容区大标题槽位，顶栏为唯一标题，设置五页
