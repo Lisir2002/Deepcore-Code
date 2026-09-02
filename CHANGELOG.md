@@ -2,6 +2,28 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.4.0] — 2026-09-02 · versionCode 40400
+
+> **借鉴 deepcode-R 的供应商/模型添加体系**：模型存储粒度迁移为供应商粒度（一条供应商＝协议+端点+密钥+多个模型），
+> 补齐连通性测试、模型页搜索/批量添加、拉取 failover 兜底、API Key 加密存储。
+
+### Added
+
+- **连通性测试自顶向下打通**：core SPI 新增 `ModelTestResult` 与 [ModelProvider.testModel](core/agent/src/main/kotlin/com/deepcode/core/agent/spi/ModelProvider.kt) 默认方法；
+  三协议 Provider（OpenAI 兼容 / Anthropic / Gemini）分别实现 `testModel`（发送最小请求并返回耗时）；模型页每条可「测试」并内联展示耗时/结果。
+- **API Key 加密存储 [KeyEncryptor.kt](app/src/main/kotlin/com/deepcode/agent/security/KeyEncryptor.kt)**：Android Keystore AES-256-GCM 加密，落盘密文格式 `V1:<base64>`，[ModelEndpointConfigStore.kt](app/src/main/kotlin/com/deepcode/agent/model/ModelEndpointConfigStore.kt) 写入时加密、读取时解密；「用户未改 Key」保留既有密文避免误覆盖。
+- **拉取 failover 兜底**：`OkHttpProvider.listModels` 对 OpenAI 兼容网关 `GET /v1/models` 返回 404 时探测文生图接口并回退候选模型列表。
+- **模型页搜索 + 批量添加 + 重复拦截**：[ModelPickScreen.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/ModelPickScreen.kt) 支持按 ID 搜索过滤、多选批量保存、手输去重拦截。
+- **旧版逐步迁移**：`models_json`（一条一模型）首次读取时按协议+端点归并为供应商，保留激活与选中模型后清除旧键。
+
+### Changed
+
+- **存储粒度模型 → 供应商**：[ModelProviderConfig.kt](core/agent/src/main/kotlin/com/deepcode/core/agent/spi/ModelProviderConfig.kt) 新增 `ProviderConfig`（内嵌 `models` 列表 + `selectedModel`），
+  [ModelConfigStore](core/agent/src/main/kotlin/com/deepcode/core/agent/spi/ModelProviderConfig.kt) 扩展为 `saveProvider/activateProvider/deleteProvider/setSelectedModel/updateModels`。
+- **[ProviderEditViewModel.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/ProviderEditViewModel.kt) 重构为供应商粒度**：`commitModels` 一次保存构成供应商的一个 ProviderConfig 并标记激活；跨屏草稿经单例 `ProviderEditFlow` 共享。
+- **[SettingsModelScreen.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/SettingsModelScreen.kt) 供应商列表管理**：展示已保存供应商（模型数/生效模型/协议），点击激活、删除二次确认。
+- **[ChatViewModel.kt](feature/chat/src/main/kotlin/com/deepcode/feature/chat/ChatViewModel.kt) 按（供应商, 模型）选择**：顶栏下拉列出全部供应商下全部模型，切换即激活该供应商并设置选中模型、重建 runtime。
+
 ## [v0.4.3.1] — 2026-09-02 · versionCode 40301
 
 > **三大流行协议全量兼容 + 供应商两步流程**。接入业界主流做法（LiteLLM / llm-bridge / unified-llm 等

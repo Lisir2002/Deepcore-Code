@@ -6,6 +6,7 @@ import com.deepcode.core.agent.spi.LlmMessage
 import com.deepcode.core.agent.spi.LlmRole
 import com.deepcode.core.agent.spi.ModelInfo
 import com.deepcode.core.agent.spi.ModelProvider
+import com.deepcode.core.agent.spi.ModelTestResult
 import com.deepcode.core.agent.spi.OpenAIConfig
 import com.deepcode.core.agent.spi.StopReasonRaw
 import com.deepcode.core.model.ToolCall
@@ -64,46 +65,133 @@ class OkHttpProvider(
     private val json: Json = Json { ignoreUnknownKeys = true }
 
     override suspend fun listModels(): List<ModelInfo> {
-        // 真实拉取 OpenAI 兼容端点的 /v1/models 目录；失败 / 空时回退到已填模型单条，
-        // 保证「选择模型」页始终有兜底项。
-        val remote = runCatching {
+        // 真实拉取 OpenAI 兼容端点的 /v1/models 目录。
+        // Failover（借鉴 deepcode-R ModelApiService）：若该端点返回 404（baseUrl 指向的是
+        // 仅文生图专用网关，/v1/models 未暴露），则探测 /v1/images/generations——只要后者可
+        // 达就回退一份常见文生图模型候选，避免用户误判为 Key/网络错误；其余失败回退已填模型单条。
+        val (code, body) = try {
             val req = Request.Builder()
                 .url(config.modelsUrl())
                 .header("Authorization", "Bearer ${config.apiKey}")
                 .header("Accept", "application/json")
                 .build()
-            http.newCall(req).execute().use { response ->
-                if (!response.isSuccessful) return@use emptyList()
-                val root = json.parseToJsonElement(response.body?.string().orEmpty()).jsonObject
-                root["data"]?.jsonArray?.mapNotNull { el ->
-                    val id = el.jsonObject["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-                    ModelInfo(
-                        id = id,
-                        displayName = el.jsonObject["id"]?.jsonPrimitive?.contentOrNull ?: id,
-                        contextWindowTokens = 128_000,
-                        maxOutputTokens = config.maxTokens,
-                        supportsTools = true,
-                        supportsThinking = true,
-                        supportsPromptCaching = true,
-                    )
-                } ?: emptyList()
+            http.newCall(req).execute().use { r ->
+                r.code to r.body?.string().orEmpty()
             }
-        }.getOrDefault(emptyList())
+        } catch (e: Exception) {
+            return fallbackSingle()
+        }
 
-        return remote.ifEmpty {
-            listOf(
+        if (code == 404) {
+            val t2i = probeT2IEndpoint()
+            return if (t2i != 404) t2iCandidates() else fallbackSingle()
+        }
+        if (code !in 200..299 || body.isBlank()) return fallbackSingle()
+
+        val remote = runCatching {
+            val root = json.parseToJsonElement(body).jsonObject
+            root["data"]?.jsonArray?.mapNotNull { el ->
+                val id = el.jsonObject["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
                 ModelInfo(
-                    id = config.model,
-                    displayName = config.model,
+                    id = id,
+                    displayName = el.jsonObject["id"]?.jsonPrimitive?.contentOrNull ?: id,
                     contextWindowTokens = 128_000,
                     maxOutputTokens = config.maxTokens,
                     supportsTools = true,
                     supportsThinking = true,
                     supportsPromptCaching = true,
-                ),
-            )
+                )
+            } ?: emptyList()
+        }.getOrDefault(emptyList())
+
+        return remote.ifEmpty { fallbackSingle() }
+    }
+
+    override suspend fun testModel(modelId: String): ModelTestResult {
+        val start = System.nanoTime()
+        return try {
+            if (config.apiKey.isBlank()) {
+                ModelTestResult(success = false, latencyMs = 0, message = "请先填写 API Key")
+            } else {
+                val payload =
+                    """{"model":${modelRef(modelId)},"max_tokens":1,"messages":[{"role":"user","content":"hi"}]}"""
+                val req = Request.Builder()
+                    .url(config.completionsUrl())
+                    .header("Authorization", "Bearer ${config.apiKey}")
+                    .header("Content-Type", "application/json")
+                    .post(payload.toRequestBody(JSON))
+                    .build()
+                http.newCall(req).execute().use { r ->
+                    val code = r.code
+                    val latency = elapsedMs(start)
+                    if (code in 200..299) {
+                        ModelTestResult(success = true, latencyMs = latency, message = "连通 · ${latency}ms")
+                    } else if (code == 404) {
+                        // Failover：chat/completions 404 → 探测文生图接口，可用则以文生图判定。
+                        val t2iCode = probeT2IEndpoint()
+                        val total = elapsedMs(start)
+                        if (t2iCode == 404) {
+                            ModelTestResult(false, total, "聊天接口 404 · 文生图接口也 404：请检查 baseUrl 路径结构")
+                        } else {
+                            val tip = if (t2iCode in 200..299) "连通" else "可达（HTTP $t2iCode，可能是 Key / 额度问题）"
+                            ModelTestResult(
+                                success = t2iCode in 200..299,
+                                latencyMs = total,
+                                message = "聊天接口 404 · 已回退文生图接口 $tip · $total ms",
+                            )
+                        }
+                    } else {
+                        ModelTestResult(false, latency, "HTTP $code: ${r.body?.string().orEmpty().take(160)}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            ModelTestResult(false, elapsedMs(start), e.message ?: "请求失败")
         }
     }
+
+    /** 文生图接口探活（只取 HTTP 状态，不消耗 token）：返回 404 = 路径不存在。 */
+    private fun probeT2IEndpoint(): Int {
+        val payload = """{"model":"probe","prompt":"probe","n":1,"size":"256x256"}"""
+        val req = Request.Builder()
+            .url(config.baseUrl.trimEnd('/') + "/images/generations")
+            .header("Authorization", "Bearer ${config.apiKey}")
+            .post(payload.toRequestBody(JSON))
+            .build()
+        return http.newCall(req).execute().use { it.code }
+    }
+
+    /** 拉取失败时回退到已填模型单条，保证「选择模型」页始终有兜底项。 */
+    private fun fallbackSingle(): List<ModelInfo> =
+        setOf(config.model, config.displayName.substringAfter("· ")).mapNotNull { raw ->
+            raw.takeIf { it.isNotBlank() }?.let {
+                ModelInfo(
+                    id = it,
+                    displayName = it,
+                    contextWindowTokens = 128_000,
+                    maxOutputTokens = config.maxTokens,
+                    supportsTools = true,
+                    supportsThinking = true,
+                    supportsPromptCaching = true,
+                )
+            }
+        }
+
+    /** 文生图专用网关的常见模型候选（用户可在 UI 增删）。 */
+    private fun t2iCandidates(): List<ModelInfo> = listOf(
+        "step-2x-large", "step-image-edit-2", "step-image-plus",
+        "dall-e-3", "dall-e-2", "flux-schnell", "flux-dev", "stable-diffusion-xl-1.0",
+    ).map { id ->
+        ModelInfo(
+            id = id, displayName = id, contextWindowTokens = 0, maxOutputTokens = 0,
+            supportsTools = false, supportsThinking = false,
+        )
+    }
+
+    /** 安全的 JSON 字符串字面量（含引号、正确转义）。 */
+    private fun modelRef(modelId: String): String = JsonPrimitive(modelId).toString()
+
+    private fun elapsedMs(start: Long): Long = (System.nanoTime() - start) / 1_000_000
 
     override fun supports(modelId: String): Boolean = modelId == config.model || modelId == id
 

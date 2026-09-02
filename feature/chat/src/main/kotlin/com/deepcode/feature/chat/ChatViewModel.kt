@@ -5,8 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.deepcode.core.agent.AgentRuntime
 import com.deepcode.core.agent.AgentRuntimeFactory
 import com.deepcode.core.agent.spi.ModelConfigStore
-import com.deepcode.core.agent.spi.ModelProviderIds
-import com.deepcode.core.agent.spi.SavedModel
 import com.deepcode.core.model.ApprovalScope
 import com.deepcode.core.model.SessionId
 import com.deepcode.core.model.ToolCall
@@ -24,8 +22,9 @@ import kotlinx.coroutines.launch
  * 界面内容完全由事件日志归约而来，进程被杀重建后重新走一遍 history() 即可还原。
  * 多会话：DI 注入 [AgentRuntimeFactory] + 当前会话 id（导航参数），一个会话一个 runtime。
  *
- * 多模型：可从已保存模型列表 [availableModels] 切换到其它模型——[switchModel] 先写
- * [ModelConfigStore.activateModel]，再按当前会话重建 runtime 并重挂事件流，保证新消息
+ * 多供应商/多模型（供应商粒度，借鉴 deepcode-R）：可从已保存供应商的模型列表里选一个
+ * [ModelChoice]（供应商 + 模型）——[switchModel] 先 [ModelConfigStore.activateProvider] +
+ * [ModelConfigStore.setSelectedModel]，再按当前会话重建 runtime 并重挂事件流，保证新消息
  * 走新模型、历史仍由事件日志还原。
  */
 class ChatViewModel(
@@ -51,35 +50,52 @@ class ChatViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    /** 当前激活的模型 id；空表示未激活（走演示模型）。 */
-    private val _activeModelId = MutableStateFlow(store.activeModelId())
-    val activeModelId: StateFlow<String> = _activeModelId
-
     init {
         rewire()
     }
 
-    // ─────────────── 多模型选择 ───────────────
+    // ─────────────── 多供应商/多模型选择 ───────────────
 
-    /** 全部已保存模型（供顶栏下拉选择）。 */
-    fun availableModels(): List<SavedModel> = store.listModels()
+    /** 顶栏展示当前生效的「供应商 · 模型」；未激活供应商 → 演示模型。 */
+    val activeLabel: String
+        get() = store.activeProvider()?.let { p ->
+            val n = p.displayName()
+            val m = p.effectiveModel()
+            if (n.isBlank() || m.isBlank()) null else "$n · $m"
+        } ?: "演示模型"
 
-    /** 模型 id → 显示名（顶栏/下拉展示；未激活或不存在 → 演示模型）。 */
-    fun modelLabel(id: String): String {
-        if (id.isBlank()) return "演示模型"
-        val sm = store.listModels().firstOrNull { it.id == id }
-        return sm?.label?.ifBlank { sm.model }?.takeIf { it.isNotBlank() } ?: "演示模型"
+    /** 是否存在已激活供应商（决定下拉里「演示模型」是否高亮）。 */
+    val hasActiveProvider: Boolean
+        get() = store.activeProvider() != null
+
+    /** 一个可选择的 (供应商, 模型) 组合。 */
+    data class ModelChoice(val providerId: String, val providerName: String, val modelId: String)
+
+    /** 全部已保存供应商下的全部模型（供顶栏下拉选择）。 */
+    fun availableModels(): List<ModelChoice> = store.listProviders().flatMap { p ->
+        p.models.map { m -> ModelChoice(providerId = p.id, providerName = p.displayName(), modelId = m) }
     }
 
-    /** 切换当前会话使用的模型；传 [ModelProviderIds.DEMO] 退回首演示模型。 */
-    fun switchModel(id: String) {
-        if (id == ModelProviderIds.DEMO) {
-            store.resetToDemo()
-            _activeModelId.update { "" }
-        } else {
-            store.activateModel(id)
-            _activeModelId.update { id }
-        }
+    /** 判断某组合是否为当前生效选项。 */
+    fun isActive(choice: ModelChoice): Boolean {
+        val p = store.activeProvider() ?: return false
+        return p.id == choice.providerId && p.effectiveModel() == choice.modelId
+    }
+
+    /** 切换当前会话使用的 (供应商, 模型)：激活该供应商并设置其选中模型，重建 runtime。 */
+    fun switchModel(choice: ModelChoice) {
+        store.activateProvider(choice.providerId)
+        store.setSelectedModel(choice.providerId, choice.modelId)
+        rebuild()
+    }
+
+    /** 退回首演示模型（取消激活，保留已保存供应商）。 */
+    fun switchToDemo() {
+        store.resetToDemo()
+        rebuild()
+    }
+
+    private fun rebuild() {
         // 重建运行时，让后续消息/事件走新模型；历史由事件日志还原，不丢现场。
         runtime = runtimeFactory.create(sessionId)
         rewire()

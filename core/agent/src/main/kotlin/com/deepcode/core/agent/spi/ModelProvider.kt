@@ -29,8 +29,22 @@ interface ModelProvider {
     /** 是否支持某模型（用于运行时路由：主模型 / 压缩用小模型）。 */
     fun supports(modelId: String): Boolean = true
 
+    /**
+     * 测试某模型的连通性（借鉴 deepcode-R ModelApiService）：对该模型发一条极短最小请求，
+     * 返回耗时与结果。各协议实现应复用本 Provider 的鉴权与端点逻辑；未实现时默认报失败。
+     */
+    suspend fun testModel(modelId: String): ModelTestResult =
+        ModelTestResult(success = false, latencyMs = 0, message = "此协议未实现连通性测试")
+
     fun stream(request: CompletionRequest): Flow<CompletionChunk>
 }
+
+/** 单次模型连通性测试的结果（供设置页「测试」按钮展示）。 */
+data class ModelTestResult(
+    val success: Boolean,
+    val latencyMs: Long,
+    val message: String,
+)
 
 data class ModelInfo(
     val id: String,

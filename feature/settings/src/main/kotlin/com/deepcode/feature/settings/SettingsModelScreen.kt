@@ -27,11 +27,11 @@ import com.deepcode.designsystem.theme.appColors
 import org.koin.androidx.compose.koinViewModel
 
 /**
- * 设置二级页 · 模型（多模型管理 + 当前接入）。
+ * 设置二级页 · 模型（供应商粒度多模型管理 + 当前接入）。
  *
- * - 顶部「当前接入」状态卡（激活 Provider + 会话模型）。
- * - 下方「已保存模型」列表：点击条目激活（标记"使用中"），每条可删除。
- * - "添加模型"压栈进 [ProviderEditScreen] 分步新增（端点 → 模型），保存后回退重读列表。
+ * - 顶部「当前接入」状态卡（激活供应商 + 会话模型）。
+ * - 下方「已保存供应商」列表：点击条目激活（标记"使用中"），每条显示模型数/生效模型，可删除。
+ * - "添加供应商"压栈进 [ProviderEditScreen] 分步新增（端点 → 模型），保存后回退重读列表。
  */
 @Composable
 fun SettingsModelScreen(
@@ -41,8 +41,8 @@ fun SettingsModelScreen(
     val viewModel: SettingsModelViewModel = koinViewModel()
     // 每次进入/返回都重读：二级页保存后 popBack 回来要能看到最新列表
     val active = viewModel.activeState()
-    var models by remember { mutableStateOf(viewModel.models()) }
-    var pendingDelete by remember { mutableStateOf<SettingsModelViewModel.ItemUi?>(null) }
+    var providers by remember { mutableStateOf(viewModel.providers()) }
+    var pendingDelete by remember { mutableStateOf<SettingsModelViewModel.ProviderUi?>(null) }
 
     DetailScaffold(
         title = "模型",
@@ -79,33 +79,33 @@ fun SettingsModelScreen(
                 }
             }
 
-            // —— 已保存模型列表 ——
+            // —— 已保存供应商列表 ——
             item(key = "models_header") {
                 AppCard {
                     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceXXS)) {
                         AppText(
-                            "已保存模型（${models.size}）",
+                            "已保存供应商（${providers.size}）",
                             style = AppTextStyle.Body,
                         )
                         AppText(
-                            "点击条目切换为当前使用模型；删除后可重新添加。",
+                            "点击条目切换为当前使用；每条含多个模型，生效模型见标注。",
                             style = AppTextStyle.Caption,
                             tone = AppTextTone.Muted,
                         )
-                        if (models.isEmpty()) {
+                        if (providers.isEmpty()) {
                             AppText(
-                                "暂无已保存模型",
+                                "暂无已保存供应商",
                                 style = AppTextStyle.Caption,
                                 tone = AppTextTone.Muted,
                                 modifier = Modifier.padding(top = Dimens.spaceS),
                             )
                         }
-                        models.forEach { item ->
-                            AppModelRow(
+                        providers.forEach { item ->
+                            AppProviderRow(
                                 item = item,
                                 onActivate = {
-                                    viewModel.activateModel(item.id)
-                                    models = viewModel.models()
+                                    viewModel.activateProvider(item.id)
+                                    providers = viewModel.providers()
                                 },
                                 onDelete = { pendingDelete = item },
                             )
@@ -117,7 +117,7 @@ fun SettingsModelScreen(
             // —— 添加入口 ——
             item(key = "add") {
                 AppSettingRow(
-                    label = "添加模型",
+                    label = "添加供应商",
                     supporting = "选择协议 / 端点 / API Key / 模型",
                     onClick = onOpenProvider,
                 )
@@ -128,30 +128,33 @@ fun SettingsModelScreen(
     // 删除确认对话框（破坏性操作，需双重确认）
     pendingDelete?.let { item ->
         AppConfirmDialog(
-            title = "删除模型",
-            body = "确定删除「${item.label}」吗？此操作不可撤销。",
+            title = "删除供应商",
+            body = "确定删除「${item.label}」及其 ${item.modelCount} 个模型吗？此操作不可撤销。",
             confirmText = "删除",
             danger = true,
             onDismiss = { pendingDelete = null },
             onConfirm = {
-                viewModel.removeModel(item.id)
-                models = viewModel.models()
+                viewModel.deleteProvider(item.id)
+                providers = viewModel.providers()
                 pendingDelete = null
             },
         )
     }
 }
 
-/** 单条已保存模型行：点击激活，trailing 展示"使用中"或"删除"。 */
+/** 单个已保存供应商行：点击激活，trailing 展示"使用中"或"删除"。 */
 @Composable
-private fun AppModelRow(
-    item: SettingsModelViewModel.ItemUi,
+private fun AppProviderRow(
+    item: SettingsModelViewModel.ProviderUi,
     onActivate: () -> Unit,
     onDelete: () -> Unit,
 ) {
     AppSettingRow(
         label = item.label,
-        supporting = "${item.modelId} · ${item.providerName}",
+        supporting = buildString {
+            append(item.protocolName)
+            append(" · ${item.modelCount} 个模型 · 生效 ${item.effectiveModel}")
+        },
         onClick = onActivate,
         trailing = {
             Row {

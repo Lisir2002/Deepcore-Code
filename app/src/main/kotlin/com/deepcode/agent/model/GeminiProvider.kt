@@ -7,6 +7,7 @@ import com.deepcode.core.agent.spi.LlmMessage
 import com.deepcode.core.agent.spi.LlmRole
 import com.deepcode.core.agent.spi.ModelInfo
 import com.deepcode.core.agent.spi.ModelProvider
+import com.deepcode.core.agent.spi.ModelTestResult
 import com.deepcode.core.agent.spi.StopReasonRaw
 import com.deepcode.core.model.ToolCall
 import com.deepcode.core.model.ToolCallId
@@ -84,6 +85,35 @@ class GeminiProvider(
 
     override fun supports(modelId: String): Boolean =
         modelId == config.model || modelId == this.modelId || modelId == id
+
+    override suspend fun testModel(modelId: String): ModelTestResult {
+        val start = System.nanoTime()
+        return try {
+            if (config.apiKey.isBlank()) {
+                ModelTestResult(success = false, latencyMs = 0, message = "请先填写 API Key")
+            } else {
+                val url = config.baseUrl.trimEnd('/') + "/v1beta/models/" +
+                    modelId.removePrefix("models/") + ":generateContent"
+                val payload = """{"contents":[{"role":"user","parts":[{"text":"hi"}]}]}"""
+                val req = Request.Builder()
+                    .url(url)
+                    .header("Content-Type", "application/json")
+                    .header("x-goog-api-key", config.apiKey)
+                    .post(payload.toRequestBody(JSON))
+                    .build()
+                http.newCall(req).execute().use { r ->
+                    val latency = (System.nanoTime() - start) / 1_000_000
+                    if (r.code in 200..299) {
+                        ModelTestResult(success = true, latencyMs = latency, message = "连通 · ${latency}ms")
+                    } else {
+                        ModelTestResult(false, latency, "HTTP ${r.code}: ${r.body?.string().orEmpty().take(160)}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            ModelTestResult(false, (System.nanoTime() - start) / 1_000_000, e.message ?: "请求失败")
+        }
+    }
 
     override fun stream(request: CompletionRequest): Flow<CompletionChunk> = channelFlow {
         val url = config.baseUrl.trimEnd('/') + "/v1beta/models/" + modelId + ":streamGenerateContent?alt=sse"

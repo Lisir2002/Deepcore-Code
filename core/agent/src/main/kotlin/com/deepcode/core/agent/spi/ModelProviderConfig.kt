@@ -3,15 +3,17 @@ package com.deepcode.core.agent.spi
 import kotlinx.serialization.Serializable
 
 /**
- * 模型供应商接入编排（决策 D1/D2：注册表统一 + 类型化配置）。
+ * 模型供应商接入编排（决策 D1/D2：注册表统一 + 类型化配置；借鉴 deepcode-R 供应商粒度）。
  *
  * 连接面放纯 Kotlin 核心层，让 :feature:settings 与 :app / Provider 实现共享同一套
  * 类型，而无需反向依赖 :app。属性：
  *
  * - 新增厂商 = 登记一个 [ModelProviderDescriptor]，UI 与 Factory 免改。
- * - Provider 多模型：`ModelRef(providerId, modelId)`，Provider 可暴露多个模型。
- * - 三种流行协议（本轮决策 P1）：OpenAI 兼容 / Anthropic / Google Gemini，
- *   各自一个类型化配置实现；协议差异在 app 层各自的 Provider 适配器内隔离。
+ * - 存储粒度 = **供应商**：一条 [ProviderConfig] 是一个供应商，内嵌一组模型
+ *   [ProviderConfig.models]，选中一个 [ProviderConfig.selectedModel]，其中一条标记激活。
+ *   这与 deepcode-R 的 AIProviderConfig 粒度一致，比"每条一个模型"更贴合用户心智。
+ * - 三种流行协议（决策 P1）：OpenAI 兼容 / Anthropic / Google Gemini，各自一个
+ *   类型化配置实现；协议差异在 app 层各自的 Provider 适配器内隔离。
  */
 object ModelProviderIds {
     const val OPENAI_COMPATIBLE = "openai"
@@ -104,72 +106,89 @@ fun modelOf(config: ModelProviderConfig): String = when (config) {
 }
 
 /**
- * 一条已保存的模型配置（多模型支持）。
+ * 一条已保存的**供应商**配置（供应商粒度存储，借鉴 deepcode-R 的 AIProviderConfig）。
  *
- * 用户可保存任意多条「Provider + 端点 + 密钥 + 模型」的组合，其中一条标记为激活
- * （[ModelConfigStore.activeModelId]）。聊天页与设置页均从此列表出可选模型。
+ * 一个供应商 = 协议 + 端点 + 密钥 + 一组模型；其中一条供应商标记为激活
+ * （[ModelConfigStore.activeProviderId]）。聊天页可选该供应商下的任一模型，设置页
+ * 管理全部供应商。
  *
  * @param id 稳定 id（保存时若为空则由存储方生成）。
- * @param label 用户可读名，如 "DeepSeek V3"。
+ * @param name 用户可读名，如 "DeepSeek"。
+ * @param providerId 协议类型（见 [ModelProviderIds]）。
+ * @param apiKey 由存储实现做加密落盘；内存态为明文。
+ * @param models 该供应商已添加的可用模型列表（拉取或手动添加）。
+ * @param selectedModel 当前选中的模型；为空时回退到 [models] 首个。
  */
 @Serializable
-data class SavedModel(
+data class ProviderConfig(
     val id: String = "",
-    val label: String = "",
+    val name: String = "",
     val providerId: String = "",
     val baseUrl: String = "",
     val apiKey: String = "",
-    val model: String = "",
     val maxTokens: Int = 8192,
+    val models: List<String> = emptyList(),
+    val selectedModel: String = "",
+    val isActive: Boolean = false,
 ) {
-    /** 转回类型化配置；协议未知/不可用时回退 [DemoConfig]。 */
-    fun toConfig(): ModelProviderConfig = when (providerId) {
-        ModelProviderIds.OPENAI_COMPATIBLE -> OpenAIConfig(baseUrl, apiKey, model, maxTokens)
-        ModelProviderIds.ANTHROPIC -> AnthropicConfig(baseUrl, apiKey, model, maxTokens)
-        ModelProviderIds.GEMINI -> GeminiConfig(baseUrl, apiKey, model, maxTokens)
-        else -> DemoConfig()
-    }
+    /** 当前生效模型：优先 selectedModel，其次列表首个。 */
+    fun effectiveModel(): String = selectedModel.ifBlank { models.firstOrNull().orEmpty() }
+
+    /** 预览用显示名。 */
+    fun displayName(): String = name.ifBlank { providerId }
 
     /** 是否已构成"可用"（缺字段则不能作为真实模型激活）。 */
-    fun isComplete(): Boolean = baseUrl.isNotBlank() && apiKey.isNotBlank() && model.isNotBlank()
-}
+    fun isComplete(): Boolean =
+        baseUrl.isNotBlank() && apiKey.isNotBlank() && models.isNotEmpty() && effectiveModel().isNotBlank()
 
-/** 从类型化配置构一条 [SavedModel]（多模型落盘转换；id 为空时由存储方生成）。 */
-fun savedModelOf(config: ModelProviderConfig): SavedModel = when (config) {
-    is OpenAIConfig -> SavedModel(providerId = config.providerId, baseUrl = config.baseUrl, apiKey = config.apiKey, model = config.model, maxTokens = config.maxTokens)
-    is AnthropicConfig -> SavedModel(providerId = config.providerId, baseUrl = config.baseUrl, apiKey = config.apiKey, model = config.model, maxTokens = config.maxTokens)
-    is GeminiConfig -> SavedModel(providerId = config.providerId, baseUrl = config.baseUrl, apiKey = config.apiKey, model = config.model, maxTokens = config.maxTokens)
-    else -> SavedModel(providerId = DemoConfig().providerId, label = DemoConfig().displayName)
+    /** 转回类型化配置（用当前生效模型）；协议未知/不可用时回退 [DemoConfig]。 */
+    fun toConfig(): ModelProviderConfig = when (providerId) {
+        ModelProviderIds.OPENAI_COMPATIBLE -> OpenAIConfig(baseUrl, apiKey, effectiveModel(), maxTokens)
+        ModelProviderIds.ANTHROPIC -> AnthropicConfig(baseUrl, apiKey, effectiveModel(), maxTokens)
+        ModelProviderIds.GEMINI -> GeminiConfig(baseUrl, apiKey, effectiveModel(), maxTokens)
+        else -> DemoConfig()
+    }
 }
 
 /**
- * Provider 配置的持久化访问抽象（多模型）。实现方在 :app（Encrypted 计划见 M2）。
+ * Provider 配置的持久化访问抽象（供应商粒度，借鉴 deepcode-R AIProviderRepository 语义）。
+ * 实现方在 :app（明文 JSON + API Key 加密，见 ModelEndpointConfigStore + KeyEncryptor）。
  *
- * 多模型：可保存多条 [SavedModel]，[activeModelId] 决定当前会话生效哪条；
- * [current] 读激活模型转类型化配置，未激活/不可用回退 [DemoConfig]。
+ * 供应商粒度：可保存多条 [ProviderConfig]，[activeProviderId] 决定当前会话生效哪个
+ * 供应商；供应商内 [selectedModel] 决定用哪个模型。[current] 读激活供应商+选中模型
+ * 转类型化配置，未激活/不可用回退 [DemoConfig]。
  */
 interface ModelConfigStore {
-    /** 当前生效的类型化配置（激活模型或 Demo 兜底）。 */
+    /** 当前生效的类型化配置（激活供应商选中模型，或 Demo 兜底）。 */
     fun current(): ModelProviderConfig
 
-    /** 所有已保存模型（不含过期的激活 id）。 */
-    fun listModels(): List<SavedModel>
+    /** 所有已保存供应商（含激活标记）。 */
+    fun listProviders(): List<ProviderConfig>
 
-    /** 当前激活的模型 id；为空表示未激活（走演示模型）。 */
-    fun activeModelId(): String
+    /** 所有已保存供应商 id（便捷）。 */
+    fun listProviderIds(): List<String> = listProviders().map { it.id }
 
-    /** 当前激活的 [SavedModel]；未激活返回 null。 */
-    fun activeModel(): SavedModel?
+    /** 当前激活的供应商 id；为空表示未激活（走演示模型）。 */
+    fun activeProviderId(): String
 
-    /** 保存（按 id 覆盖）或新增一条模型，返回稳定 id。 */
-    fun saveModel(model: SavedModel): String
+    /** 当前激活的 [ProviderConfig]；未激活返回 null。 */
+    fun activeProvider(): ProviderConfig?
 
-    /** 标记某条模型为激活；id 不存在则忽略。 */
-    fun activateModel(id: String)
+    /** 保存（按 id 覆盖）或新增一条供应商，返回稳定 id。 */
+    fun saveProvider(provider: ProviderConfig): String
 
-    /** 删除某条模型；若它为激活则改为未激活。 */
-    fun removeModel(id: String)
+    /** 标记某供应商为激活（先取消其它供应商的激活标记）；id 不存在则忽略。 */
+    fun activateProvider(id: String)
 
-    /** 退回首演示模型（不再激活任何已保存模型，但保留列表）。 */
+    /** 删除某供应商；若它为激活则改为未激活（可自动接替首个可用）。 */
+    fun deleteProvider(id: String)
+
+    /** 设置某供应商当前选中模型；仅当选中的模型在其 models 列表内才生效。 */
+    fun setSelectedModel(providerId: String, model: String)
+
+    /** 整体替换某供应商的模型列表。 */
+    fun updateModels(providerId: String, models: List<String>)
+
+    /** 退回首演示模型（不再激活任何已保存供应商，但保留列表）。 */
     fun resetToDemo()
 }

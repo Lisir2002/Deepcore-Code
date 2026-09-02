@@ -9,21 +9,22 @@ import com.deepcode.core.agent.spi.ModelProviderConfig
 import com.deepcode.core.agent.spi.ModelProviderDescriptor
 import com.deepcode.core.agent.spi.ModelProviderIds
 import com.deepcode.core.agent.spi.ModelProviderRegistry
+import com.deepcode.core.agent.spi.ModelTestResult
 import com.deepcode.core.agent.spi.OpenAIConfig
-import com.deepcode.core.agent.spi.SavedModel
-import com.deepcode.core.agent.spi.savedModelOf
+import com.deepcode.core.agent.spi.ProviderConfig
 import com.deepcode.core.logging.Log
 import com.deepcode.core.logging.LogCategory
 import com.deepcode.core.logging.LogLevel
 
 /**
- * 添加供应商流程 ViewModel（两步：端点 → 模型；决策 D5/D6/P1）。
+ * 添加供应商流程 ViewModel（两步：端点 → 模型；决策 D5/D6/P1；借鉴 deepcode-R 供应商粒度）。
  *
  * - Step1（端点页）：协议单选 + Base URL / API Key / Max Tokens；「下一步」把草稿
  *   存进 [ProviderEditFlow.draft]（内存态，不进持久化，避免把未定模型的半成品存盘）。
  * - Step2（模型页）：一键 `GET /v1/models` 拉取官方模型列表（[fetchModels]，经注册表
- *   动态实例化对应协议 Provider），也可手输兜底；「完成」**新增一条** [SavedModel]
- *   持久化并标记激活（多模型：不影响既有模型）。
+ *   动态实例化对应协议 Provider，含 failover 兜底），批量勾选 + 手输；每条可「测试」
+ *   连通性（[testModel]）；「完成」把**一个** [ProviderConfig]（供应商 = 端点 + 内嵌模型
+ *   列表）持久化并标记激活（供应商粒度，多模型内嵌，不打散成多条）。
  *
  * ⚠ Step1 与 Step2 是两个独立导航目的地，各持一个 [ProviderEditViewModel] 实例
  * （Koin ViewModel 按目的地隔离）。为了让 Step2 读到 Step1 暂存的草稿，草稿挂在
@@ -72,7 +73,7 @@ class ProviderEditViewModel(
         flow.draft = ProviderEditFlow.Draft(providerId.trim(), baseUrl.trim(), apiKey.trim(), maxTokens)
     }
 
-    /** Step2「一键拉取」：按草稿构造临时 Provider 并调用 listModels()。 */
+    /** Step2「一键拉取」：按草稿构造临时 Provider 并调用其 listModels()（含 failover 兜底）。 */
     suspend fun fetchModels(): Result<List<ModelInfo>> {
         val d = flow.draft ?: return Result.failure(IllegalStateException("尚未配置端点"))
         val descriptor = registry.resolve(d.providerId)
@@ -81,7 +82,17 @@ class ProviderEditViewModel(
         return runCatching { descriptor.instantiate(config).listModels() }
     }
 
-    /** 回退演示模型（取消激活，保留已保存模型列表）。 */
+    /** Step2「测试」：按草稿构造临时 Provider，对指定模型发一条最小请求测连通性。 */
+    suspend fun testModel(modelId: String): Result<ModelTestResult> {
+        val d = flow.draft ?: return Result.failure(IllegalStateException("尚未配置端点"))
+        if (modelId.isBlank()) return Result.failure(IllegalStateException("请先选择模型"))
+        val descriptor = registry.resolve(d.providerId)
+            ?: return Result.failure(IllegalStateException("未知协议 ${d.providerId}"))
+        val config = buildConfig(d, model = modelId)
+        return runCatching { descriptor.instantiate(config).testModel(modelId) }
+    }
+
+    /** 回退演示模型（取消激活，保留已保存供应商列表）。 */
     fun selectDemo() {
         Log.log(
             LogLevel.INFO, LogCategory.OPERATION_USER, "Settings",
@@ -90,20 +101,26 @@ class ProviderEditViewModel(
         store.resetToDemo()
     }
 
-    /** Step2「完成」：新增一条 [SavedModel] 并标记激活（多模型）。 */
-    fun commitModel(model: String) {
+    /** Step2「完成」：把草稿 + 勾选的模型列表保存为**一个**供应商并激活（供应商粒度）。 */
+    fun commitModels(models: List<String>) {
         val d = flow.draft ?: return
-        if (model.isBlank()) return
-        val config = buildConfig(d, model.trim())
+        val ids = models.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        if (ids.isEmpty()) return
         val providerLabel = registry.resolve(d.providerId)?.displayName ?: d.providerId
-        val saved = savedModelOf(config).copy(
-            label = "${model.trim()} · $providerLabel",
+        val provider = ProviderConfig(
+            providerId = d.providerId,
+            name = providerLabel,
+            baseUrl = d.baseUrl,
+            apiKey = d.apiKey,
+            maxTokens = d.maxTokens,
+            models = ids,
+            selectedModel = ids.first(),
         )
-        val id = store.saveModel(saved)
-        store.activateModel(id)
+        val id = store.saveProvider(provider)
+        store.activateProvider(id)
         Log.log(
             LogLevel.INFO, LogCategory.OPERATION_USER, "Settings",
-            "新增模型（provider=${d.providerId}, model=${model.trim()}, id=$id）",
+            "新增供应商（provider=${d.providerId}, models=${ids}, id=$id）",
         )
         flow.draft = null
     }

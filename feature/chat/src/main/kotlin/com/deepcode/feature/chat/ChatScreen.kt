@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.deepcode.core.agent.spi.ModelProviderIds
 import com.deepcode.designsystem.components.AppEmptyState
 import com.deepcode.designsystem.components.AppInputBar
 import com.deepcode.designsystem.components.AppTextButton
@@ -46,12 +45,11 @@ fun ChatScreen(
     val blocks by viewModel.blocks.collectAsStateWithLifecycle()
     val running by viewModel.running.collectAsStateWithLifecycle()
     val draft by viewModel.draft.collectAsStateWithLifecycle()
-    val activeModelId by viewModel.activeModelId.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
     var modelMenu by remember { mutableStateOf(false) }
     val models = viewModel.availableModels()
-    val activeModelName = viewModel.modelLabel(activeModelId)
+    val activeModelName = viewModel.activeLabel
 
     // 有新内容就贴到底部。只在块数量变化时触发，避免流式更新时疯狂滚动。
     LaunchedEffect(blocks.size) {
@@ -85,20 +83,20 @@ fun ChatScreen(
                                 )
                             },
                         ) {
-                            AppDropdownMenuHeader("选择模型")
-                            models.forEach { model ->
+                            AppDropdownMenuHeader("选择模型 · 供应商 / 模型")
+                            models.forEach { choice ->
                                 AppDropdownMenuItem(
-                                text = model.label.ifBlank { model.model },
-                                selected = model.id == activeModelId,
-                                onClick = {
-                                    modelMenu = false
-                                    viewModel.switchModel(model.id)
-                                },
-                            )
+                                    text = "${choice.providerName} / ${choice.modelId}",
+                                    selected = viewModel.isActive(choice),
+                                    onClick = {
+                                        modelMenu = false
+                                        viewModel.switchModel(choice)
+                                    },
+                                )
                             }
                             if (models.isEmpty()) {
                                 AppDropdownMenuItem(
-                                    text = "暂无保存模型，请到设置添加",
+                                    text = "暂无已保存模型，请到设置添加",
                                     enabled = false,
                                     onClick = { modelMenu = false },
                                 )
@@ -106,10 +104,10 @@ fun ChatScreen(
                             AppDropdownMenuDivider()
                             AppDropdownMenuItem(
                                 text = "演示模型",
-                                selected = activeModelId.isBlank(),
+                                selected = !viewModel.hasActiveProvider,
                                 onClick = {
                                     modelMenu = false
-                                    viewModel.switchModel(ModelProviderIds.DEMO)
+                                    viewModel.switchToDemo()
                                 },
                             )
                         }
