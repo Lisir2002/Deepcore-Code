@@ -500,7 +500,7 @@ fun NavScaffold(
 
 @Composable
 fun DetailScaffold(
-    title: String, largeTitle: String,            // 滚动收合：displaySmall→17sp（与滚动 1:1 跟手）
+    title: String,                                // 顶栏为唯一标题，内容区不重复放大标题
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     bottomActions: @Composable () -> Unit = {},   // 可选操作条

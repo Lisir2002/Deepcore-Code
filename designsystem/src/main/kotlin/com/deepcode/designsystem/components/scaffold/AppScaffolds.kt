@@ -20,10 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.deepcode.designsystem.components.AppBottomBarDivider
 import com.deepcode.designsystem.components.AppTopAppBar
-import com.deepcode.designsystem.components.AppText
 import com.deepcode.designsystem.components.overlay.ToastHost
 import com.deepcode.designsystem.components.overlay.ToastHostState
-import com.deepcode.designsystem.theme.AppTextStyle
 import com.deepcode.designsystem.theme.Dimens
 
 /** 骨架族（§6.5.1）公共基底：吃 Ime/导航 insets + 衬 background + 内容 PaddingValues。 */
@@ -134,11 +132,10 @@ fun NavScaffold(
     }
 }
 
-/** 详情骨架：大标题（largeTitle）＋ 可选操作条（§6.5.1；滚动收合由页面滚动状态驱动，此处承载槽位）。 */
+/** 详情骨架：顶栏标题 + 可选操作条（§6.5.1）。顶栏为唯一标题，内容区不再重复放大标题。 */
 @Composable
 fun DetailScaffold(
     title: String,
-    largeTitle: String,
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     bottomActions: @Composable () -> Unit = {},
@@ -148,17 +145,7 @@ fun DetailScaffold(
     ContentScaffold(
         modifier = modifier,
         topBar = {
-            androidx.compose.foundation.layout.Column {
-                AppTopAppBar(title = title, onBack = onBack, actions = actions)
-                Column(
-                    modifier = Modifier.padding(
-                        horizontal = Dimens.spaceL,
-                        vertical = Dimens.spaceS,
-                    ),
-                ) {
-                    AppText(text = largeTitle, style = AppTextStyle.Title)
-                }
-            }
+            AppTopAppBar(title = title, onBack = onBack, actions = actions)
         },
         bottomBar = {
             Surface(color = MaterialTheme.colorScheme.surface) {

@@ -2,6 +2,18 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.2.1] — 2026-09-02 · versionCode 40201
+
+> **设置二级页重复标题移除**。`DetailScaffold` 去掉内容区大标题槽位，顶栏为唯一标题，设置五页
+> 不再出现重复标题；同步更新兼容迁移提示与设计令牌文档。
+
+### Changed
+
+- **`DetailScaffold` 移除 `largeTitle`**（[AppScaffolds.kt](designsystem/src/main/kotlin/com/deepcode/designsystem/components/scaffold/AppScaffolds.kt)）：
+  顶栏为唯一标题，内容区不再重复放大标题；原「滚动收合」槽位设计暂缓，当前无滚动联动。
+- **设置二级页去除重复标题**：外观 / 模型 / 技能 / 日志 / 关于 五页移除 `largeTitle` 传参。
+- **文档同步**（[DESIGN_TOKENS.md](docs/DESIGN_TOKENS.md)）：`DetailScaffold` 签名更新；兼容迁移提示同步。
+
 ## [v0.4.2.0] — 2026-09-02 · versionCode 40200
 
 > **设置页骨架重构（入口列表 + 二级 Detail）+ 真实模型配置分页**。本轮按设置骨架设计拍板点落地：

@@ -54,7 +54,6 @@ fun SettingsSkillsScreen(
 
     DetailScaffold(
         title = "技能",
-        largeTitle = "技能",
         onBack = onBack,
         actions = {
             AppTextButton(text = "重连", onClick = viewModel::reconnectAll)

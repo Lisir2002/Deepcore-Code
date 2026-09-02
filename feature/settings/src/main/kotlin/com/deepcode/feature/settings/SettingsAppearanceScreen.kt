@@ -116,7 +116,6 @@ fun SettingsAppearanceScreen(
 
     DetailScaffold(
         title = "外观",
-        largeTitle = "外观",
         onBack = onBack,
     ) { padding ->
         LazyColumn(

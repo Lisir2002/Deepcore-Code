@@ -14,7 +14,7 @@ import com.deepcode.designsystem.components.AppScaffold
  */
 @Deprecated(
     message = "骨架族已上线：请改用 ChatScaffold/TabbedScaffold/NavScaffold/DetailScaffold/FormScaffold",
-    replaceWith = ReplaceWith("DetailScaffold(title = title, largeTitle = title, onBack = onBack, actions = actions)"),
+    replaceWith = ReplaceWith("DetailScaffold(title = title, onBack = onBack, actions = actions)"),
 )
 @Composable
 fun AppScaffoldCompat(

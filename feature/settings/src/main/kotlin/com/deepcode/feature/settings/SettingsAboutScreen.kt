@@ -30,7 +30,6 @@ fun SettingsAboutScreen(
 ) {
     DetailScaffold(
         title = "关于",
-        largeTitle = "关于",
         onBack = onBack,
     ) { padding ->
         LazyColumn(

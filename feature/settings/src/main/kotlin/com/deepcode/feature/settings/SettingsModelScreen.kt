@@ -31,7 +31,6 @@ fun SettingsModelScreen(
 ) {
     DetailScaffold(
         title = "模型",
-        largeTitle = "模型",
         onBack = onBack,
     ) { padding ->
         LazyColumn(

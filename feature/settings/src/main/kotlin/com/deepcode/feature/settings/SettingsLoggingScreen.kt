@@ -39,7 +39,6 @@ fun SettingsLoggingScreen(
 
     DetailScaffold(
         title = "日志",
-        largeTitle = "日志",
         onBack = onBack,
     ) { padding ->
         LazyColumn(
