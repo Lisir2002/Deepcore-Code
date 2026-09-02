@@ -1,5 +1,7 @@
 package com.deepcode.core.agent.spi
 
+import kotlinx.serialization.Serializable
+
 /**
  * 模型供应商接入编排（决策 D1/D2：注册表统一 + 类型化配置）。
  *
@@ -110,6 +112,7 @@ fun modelOf(config: ModelProviderConfig): String = when (config) {
  * @param id 稳定 id（保存时若为空则由存储方生成）。
  * @param label 用户可读名，如 "DeepSeek V3"。
  */
+@Serializable
 data class SavedModel(
     val id: String = "",
     val label: String = "",

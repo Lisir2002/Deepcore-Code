@@ -6,8 +6,9 @@ import com.deepcode.core.agent.spi.DemoConfig
 import com.deepcode.core.agent.spi.ModelConfigStore
 import com.deepcode.core.agent.spi.ModelProviderConfig
 import com.deepcode.core.agent.spi.SavedModel
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * 模型供应商的本地配置（SharedPreferences 明文存储，多模型）。
@@ -27,30 +28,21 @@ class ModelEndpointConfigStore(context: Context) : ModelConfigStore {
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences("llm_config", Context.MODE_PRIVATE)
 
+    // 忽略未知键 + 显式编码默认值：向前兼容后续新增字段，且固定写入 id/label 等默认值。
+    private val json: Json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+
     override fun activeModelId(): String = prefs.getString(KEY_ACTIVE_MODEL_ID, null).orEmpty()
 
     override fun listModels(): List<SavedModel> {
         migrateLegacySingleConfigIfNeeded()
         val raw = prefs.getString(KEY_MODELS_JSON, null) ?: return emptyList()
-        return runCatching {
-            val arr = JSONArray(raw)
-            buildList {
-                for (i in 0 until arr.length()) {
-                    val o = arr.getJSONObject(i)
-                    add(SavedModel(
-                        id = o.optString("id"),
-                        label = o.optString("label"),
-                        providerId = o.optString("providerId"),
-                        baseUrl = o.optString("baseUrl"),
-                        apiKey = o.optString("apiKey"),
-                        model = o.optString("model"),
-                        maxTokens = o.optInt("maxTokens", 8192),
-                    ))
-                }
-                // 过滤掉恒空的僵尸条目（迁移/残缺写入的兜底）
-                removeAll { it.id.isBlank() }
-            }
-        }.getOrDefault(emptyList())
+        return runCatching { json.decodeFromString<List<SavedModel>>(raw) }
+            // 过滤掉恒空的僵尸条目（迁移/残缺写入的兜底）
+            .getOrDefault(emptyList())
+            .filter { it.id.isNotBlank() }
     }
 
     override fun activeModel(): SavedModel? {
@@ -97,19 +89,7 @@ class ModelEndpointConfigStore(context: Context) : ModelConfigStore {
     // ─────────────────────────── 内部工具 ───────────────────────────
 
     private fun writeModels(list: List<SavedModel>) {
-        val arr = JSONArray()
-        list.forEach { m ->
-            arr.put(JSONObject().apply {
-                put("id", m.id)
-                put("label", m.label)
-                put("providerId", m.providerId)
-                put("baseUrl", m.baseUrl)
-                put("apiKey", m.apiKey)
-                put("model", m.model)
-                put("maxTokens", m.maxTokens)
-            })
-        }
-        prefs.edit().putString(KEY_MODELS_JSON, arr.toString()).apply()
+        prefs.edit().putString(KEY_MODELS_JSON, json.encodeToString(list)).apply()
     }
 
     private fun newId(): String = "model-${System.currentTimeMillis()}"
