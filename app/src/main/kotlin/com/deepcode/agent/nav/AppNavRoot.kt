@@ -24,6 +24,7 @@ import com.deepcode.feature.settings.SettingsAppearanceScreen
 import com.deepcode.feature.settings.SettingsLoggingScreen
 import com.deepcode.feature.settings.SettingsModelScreen
 import com.deepcode.feature.settings.ProviderEditScreen
+import com.deepcode.feature.settings.ModelPickScreen
 import com.deepcode.feature.settings.SettingsScreen
 import com.deepcode.feature.settings.SettingsSkillsScreen
 import androidx.compose.material.icons.Icons
@@ -49,6 +50,8 @@ object AppRoutes {
 
     // —— 设置三级页（Provider 编辑，由模型页压栈进入）——
     const val PROVIDER_EDIT = "settings/provider"
+    // —— 添加供应商流水线 · Step2 选择模型（由 Step1 端点页进入）——
+    const val MODEL_PICK = "settings/provider/model"
 
     // —— 设置二级页（入口列表压栈进入，DetailScaffold 自带返回，隐藏底栏）——
     // 带参路由：`settings/{page}?reason=` 支持直达（首次引导 / 连接异常跳转），
@@ -134,7 +137,17 @@ fun AppNavRoot(styleController: StyleController) {
         composable(AppRoutes.PROVIDER_EDIT) {
             ProviderEditScreen(
                 onBack = { navController.popBackStack() },
-                onSaved = { navController.popBackStack() },
+                onNext = { navController.navigate(AppRoutes.MODEL_PICK) },
+            )
+        }
+        // —— 添加供应商流水线 · Step2 选择模型（完成/返回都回退到模型页）——
+        composable(AppRoutes.MODEL_PICK) {
+            ModelPickScreen(
+                onBack = { navController.popBackStack() },
+                onDone = {
+                    navController.popBackStack()
+                    navController.popBackStack()
+                },
             )
         }
         composable(

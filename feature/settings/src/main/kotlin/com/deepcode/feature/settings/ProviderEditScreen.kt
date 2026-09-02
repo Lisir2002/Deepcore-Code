@@ -32,54 +32,55 @@ import com.deepcode.designsystem.theme.Dimens
 import org.koin.androidx.compose.koinViewModel
 
 /**
- * 设置三级页 · Provider 编辑（决策 D5/D7）。
+ * 添加供应商流程 · Step1 端点页（决策 P1：三协议全量落地）。
  *
- * - 顶部 Provider 单选（来自注册表 [ProviderRegistry]，决策 D1），
- *   选中 `requiresConfig` 的 Provider 时展开动态字段表单（当前：OpenAI 兼容四字段）。
- * - 模型字段 = 手输兜底（决策 D6 的下拉拉取 listModels() 留到接入真实端点后增强）。
- * - 保存按钮：表单字段齐全才可点；教练 Provider 保存后回 [FormScaffold] popBack。
+ * - Provider 单选（来自注册表 [com.deepcode.core.agent.spi.ModelProviderRegistry]，决策 D1）。
+ * - 选中需配置的协议时展开：Base URL / API Key / Max Tokens（Max Tokens 固定在 Step1）。
+ * - 「下一步」把端点草稿暂存进内存 [ProviderEditViewModel.Draft]（不落盘），跳 Step2 选模型。
+ * - 选中「演示模型」直接回调 Demo 回退。
  */
 @Composable
 fun ProviderEditScreen(
     onBack: (() -> Unit)?,
-    onSaved: (() -> Unit)? = null,
+    onNext: ((providerId: String) -> Unit)? = null,
 ) {
     val viewModel: ProviderEditViewModel = koinViewModel()
 
     var selectedProviderId by remember {
         mutableStateOf(viewModel.initialProviderId().takeIf { it.isNotBlank() } ?: ModelProviderIds.DEMO)
     }
-
-    val openAi = remember { viewModel.initialConfig() }
-    var baseUrl by remember { mutableStateOf(openAi.baseUrl) }
-    var apiKey by remember { mutableStateOf(openAi.apiKey) }
-    var model by remember { mutableStateOf(openAi.model) }
-    var maxTokens by remember { mutableIntStateOf(openAi.maxTokens) }
+    var baseUrl by remember { mutableStateOf(viewModel.initialBaseUrl()) }
+    var apiKey by remember { mutableStateOf(viewModel.initialApiKey()) }
+    var maxTokens by remember { mutableIntStateOf(viewModel.initialMaxTokens()) }
 
     val selected = viewModel.descriptors.firstOrNull { it.id == selectedProviderId }
     val needsConfig = selected?.requiresConfig == true
-    val fieldsReady = baseUrl.isNotBlank() && apiKey.isNotBlank() && model.isNotBlank()
-
-    fun onSave() {
-        if (needsConfig) {
-            viewModel.saveOpenAi(baseUrl = baseUrl, apiKey = apiKey, model = model, maxTokens = maxTokens)
-        } else {
-            viewModel.selectDemo()
-        }
-        onSaved?.invoke()
-    }
+    val fieldsReady = baseUrl.isNotBlank() && apiKey.isNotBlank()
 
     FormScaffold(
-        title = "配置 Provider",
+        title = "添加供应商",
         onBack = onBack,
         confirm = {
             AppPrimaryButton(
-                text = if (needsConfig) "保存" else "使用演示模型",
+                text = if (needsConfig) "下一步：选择模型" else "使用演示模型",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Dimens.spaceL, vertical = Dimens.spaceM),
                 enabled = !needsConfig || fieldsReady,
-                onClick = ::onSave,
+                onClick = {
+                    if (needsConfig) {
+                        viewModel.commitEndpoint(
+                            providerId = selectedProviderId,
+                            baseUrl = baseUrl,
+                            apiKey = apiKey,
+                            maxTokens = if (maxTokens > 0) maxTokens else viewModel.initialMaxTokens(),
+                        )
+                        onNext?.invoke(selectedProviderId)
+                    } else {
+                        viewModel.selectDemo()
+                        onBack?.invoke()
+                    }
+                },
             )
         },
     ) {
@@ -106,24 +107,16 @@ fun ProviderEditScreen(
                             label = "Base URL",
                             value = baseUrl,
                             onValueChange = { baseUrl = it },
-                            placeholder = "https://api.deepseek.com/v1",
-                            helperText = "OpenAI 兼容端点，需可直达 /chat/completions",
+                            placeholder = providerBaseUrlPlaceholder(selectedProviderId),
+                            helperText = providerBaseUrlHint(selectedProviderId),
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                         )
                         AppTextField(
                             label = "API Key",
                             value = apiKey,
                             onValueChange = { apiKey = it },
-                            placeholder = "sk-…",
+                            placeholder = providerKeyPlaceholder(selectedProviderId),
                             helperText = "明文存储，加密存储排期 M2",
-                        )
-                        AppTextField(
-                            label = "模型",
-                            value = model,
-                            onValueChange = { model = it },
-                            placeholder = "deepseek-chat",
-                            helperText = "手输模型 ID（接入真实端点后支持从端点下拉拉取）",
-                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                         )
                         AppTextField(
                             label = "Max Tokens",
@@ -132,7 +125,7 @@ fun ProviderEditScreen(
                                 maxTokens = raw.toIntOrNull() ?: 0
                             },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            helperText = "单次生成最大 token 数，缺省 8192",
+                            helperText = "单次生成最大 token 数，缺省按协议默认",
                         )
                     }
                 }
@@ -141,7 +134,7 @@ fun ProviderEditScreen(
     }
 }
 
-/** Provider 单选组：无表单（如 Demo）与需配置（如 OpenAI 兼容）并行展示。 */
+/** 协议单选组：无表单（如 Demo）与需配置（OpenAI / Anthropic / Gemini）并行展示。 */
 @Composable
 private fun ColumnScope.ProviderSelector(
     descriptors: List<com.deepcode.core.agent.spi.ModelProviderDescriptor>,
@@ -178,4 +171,25 @@ private fun ColumnScope.ProviderSelector(
             }
         }
     }
+}
+
+private fun providerBaseUrlPlaceholder(providerId: String): String = when (providerId) {
+    ModelProviderIds.OPENAI_COMPATIBLE -> "https://api.deepseek.com/v1"
+    ModelProviderIds.ANTHROPIC -> "https://api.anthropic.com"
+    ModelProviderIds.GEMINI -> "https://generativelanguage.googleapis.com"
+    else -> "https://…"
+}
+
+private fun providerBaseUrlHint(providerId: String): String = when (providerId) {
+    ModelProviderIds.OPENAI_COMPATIBLE -> "OpenAI 兼容端点，需可直达 /chat/completions"
+    ModelProviderIds.ANTHROPIC -> "Anthropic 端点，追加 /v1/messages"
+    ModelProviderIds.GEMINI -> "Gemini 端点，追加 /v1beta/models/{model}:streamGenerateContent"
+    else -> ""
+}
+
+private fun providerKeyPlaceholder(providerId: String): String = when (providerId) {
+    ModelProviderIds.OPENAI_COMPATIBLE -> "sk-…"
+    ModelProviderIds.ANTHROPIC -> "sk-ant-…"
+    ModelProviderIds.GEMINI -> "AIza…"
+    else -> "…"
 }

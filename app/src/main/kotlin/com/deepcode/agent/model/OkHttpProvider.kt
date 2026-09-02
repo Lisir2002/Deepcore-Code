@@ -63,17 +63,47 @@ class OkHttpProvider(
     private val http: OkHttpClient = client
     private val json: Json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun listModels(): List<ModelInfo> = listOf(
-        ModelInfo(
-            id = config.model,
-            displayName = config.model,
-            contextWindowTokens = 128_000,
-            maxOutputTokens = config.maxTokens,
-            supportsTools = true,
-            supportsThinking = true,
-            supportsPromptCaching = true,
-        ),
-    )
+    override suspend fun listModels(): List<ModelInfo> {
+        // 真实拉取 OpenAI 兼容端点的 /v1/models 目录；失败 / 空时回退到已填模型单条，
+        // 保证「选择模型」页始终有兜底项。
+        val remote = runCatching {
+            val req = Request.Builder()
+                .url(config.modelsUrl())
+                .header("Authorization", "Bearer ${config.apiKey}")
+                .header("Accept", "application/json")
+                .build()
+            http.newCall(req).execute().use { response ->
+                if (!response.isSuccessful) return@use emptyList()
+                val root = json.parseToJsonElement(response.body?.string().orEmpty()).jsonObject
+                root["data"]?.jsonArray?.mapNotNull { el ->
+                    val id = el.jsonObject["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                    ModelInfo(
+                        id = id,
+                        displayName = el.jsonObject["id"]?.jsonPrimitive?.contentOrNull ?: id,
+                        contextWindowTokens = 128_000,
+                        maxOutputTokens = config.maxTokens,
+                        supportsTools = true,
+                        supportsThinking = true,
+                        supportsPromptCaching = true,
+                    )
+                } ?: emptyList()
+            }
+        }.getOrDefault(emptyList())
+
+        return remote.ifEmpty {
+            listOf(
+                ModelInfo(
+                    id = config.model,
+                    displayName = config.model,
+                    contextWindowTokens = 128_000,
+                    maxOutputTokens = config.maxTokens,
+                    supportsTools = true,
+                    supportsThinking = true,
+                    supportsPromptCaching = true,
+                ),
+            )
+        }
+    }
 
     override fun supports(modelId: String): Boolean = modelId == config.model || modelId == id
 

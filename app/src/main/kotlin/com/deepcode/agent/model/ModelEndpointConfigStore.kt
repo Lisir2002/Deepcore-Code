@@ -2,7 +2,9 @@ package com.deepcode.agent.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.deepcode.core.agent.spi.AnthropicConfig
 import com.deepcode.core.agent.spi.DemoConfig
+import com.deepcode.core.agent.spi.GeminiConfig
 import com.deepcode.core.agent.spi.ModelConfigStore
 import com.deepcode.core.agent.spi.ModelProviderConfig
 import com.deepcode.core.agent.spi.ModelProviderIds
@@ -46,20 +48,43 @@ class ModelEndpointConfigStore(context: Context) : ModelConfigStore {
 
     /** 当前生效的类型化配置；Provider 缺失或字段不完整时回退 [DemoConfig]。 */
     override fun current(): ModelProviderConfig {
-        if (activeProviderId == ModelProviderIds.OPENAI_COMPATIBLE) {
-            val openAi = OpenAIConfig(
-                baseUrl = baseUrl,
-                apiKey = apiKey,
-                model = model,
-                maxTokens = maxTokens,
-            )
-            return if (openAi.isComplete()) openAi else DemoConfig()
+        return when (activeProviderId) {
+            ModelProviderIds.OPENAI_COMPATIBLE -> {
+                val c = OpenAIConfig(baseUrl = baseUrl, apiKey = apiKey, model = model, maxTokens = maxTokens)
+                if (c.isComplete()) c else DemoConfig()
+            }
+            ModelProviderIds.ANTHROPIC -> {
+                val c = AnthropicConfig(baseUrl = baseUrl, apiKey = apiKey, model = model, maxTokens = maxTokens)
+                if (c.isComplete()) c else DemoConfig()
+            }
+            ModelProviderIds.GEMINI -> {
+                val c = GeminiConfig(baseUrl = baseUrl, apiKey = apiKey, model = model, maxTokens = maxTokens)
+                if (c.isComplete()) c else DemoConfig()
+            }
+            else -> DemoConfig()
         }
-        return DemoConfig()
     }
 
     /** 保存一组 OpenAI 兼容配置并标记为激活。 */
     override fun saveOpenAi(config: OpenAIConfig) {
+        activeProviderId = config.providerId
+        baseUrl = config.baseUrl
+        apiKey = config.apiKey
+        model = config.model
+        maxTokens = config.maxTokens
+    }
+
+    /** 保存一组 Anthropic 配置并标记为激活。 */
+    override fun saveAnthropic(config: AnthropicConfig) {
+        activeProviderId = config.providerId
+        baseUrl = config.baseUrl
+        apiKey = config.apiKey
+        model = config.model
+        maxTokens = config.maxTokens
+    }
+
+    /** 保存一组 Gemini 配置并标记为激活。 */
+    override fun saveGemini(config: GeminiConfig) {
         activeProviderId = config.providerId
         baseUrl = config.baseUrl
         apiKey = config.apiKey

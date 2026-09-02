@@ -29,8 +29,8 @@
 | D2 | 配置形态 | **类型化配置**：`ModelConfig` 接口，每 Provider 一个实现（`OpenAIConfig`/`DemoConfig`） |
 | D3 | Provider↔模型关系 | **provider 多模型**：`ModelRef(providerId, modelId)`，Provider 可暴露多个模型 |
 | D4 | 配置基础形态 | **单配置**：当前状态 + 可编辑，切换 Provider 即覆盖 |
-| D5 | 编辑载体 | **二级编辑页**：模型页是状态/入口，压栈进 `ProviderEditScreen` 编辑 |
-| D6 | 模型选择 | **下拉 + 手输兜底**：优先 `listModels()`，拉取失败可手输 modelId |
+| D5 | 编辑载体 | **两步流程**：模型页压栈进 `ProviderEditScreen`(Step1 端点/密钥/MaxTokens) → `ModelPickScreen`(Step2 选模型) |
+| D6 | 模型选择 | **一键拉取 + 手输兜底**：`GET /v1/models` 拉官方目录（失败提示），可手输 modelId |
 | D7 | 字段范围 | **全做现有字段**：端点 / API Key / 模型 / maxTokens（OpenAIConfig 现有四字段）；流式开关暂缓 |
 
 > D1–D3 决定"接入编排"；D4–D7 决定"设置页交互"。两者叠加为本次完整落地。

@@ -2,6 +2,37 @@
 
 本项目所有显著变更记录于此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [v0.4.3.1] — 2026-09-02 · versionCode 40301
+
+> **三大流行协议全量兼容 + 供应商两步流程**。接入业界主流做法（LiteLLM / llm-bridge / unified-llm 等
+> 统一接口 + 适配器隔离），OpenAI 兼容 / Anthropic / Gemini 三协议各自一个类型化配置与 Provider 适配器，
+> 协议差异（鉴权、system 位置、tool 块、SSE 事件、模型列表端点）全部隔离在 app 层。
+> 「添加供应商」改为两步：Step1 端点页（协议/Base URL/API Key/Max Tokens）→ Step2 模型页（一键拉取官方
+> 模型目录或手输兜底）。
+
+### Added
+
+- **Anthropic 协议适配器 [AnthropicProvider.kt](app/src/main/kotlin/com/deepcode/agent/model/AnthropicProvider.kt)**：
+  `POST /v1/messages` 命名 SSE 事件完整流式（text/thinking/tool_use 块）、`x-api-key`+`anthropic-version` 鉴权、
+  顶层 `system`、`listModels()` 拉 `/v1/models`。
+- **Gemini 协议适配器 [GeminiProvider.kt](app/src/main/kotlin/com/deepcode/agent/model/GeminiProvider.kt)**：
+  `streamGenerateContent?alt=sse` 流式、`contents/parts` 结构、`x-goog-api-key` 鉴权、functionCall/functionResponse、
+  `listModels()` 拉 `/v1beta/models`（清 `models/` 前缀）。
+- **类型化配置 `AnthropicConfig` / `GeminiConfig`**（[ModelProviderConfig.kt](core/agent/src/main/kotlin/com/deepcode/core/agent/spi/ModelProviderConfig.kt)）：
+  并扩展 `ModelConfigStore` 增加 `saveAnthropic` / `saveGemini`。
+- **供应商两步流程 UI**：Step1 端点页 [ProviderEditScreen.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/ProviderEditScreen.kt)
+  与 Step2 模型页 [ModelPickScreen.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/ModelPickScreen.kt)（一键拉取 + 手输兜底）。
+- **分步流程 ViewModel [ProviderEditViewModel.kt](feature/settings/src/main/kotlin/com/deepcode/feature/settings/ProviderEditViewModel.kt)**：
+  端点草稿内存暂存（不落盘）、按协议动态实例化 Provider 拉模型、按协议分遣保存。
+
+### Changed
+
+- **`OkHttpProvider.listModels` 改造**：真实打 `GET /v1/models` 拉官方模型目录，失败回退已配置模型。
+- **注册表 [ProviderRegistry.kt](app/src/main/kotlin/com/deepcode/agent/model/ProviderRegistry.kt)**：登记 Anthropic / Gemini 描述。
+- **存储 [ModelEndpointConfigStore.kt](app/src/main/kotlin/com/deepcode/agent/model/ModelEndpointConfigStore.kt)**：
+  `current()` 支持三协议解析；新增 `saveAnthropic` / `saveGemini`。
+- **导航 [AppNavRoot.kt](app/src/main/kotlin/com/deepcode/agent/nav/AppNavRoot.kt)**：新增 `settings/provider/model` 子路由，Step1→Step2。
+
 ## [v0.4.3.0] — 2026-09-02 · versionCode 40300
 
 > **模型接入统一规划落地**。按 [MODEL_PROVIDER_PLAN.md](docs/MODEL_PROVIDER_PLAN.md) 七项决策
